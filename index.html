@@ -49,6 +49,12 @@
         .sidebar-toggle-button { position: absolute; top: 16px; right: 10px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(255,255,255,0.08); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s; }
         .sidebar-toggle-button:hover { background: rgba(255,255,255,0.16); }
         .sidebar-toggle-button i { font-size: 12px; }
+        body.sidebar-expanded .sidebar { width: 180px !important; }
+        body.sidebar-expanded .sidebar:hover { width: 180px !important; }
+        body.sidebar-expanded .sidebar-logo span { display: inline; }
+        body.sidebar-expanded .sidebar .nav-item span { display: inline; }
+        body.sidebar-expanded .main { margin-left: 180px; width: calc(100% - 180px); }
+        body.sidebar-expanded .top-bar { left: 180px; width: calc(100% - 180px); }
         body.sidebar-collapsed .sidebar { width: 70px !important; }
         body.sidebar-collapsed .sidebar:hover { width: 70px !important; }
         body.sidebar-collapsed .sidebar-logo { padding: 20px 8px; }
@@ -130,12 +136,6 @@
         .modal-close:hover { color: var(--danger); transform: none; }
         .modal-footer { display: flex; gap: 10px; margin-top: 15px; }
         .modal-footer button { flex: 1; }
-        body.sidebar-collapsed .sidebar { width: 0 !important; min-width: 0 !important; padding: 0 !important; border: none !important; overflow: hidden !important; left: -100% !important; }
-        body.sidebar-collapsed .sidebar .sidebar-logo,
-        body.sidebar-collapsed .sidebar .nav-item { display: none !important; }
-        body.sidebar-collapsed .main { margin-left: 0; width: 100%; }
-        body.sidebar-collapsed .top-bar { left: 0; width: 100%; }
-        body.sidebar-collapsed .sidebar:hover { width: 0 !important; }
         .sidebar-toggle { display: inline-flex; }
         .login-page { position: fixed; inset: 0; background: radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 35%), #04050b; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 2000; }
         .login-page.hidden { display: none; }
@@ -545,28 +545,39 @@ function limparLogin() {
 }
 
 function toggleSidebar() {
-    document.body.classList.toggle('sidebar-collapsed');
+    const body = document.body;
     const btnTop = document.getElementById('sidebar_toggle_btn');
     const btnSide = document.querySelector('.sidebar-toggle-button i');
 
-    if (document.body.classList.contains('sidebar-collapsed')) {
-        localStorage.setItem('sidebarCollapsed', 'true');
+    if (body.classList.contains('sidebar-expanded')) {
+        body.classList.remove('sidebar-expanded');
+        body.classList.add('sidebar-collapsed');
+        localStorage.setItem('sidebarState', 'collapsed');
         if (btnTop) btnTop.innerHTML = '<i class="fas fa-bars"></i>';
         if (btnSide) btnSide.className = 'fas fa-chevron-right';
-    } else {
-        localStorage.removeItem('sidebarCollapsed');
-        if (btnTop) btnTop.innerHTML = '<i class="fas fa-times"></i>';
-        if (btnSide) btnSide.className = 'fas fa-chevron-left';
+        return;
     }
+
+    body.classList.remove('sidebar-collapsed');
+    body.classList.add('sidebar-expanded');
+    localStorage.setItem('sidebarState', 'expanded');
+    if (btnTop) btnTop.innerHTML = '<i class="fas fa-times"></i>';
+    if (btnSide) btnSide.className = 'fas fa-chevron-left';
 }
 
 function initSidebarToggle() {
+    const btnTop = document.getElementById('sidebar_toggle_btn');
     const btnSide = document.querySelector('.sidebar-toggle-button i');
-    if (localStorage.getItem('sidebarCollapsed') === 'true') {
-        document.body.classList.add('sidebar-collapsed');
-        if (btnSide) btnSide.className = 'fas fa-chevron-right';
-    } else {
+    const state = localStorage.getItem('sidebarState');
+
+    if (state === 'expanded') {
+        document.body.classList.add('sidebar-expanded');
+        if (btnTop) btnTop.innerHTML = '<i class="fas fa-times"></i>';
         if (btnSide) btnSide.className = 'fas fa-chevron-left';
+    } else {
+        document.body.classList.add('sidebar-collapsed');
+        if (btnTop) btnTop.innerHTML = '<i class="fas fa-bars"></i>';
+        if (btnSide) btnSide.className = 'fas fa-chevron-right';
     }
 }
 
