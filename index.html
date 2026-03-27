@@ -119,6 +119,13 @@
         .modal-close:hover { color: var(--danger); transform: none; }
         .modal-footer { display: flex; gap: 10px; margin-top: 15px; }
         .modal-footer button { flex: 1; }
+        body.sidebar-collapsed .sidebar { width: 0 !important; min-width: 0 !important; padding: 0 !important; border: none !important; overflow: hidden !important; left: -100% !important; }
+        body.sidebar-collapsed .sidebar .sidebar-logo,
+        body.sidebar-collapsed .sidebar .nav-item { display: none !important; }
+        body.sidebar-collapsed .main { margin-left: 0; width: 100%; }
+        body.sidebar-collapsed .top-bar { left: 0; width: 100%; }
+        body.sidebar-collapsed .sidebar:hover { width: 0 !important; }
+        .sidebar-toggle { display: inline-flex; }
         .login-page { position: fixed; inset: 0; background: radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 35%), #04050b; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 2000; }
         .login-page.hidden { display: none; }
         .login-box { width: 100%; max-width: 380px; background: #10121b; border: 1px solid var(--border); border-radius: 24px; padding: 30px; box-shadow: 0 24px 80px rgba(0,0,0,0.4); }
@@ -194,6 +201,7 @@
 
 <!-- TOP BAR -->
 <div class="top-bar">
+    <button id="sidebar_toggle_btn" class="top-btn sidebar-toggle" style="background:#f59e0b" onclick="toggleSidebar()" title="Mostrar/ocultar menu"><i class="fas fa-bars"></i></button>
     <button class="top-btn" style="background:#6366f1" onclick="importarBackup()" title="Importar backup JSON"><i class="fas fa-upload"></i> Importar</button>
     <button class="top-btn" style="background:#8b5cf6" onclick="exportarBackup()" title="Exportar backup JSON"><i class="fas fa-download"></i> Backup</button>
     <button class="top-btn" style="background:var(--success)" onclick="salvarDados()"><i class="fas fa-save"></i> Salvar</button>
@@ -522,6 +530,26 @@ function limparLogin() {
     document.getElementById('login_user').value = '';
     document.getElementById('login_pass').value = '';
     document.getElementById('login_error').textContent = '';
+}
+
+function toggleSidebar() {
+    document.body.classList.toggle('sidebar-collapsed');
+    const btn = document.getElementById('sidebar_toggle_btn');
+    if (document.body.classList.contains('sidebar-collapsed')) {
+        btn.innerHTML = '<i class="fas fa-bars"></i>';
+        localStorage.setItem('sidebarCollapsed', 'true');
+    } else {
+        btn.innerHTML = '<i class="fas fa-times"></i>';
+        localStorage.removeItem('sidebarCollapsed');
+    }
+}
+
+function initSidebarToggle() {
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        document.body.classList.add('sidebar-collapsed');
+        const btn = document.getElementById('sidebar_toggle_btn');
+        if (btn) btn.innerHTML = '<i class="fas fa-bars"></i>';
+    }
 }
 
 // ============================================================
@@ -1792,6 +1820,7 @@ Object.assign(window, {
 // ============================================================
 carregarDados();
 tab('dash');
+initSidebarToggle();
 checkLogin();
 </script>
 </body>
