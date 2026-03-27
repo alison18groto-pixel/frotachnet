@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frota Pro V47 | Sistema Funcional</title>
+
+
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAd8AmqNArT1IzdzFWXcU5al4e5-VvJ6B8",
+    authDomain: "controle-veiculos-ea81c.firebaseapp.com",
+    databaseURL: "https://controle-veiculos-ea81c-default-rtdb.firebaseio.com",
+    projectId: "controle-veiculos-ea81c",
+    storageBucket: "controle-veiculos-ea81c.firebasestorage.app",
+    messagingSenderId: "907748014805",
+    appId: "1:907748014805:web:56c1c2176d076b84c2405c",
+    measurementId: "G-TZNX312NRV"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --card-hover: #1a1a2a;
+            --accent: #f5576c;
+            --accent-gradient: linear-gradient(135deg, #f093fb, #f5576c);
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: rgba(255,255,255,0.08);
+            --danger: #ef4444;
+            --warn: #f59e0b;
+            --success: #10b981;
+            --sidebar-bg: #07070c;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; font-size: 13px; }
+        .sidebar { width: 70px; background: var(--sidebar-bg); height: 100vh; position: fixed; top: 0; left: 0; transition: width 0.3s; border-right: 1px solid var(--border); overflow: hidden; z-index: 100; }
+        .sidebar:hover { width: 240px; }
+        .sidebar-logo { padding: 20px; font-size: 1.5rem; white-space: nowrap; }
+        .nav-item { padding: 14px 20px; border-radius: 12px; cursor: pointer; margin: 8px 12px; display: flex; align-items: center; gap: 18px; color: #94a3b8; white-space: nowrap; transition: all 0.3s; }
+        .nav-item i { min-width: 16px; text-align: center; }
+        .nav-item:hover, .nav-item.active { background: var(--accent-gradient); color: white; transform: translateX(5px); }
+        .main { margin-left: 70px; padding: 25px; width: calc(100% - 70px); min-height: 100vh; padding-top: 65px; }
+        .card { background: var(--card); border-radius: 16px; padding: 18px; border: 1px solid var(--border); margin-bottom: 15px; transition: all 0.3s; }
+        .card:hover { background: var(--card-hover); transform: translateY(-2px); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        input, select, textarea { background: rgba(20,20,30,0.9); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; width: 100%; margin-bottom: 10px; font-size: 13px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+        button { background: var(--accent-gradient); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: all 0.3s; font-size: 13px; }
+        button:hover { transform: translateY(-2px); opacity: 0.9; }
+        .status-mini { padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); border-left: 3px solid #8b5cf6; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .vencido { border-left-color: var(--danger) !important; background: rgba(239,68,68,0.1) !important; }
+        .atencao { border-left-color: var(--warn) !important; background: rgba(245,158,11,0.08) !important; }
+        .ok { border-left-color: var(--success) !important; background: rgba(16,185,129,0.05) !important; }
+        .ignorado { opacity: 0.5; filter: grayscale(0.3); border-left-color: var(--text-secondary) !important; }
+        .hidden { display: none; }
+        .km-tag { background: var(--accent-gradient); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; display: inline-block; }
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 10px 8px; text-align: left; border-bottom: 2px solid var(--border); color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        .icon-btn { cursor: pointer; margin-left: 8px; opacity: 0.7; background: none; border: none; color: var(--text); width: auto; padding: 0; }
+        .icon-btn:hover { opacity: 1; color: var(--accent); transform: none; }
+        .car-card { cursor: pointer; transition: all 0.3s; }
+        .car-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 30px rgba(245,87,108,0.15); }
+        .flex-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+        .btn-small { width: auto; padding: 5px 12px; font-size: 12px; }
+        .btn-success { background: var(--success); }
+        .btn-warn { background: var(--warn); }
+        .btn-danger { background: var(--danger); }
+        .btn-info { background: #3b82f6; }
+        .top-bar { position: fixed; top: 0; left: 70px; right: 0; z-index: 99; background: var(--sidebar-bg); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; }
+        .top-btn { border: none; color: white; padding: 7px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold; width: auto; }
+        .photo-item { position: relative; display: inline-block; margin-right: 8px; }
+        .photo-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer; }
+        .photo-del { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; border: none; padding: 0; line-height: 1; }
+        .nota-item { background: rgba(245,158,11,0.1); border-left: 3px solid var(--warn); padding: 10px; margin-bottom: 8px; border-radius: 6px; position: relative; }
+        .nota-del { position: absolute; top: 5px; right: 8px; cursor: pointer; color: var(--text-secondary); font-size: 16px; line-height: 1; }
+        .nota-del:hover { color: var(--danger); }
+        .servico-item { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 3px solid var(--accent); }
+        .eye-icon { cursor: pointer; margin-left: 8px; font-size: 12px; opacity: 0.7; }
+        .eye-icon:hover { opacity: 1; color: var(--accent); }
+        .stat-box { text-align: center; padding: 15px; border-radius: 12px; }
+        .stat-num { font-size: 22px; font-weight: bold; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+        .badge-danger { background: rgba(239,68,68,0.2); color: var(--danger); }
+        .badge-success { background: rgba(16,185,129,0.2); color: var(--success); }
+        .badge-warn { background: rgba(245,158,11,0.2); color: var(--warn); }
+        h2 { margin: 0 0 15px 0; font-size: 16px; }
+        h3 { margin: 0 0 12px 0; font-size: 15px; }
+        h4 { margin: 0 0 10px 0; font-size: 13px; color: var(--text-secondary); }
+        .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 15px; padding: 12px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); }
+        .filter-bar label { color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-bar input, .filter-bar select { width: auto; margin-bottom: 0; }
+        .relatorio-btn { margin-right: 5px; margin-bottom: 5px; }
+        .relatorio-btn.ativo { background: var(--accent-gradient); }
+        .relatorio-btn:not(.ativo) { background: rgba(255,255,255,0.08); }
+
+        /* ALERTA KM PROGRESS */
+        .alert-km-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); margin-top: 6px; overflow: hidden; }
+        .alert-km-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+        .alert-km-detail { font-size: 11px; margin-top: 4px; color: var(--text-secondary); }
+
+        /* MODAL DE EDIÇÃO */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #1a1a2a; border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+        .modal-box h3 { margin: 0 0 18px 0; font-size: 16px; color: var(--accent); }
+        .modal-close { float: right; background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; width: auto; padding: 0; }
+        .modal-close:hover { color: var(--danger); transform: none; }
+        .modal-footer { display: flex; gap: 10px; margin-top: 15px; }
+        .modal-footer button { flex: 1; }
+    </style>
+</head>
+<body>
+
+<!-- MODAL EDITAR SERVIÇO -->
+<div class="modal-overlay" id="modal-edit-servico">
+    <div class="modal-box">
+        <button class="modal-close" onclick="fecharModalEditar()">✕</button>
+        <h3><i class="fas fa-edit"></i> Editar Serviço</h3>
+        <input type="hidden" id="edit_idx">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Oficina / Fornecedor</label>
+        <select id="edit_forn" style="margin-bottom:12px"></select>
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Tipo de Serviço</label>
+        <input id="edit_tipo" placeholder="Ex: Troca de óleo motor" style="margin-bottom:12px">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Valor R$</label>
+        <input id="edit_val" oninput="maskMoney(this)" placeholder="R$ 0,00" style="margin-bottom:12px">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">KM do Serviço</label>
+        <input id="edit_km" oninput="maskKM(this)" placeholder="Ex: 120.000" style="margin-bottom:12px">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Data</label>
+        <input type="date" id="edit_data" style="margin-bottom:12px">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Observações</label>
+        <textarea id="edit_obs" rows="3" placeholder="Observações..."></textarea>
+        <div class="modal-footer">
+            <button class="btn-danger" onclick="fecharModalEditar()" style="background:rgba(255,255,255,0.08)">Cancelar</button>
+            <button onclick="salvarEdicaoServico()"><i class="fas fa-save"></i> Salvar Alterações</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR ESTOQUE -->
+<div class="modal-overlay" id="modal-edit-estoque">
+    <div class="modal-box">
+        <button class="modal-close" onclick="fecharModalEditarEstoque()">✕</button>
+        <h3><i class="fas fa-boxes"></i> Editar Estoque</h3>
+        <input type="hidden" id="edit_estoque_id">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Nome da peça</label>
+        <input id="edit_nome_peca" placeholder="Nome da peça" style="margin-bottom:12px">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Quantidade</label>
+        <input id="edit_qtd_peca" type="number" placeholder="Qtd" style="margin-bottom:12px">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Quantidade mínima</label>
+        <input id="edit_min_peca" type="number" placeholder="Qtd mínima" style="margin-bottom:12px">
+        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Valor unitário</label>
+        <input id="edit_val_peca" placeholder="Valor unit." style="margin-bottom:12px" oninput="maskMoney(this)">
+        <div class="modal-footer">
+            <button class="btn-danger" onclick="fecharModalEditarEstoque()" style="background:rgba(255,255,255,0.08)">Cancelar</button>
+            <button onclick="salvarEdicaoEstoque()"><i class="fas fa-save"></i> Salvar Alterações</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+    <button class="top-btn" style="background:#6366f1" onclick="importarBackup()" title="Importar backup JSON"><i class="fas fa-upload"></i> Importar</button>
+    <button class="top-btn" style="background:#8b5cf6" onclick="exportarBackup()" title="Exportar backup JSON"><i class="fas fa-download"></i> Backup</button>
+    <button class="top-btn" style="background:var(--success)" onclick="salvarDados()"><i class="fas fa-save"></i> Salvar</button>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-logo"><i class="fas fa-truck-fast" style="color:var(--accent)"></i> <span style="font-size:14px; font-weight:bold; vertical-align:middle">Frota Pro</span></div>
+    <div class="nav-item active" onclick="tab('dash')"><i class="fas fa-home"></i> <span>Dashboard</span></div>
+    <div class="nav-item" onclick="tab('frota')"><i class="fas fa-car"></i> <span>Veículos</span></div>
+    <div class="nav-item" onclick="tab('servicos')"><i class="fas fa-tools"></i> <span>Serviços</span></div>
+    <div class="nav-item" onclick="tab('estoque')"><i class="fas fa-boxes"></i> <span>Estoque</span></div>
+    <div class="nav-item" onclick="tab('relatorios')"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="tab-dash">
+        <h2>⚠️ Alertas de Manutenção</h2>
+        <div class="grid" id="dash-alerts"></div>
+        <h2>⚠️ Estoque Baixo</h2>
+        <div class="grid" id="low-stock-alerts"></div>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+                <h3 style="margin:0">📊 Gastos Mensais</h3>
+                <select id="chart_year" onchange="renderDashboard()" style="width:auto; margin-bottom:0; padding:5px 10px"></select>
+            </div>
+            <canvas id="mainChart" height="70"></canvas>
+        </div>
+    </div>
+
+    <!-- ===== FROTA ===== -->
+    <div id="tab-frota" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+            <h2 style="margin:0">🚗 Veículos</h2>
+            <button onclick="addVeiculo()" class="btn-small">+ Novo Veículo</button>
+        </div>
+        <div class="grid" id="grid-veiculos"></div>
+    </div>
+
+    <!-- ===== SERVIÇOS/CONFIG ===== -->
+    <div id="tab-servicos" class="hidden">
+        <h2>🔧 Configurações</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+            <div class="card">
+                <h3>Oficinas / Fornecedores</h3>
+                <div class="flex-row">
+                    <input id="nova_oficina" placeholder="Nome da oficina" style="flex:1; margin-bottom:0">
+                    <button onclick="addOficina()" class="btn-small" style="margin-bottom:0">+ Add</button>
+                </div>
+                <div style="margin-top:10px" id="lista_oficinas"></div>
+            </div>
+            <div class="card">
+                <h3>Intervalos de Manutenção (KM)</h3>
+                <div class="flex-row">
+                    <input id="novo_item" placeholder="Ex: Troca de óleo" style="flex:2; margin-bottom:0">
+                    <input id="novo_km_regra" oninput="maskKM(this)" placeholder="KM" style="flex:1; margin-bottom:0">
+                    <button onclick="addRegra()" class="btn-small" style="margin-bottom:0">+ Add</button>
+                </div>
+                <div style="margin-top:10px" id="lista_regras"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ESTOQUE ===== -->
+    <div id="tab-estoque" class="hidden">
+        <h2>📦 Estoque</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+            <div class="card">
+                <h3>Registrar Compra</h3>
+                <div class="flex-row">
+                    <select id="select_peca" style="flex:2; margin-bottom:0"></select>
+                    <input id="compra_qtd" type="number" placeholder="Qtd" style="flex:1; margin-bottom:0">
+                </div>
+                <div class="flex-row" style="margin-top:8px">
+                    <input id="compra_val" oninput="maskMoney(this)" placeholder="Valor unit." style="flex:1; margin-bottom:0">
+                    <input type="date" id="compra_data" style="flex:1; margin-bottom:0">
+                    <input id="compra_forn" placeholder="Fornecedor" style="flex:1; margin-bottom:0">
+                </div>
+                <button onclick="addCompra()" style="margin-top:10px">Registrar Entrada</button>
+            </div>
+            <div class="card">
+                <h3>Nova Peça</h3>
+                <div class="flex-row">
+                    <input id="nova_peca" placeholder="Nome da peça" style="flex:2; margin-bottom:0">
+                    <input id="nova_qtd" type="number" placeholder="Qtd inicial" style="flex:1; margin-bottom:0">
+                </div>
+                <div class="flex-row" style="margin-top:8px">
+                    <input id="nova_min" type="number" placeholder="Qtd mínima" value="5" style="flex:1; margin-bottom:0">
+                    <input id="nova_val" oninput="maskMoney(this)" placeholder="Valor unit." style="flex:1; margin-bottom:0">
+                </div>
+                <button onclick="addPeca()" style="margin-top:10px">Criar Peça</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Estoque Atual</h3>
+            <div style="overflow-x:auto">
+                <table id="tbl_estoque">
+                    <thead>
+                        <tr><th>Peça</th><th>Qtd</th><th>Mínimo</th><th>Valor Unit.</th><th>Valor Total</th><th>Status</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== RELATÓRIOS ===== -->
+    <div id="tab-relatorios" class="hidden">
+        <h2>📄 Relatórios</h2>
+        <div class="filter-bar">
+            <label>Relatório:</label>
+            <button id="rbtn-geral" onclick="showRelatorio('geral')" class="btn-small relatorio-btn ativo">Geral</button>
+            <button id="rbtn-veiculos" onclick="showRelatorio('veiculos')" class="btn-small relatorio-btn">Por Veículo</button>
+            <button id="rbtn-mecanicas" onclick="showRelatorio('mecanicas')" class="btn-small relatorio-btn">Por Mecânica</button>
+            <button id="rbtn-pneus" onclick="showRelatorio('pneus')" class="btn-small relatorio-btn">🔵 Pneus</button>
+            <button id="rbtn-estoque" onclick="showRelatorio('estoque')" class="btn-small relatorio-btn">Estoque</button>
+            <div style="flex:1"></div>
+            <label>Ano:</label>
+            <select id="filter_year" onchange="reRenderRelatorio()" style="width:auto; margin-bottom:0; padding:5px 10px">
+                <option value="">Todos</option>
+            </select>
+            <label>Mês:</label>
+            <select id="filter_month" onchange="reRenderRelatorio()" style="width:auto; margin-bottom:0; padding:5px 10px">
+                <option value="">Todos</option>
+                <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
+                <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
+                <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
+                <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+            </select>
+        </div>
+        <div id="relatorio-content"></div>
+    </div>
+
+    <!-- ===== DETALHES VEÍCULO ===== -->
+    <div id="tab-detalhes" class="hidden">
+        <button onclick="tab('frota')" class="btn-small" style="background:#2d2d3a; margin-bottom:15px">
+            <i class="fas fa-arrow-left"></i> Voltar para Frota
+        </button>
+        <div id="car-header"></div>
+        <div style="display:grid; grid-template-columns:1fr 1.8fr; gap:20px">
+            <!-- Coluna esquerda -->
+            <div>
+                <div class="card">
+                    <h3>📟 Odômetro</h3>
+                    <input id="det_km" oninput="maskKM(this)" placeholder="KM Atual">
+                    <button onclick="atualizarKM()">Salvar KM</button>
+                    <div id="ultima_data" style="font-size:11px; margin-top:5px; color:var(--text-secondary)"></div>
+                </div>
+                <div class="card">
+                    <h3>🔧 Registrar Manutenção</h3>
+                    <select id="servico_forn" onchange="updateTipoSelect()"></select>
+                    <select id="servico_tipo"></select>
+                    <input id="servico_val" oninput="maskMoney(this)" placeholder="Valor R$">
+                    <input id="servico_km" oninput="maskKM(this)" placeholder="KM do serviço">
+                    <input type="date" id="servico_data">
+                    <textarea id="servico_obs" rows="2" placeholder="Observações..."></textarea>
+                    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:6px"><i class="fas fa-camera"></i> Foto (opcional)</div>
+                    <input type="file" id="servico_foto" accept="image/*">
+                    <button onclick="addServico()" style="margin-top:5px">Salvar Serviço</button>
+                </div>
+                <div class="card">
+                    <h3>🔔 Alertas Personalizados</h3>
+                    <div class="flex-row">
+                        <input id="alerta_texto" placeholder="Descrição" style="flex:2; margin-bottom:0">
+                        <input id="alerta_km" oninput="maskKM(this)" placeholder="KM" style="flex:1; margin-bottom:0">
+                        <input id="alerta_data" type="date" style="flex:1; margin-bottom:0">
+                        <button onclick="addAlerta()" class="btn-small" style="margin-bottom:0">Add</button>
+                    </div>
+                    <div style="margin-top:10px" id="alertas_lista"></div>
+                </div>
+                <div class="card">
+                    <h3>📸 Fotos do Veículo</h3>
+                    <input type="file" id="fotos_carro" accept="image/*" multiple onchange="addFotos()">
+                    <div id="fotos_lista" class="flex-row" style="margin-top:10px; flex-wrap:wrap"></div>
+                </div>
+            </div>
+
+            <!-- Coluna direita -->
+            <div>
+                <div class="card">
+                    <h3>⚠️ Próximas Trocas</h3>
+                    <div id="status_alertas"></div>
+                </div>
+                <div class="card">
+                    <h3>📜 Histórico de Serviços</h3>
+                    <div id="historico_lista" style="max-height:400px; overflow-y:auto"></div>
+                </div>
+                <div class="card">
+                    <h3>📝 Notas</h3>
+                    <div id="notas_lista"></div>
+                    <div class="flex-row" style="margin-top:10px">
+                        <textarea id="nova_nota" rows="2" placeholder="Nova nota..." style="flex:1; margin-bottom:0"></textarea>
+                        <button onclick="addNota()" class="btn-small" style="margin-bottom:0; align-self:flex-end">+ Nota</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /main -->
+
+<script>
+// ============================================================
+// DADOS INICIAIS
+// ============================================================
+let db = {
+    veiculos: [
+        { id: 1, motorista: "Paulo", placa: "RAJ5D16", modelo: "Saveiro", km: 149588, servicos: [
+            { data: "2025-10-06", km: 136047, tipo: "Troca de óleo", forn: "Posto Central", val: 350, obs: "Trocado filtro" },
+            { data: "2025-08-31", km: 111111, tipo: "Pneu Traseiro", forn: "Mecânica Zimmer", val: 220, obs: "Pneu traseiro" },
+            { data: "2025-12-17", km: 139962, tipo: "Troca Cavalete água", forn: "Grotto Usinagens", val: 140, obs: "2 mangueiras" }
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-05", alertasIgnorados: [] },
+        { id: 2, motorista: "Wesley Trevisan", placa: "RLE2127", modelo: "Saveiro", km: 144367, servicos: [
+            { data: "2025-12-10", km: 139563, tipo: "Pneu Dianteiro", forn: "CHNET Estoque", val: 88, obs: "" },
+            { data: "2025-10-10", km: 124425, tipo: "Troca de óleo", forn: "Posto Central", val: 88, obs: "" },
+            { data: "2025-07-21", km: 132009, tipo: "Pneu Traseiro", forn: "Mecânica Zimmer", val: 0, obs: "" }
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-08", alertasIgnorados: [] },
+        { id: 3, motorista: "Rodrigo Machado", placa: "RLK4F55", modelo: "Saveiro", km: 78004, servicos: [
+            { data: "2026-03-10", km: 66070, tipo: "Troca de filtro de ar", forn: "Posto Central", val: 18, obs: "" },
+            { data: "2024-11-11", km: 59179, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 260, obs: "" },
+            { data: "2024-12-12", km: 42120, tipo: "Correia Dentada", forn: "Mecânica Zimmer", val: 0, obs: "" }
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-03-26", alertasIgnorados: [] },
+        { id: 4, motorista: "Jian Gubert", placa: "RAJ7B96", modelo: "Saveiro", km: 128929, servicos: [
+            { data: "2026-02-10", km: 70095, tipo: "Troca de óleo", forn: "Posto Central", val: 88, obs: "" },
+            { data: "2025-09-05", km: 100145, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 280, obs: "" },
+            { data: "2025-06-25", km: 96113, tipo: "Correia alternador", forn: "Mecânica Zimmer", val: 100, obs: "" }
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-24", alertasIgnorados: [] },
+        { id: 5, motorista: "Anderson da Silva Maria", placa: "RXS5F06", modelo: "Saveiro", km: 73407, servicos: [
+            { data: "2026-02-10", km: 70095, tipo: "Troca de óleo", forn: "Posto Central", val: 88, obs: "" },
+            { data: "2024-11-08", km: 51000, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 220, obs: "" },
+            { data: "2025-07-19", km: 63000, tipo: "Pneu Dianteiro", forn: "CHNET Estoque", val: 0, obs: "" }
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-10", alertasIgnorados: [] },
+        { id: 6, motorista: "Escritório", placa: "ESCRT1", modelo: "Saveiro", km: 10273, servicos: [
+            { data: "2024-07-24", km: 10273, tipo: "Troca de óleo", forn: "Posto Central", val: 350, obs: "" },
+            { data: "2024-07-24", km: 10273, tipo: "Troca de filtro de ar", forn: "Posto Central", val: 18, obs: "" },
+            { data: "2022-11-04", km: 0, tipo: "Correia Dentada", forn: "Mecânica Zimmer", val: 0, obs: "" },
+            { data: "2025-04-23", km: 7000, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 220, obs: "" }
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2025-07-24", alertasIgnorados: [] }
+    ],
+    regras: {
+        "Troca de óleo": 10000,
+        "Pneu": 40000,
+        "Correia Dentada": 80000,
+        "Pastilha de freio": 20000
+    },
+    oficinas: ["Mecânica Zimmer", "Grotto Usinagens", "Posto Central", "CHNET Estoque"],
+    estoque: [
+        { id: 1, nome: "Óleo Motor 5W30",   qtd: 12, min: 5, val: 45.90, compras: [] },
+        { id: 2, nome: "Filtro de Óleo",     qtd: 8,  min: 5, val: 25.50, compras: [] },
+        { id: 3, nome: "Pastilha de Freio",  qtd: 4,  min: 3, val: 89.90, compras: [] }
+    ],
+    nextId: 7
+};
+
+let veiculoAtual = null;
+let chart = null;
+let _relatorioAtual = 'geral';
+let _editandoIdx = null; // índice do serviço sendo editado
+
+// ============================================================
+// HELPER: verifica se um tipo de serviço bate com uma regra
+// Lógica de matching: o tipo do serviço contém palavras-chave da regra
+// ============================================================
+function tipoMatchRegra(tipo, regra) {
+    // Normaliza para minúsculo sem acento para comparação
+    const normalizar = s => s.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const tipoN = normalizar(tipo || '');
+    const regraN = normalizar(regra || '');
+
+    // Match direto
+    if (tipoN.includes(regraN)) return true;
+
+    // Regras específicas de pneu
+    if (regraN === 'pneu') {
+        return tipoN.includes('pneu') || tipoN.includes('pneus');
+    }
+    // Regras específicas de óleo
+    if (regraN.includes('oleo') || regraN.includes('oil')) {
+        return tipoN.includes('oleo') || tipoN.includes('oil');
+    }
+    // Correia dentada
+    if (regraN.includes('correia dentada')) {
+        return tipoN.includes('correia dentada');
+    }
+    // Pastilha
+    if (regraN.includes('pastilha')) {
+        return tipoN.includes('pastilha');
+    }
+
+    // Verifica palavras-chave individualmente (pelo menos 1 palavra principal)
+    const palavrasRegra = regraN.split(/\s+/).filter(p => p.length > 3);
+    return palavrasRegra.some(p => tipoN.includes(p));
+}
+
+// ============================================================
+// PERSISTÊNCIA
+// ============================================================
+function salvarDados() {
+    // 1. Envia os dados para o Firebase (Nuvem)
+    database.ref('appData').set(db)
+        .then(() => {
+            const btn = document.querySelector('.top-btn:last-child');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Sincronizado!';
+                setTimeout(() => btn.innerHTML = '<i class="fas fa-save"></i> Salvar', 1500);
+            }
+            console.log("Sincronizado com Firebase!");
+        })
+        .catch(error => {
+            console.error("Erro ao sincronizar:", error);
+            alert("Erro ao salvar na nuvem!");
+        });
+    
+    // 2. Mantém o backup no navegador por segurança
+    localStorage.setItem('frota_pro_v47', JSON.stringify(db));
+}
+
+function carregarDados() {
+    // Escuta o Firebase em tempo real
+    database.ref('appData').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            db = data;
+            // Garante que as listas internas existam para não dar erro
+            db.veiculos.forEach(v => {
+                if (!v.alertasIgnorados) v.alertasIgnorados = [];
+                if (!v.servicos) v.servicos = [];
+                if (!v.notas) v.notas = [];
+                if (!v.fotos) v.fotos = [];
+                if (!v.alertas) v.alertas = [];
+                if (!v.bases) v.bases = {};
+            });
+            renderizarTudo();
+        }
+    });
+}
+
+function salvar() {
+    // Agora o salvar chama a sincronização com o Firebase
+    salvarDados();
+    renderizarTudo();
+}
+
+// ============================================================
+// BACKUP / RESTORE
+// ============================================================
+function exportarBackup() {
+    let json = JSON.stringify(db, null, 2);
+    let blob = new Blob([json], { type: 'application/json' });
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = `frota_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importarBackup() {
+    let input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+        let file = e.target.files[0];
+        if (!file) return;
+        let reader = new FileReader();
+        reader.onload = evt => {
+            try {
+                let data = JSON.parse(evt.target.result);
+                if (data && data.veiculos) {
+                    db = data;
+                    salvar();
+                    alert('✅ Backup restaurado com sucesso!');
+                } else {
+                    alert('❌ Arquivo inválido!');
+                }
+            } catch(err) {
+                alert('❌ Erro ao ler arquivo: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
+function maskKM(i) {
+    let v = i.value.replace(/\D/g, '');
+    v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    i.value = v;
+}
+function maskMoney(i) {
+    let v = i.value.replace(/\D/g, '');
+    if (!v) { i.value = ''; return; }
+    v = (parseInt(v) / 100).toFixed(2).replace('.', ',');
+    i.value = 'R$ ' + v;
+}
+function parseKM(v)  { return parseInt(String(v).replace(/\D/g, '')) || 0; }
+function parseVal(v) { return parseFloat(String(v).replace(/[R$\s.]/g, '').replace(',', '.')) || 0; }
+function formatKM(v) { return v ? String(v).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') : '0'; }
+function formatMoney(v) { return (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function showImage(src) {
+    let w = window.open('', '_blank');
+    w.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${src}" style="max-width:100%;max-height:100vh"></body></html>`);
+}
+
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+function tab(t) {
+    document.querySelectorAll('.main > div').forEach(d => d.classList.add('hidden'));
+    document.getElementById('tab-' + t).classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const idx = { dash: 0, frota: 1, servicos: 2, estoque: 3, relatorios: 4 };
+    const items = document.querySelectorAll('.nav-item');
+    if (idx[t] !== undefined) items[idx[t]].classList.add('active');
+    if (t === 'dash')       renderDashboard();
+    if (t === 'estoque')    renderEstoque();
+    if (t === 'servicos')   renderServicos();
+    if (t === 'relatorios') { preencherFiltroAnos(); showRelatorio('geral'); }
+    if (t === 'frota')      renderVeiculos();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+    const alertsDiv   = document.getElementById('dash-alerts');
+    const lowStockDiv = document.getElementById('low-stock-alerts');
+    alertsDiv.innerHTML   = '';
+    lowStockDiv.innerHTML = '';
+
+    db.veiculos.forEach(v => {
+        Object.keys(db.regras).forEach(r => {
+            if (v.alertasIgnorados && v.alertasIgnorados.includes(r)) return;
+            let intervalo = db.regras[r];
+            let rodados = v.km - (v.bases[r] || 0);
+            let falta = intervalo - rodados;
+            if (falta <= 2000) {
+                let vencido = falta <= 0;
+                let classe  = vencido ? 'vencido' : (falta <= 500 ? 'atencao' : '');
+                let status = vencido
+                    ? `Passou ${formatKM(Math.abs(falta))} km além do intervalo`
+                    : `Faltam ${formatKM(falta)} km`;
+
+                alertsDiv.innerHTML += `
+                    <div class="card status-mini ${classe}" onclick="abrirVeiculo(${v.id})" style="cursor:pointer">
+                        <div>
+                            <strong>${v.motorista}</strong> <span style="color:var(--text-secondary)">(${v.placa})</span>
+                            <br><small>${r}: <strong>${vencido ? '⛔ VENCIDO' : '⚠️ Em breve'}</strong></small>
+                            <br><small>${status}</small>
+                        </div>
+                        <i class="fas fa-eye-slash eye-icon" onclick="event.stopPropagation(); ignorarAlerta(${v.id}, '${r}')" title="Ignorar alerta"></i>
+                    </div>`;
+            }
+        });
+    });
+
+    db.estoque.forEach(e => {
+        if (e.qtd <= e.min) {
+            lowStockDiv.innerHTML += `
+                <div class="card status-mini vencido">
+                    <span><strong>⚠️ ${e.nome}</strong><br><small>Estoque: ${e.qtd} | Mínimo: ${e.min}</small></span>
+                    <span class="badge badge-danger">Repor</span>
+                </div>`;
+        }
+    });
+
+    if (!alertsDiv.innerHTML)   alertsDiv.innerHTML   = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Tudo em dia!</div>';
+    if (!lowStockDiv.innerHTML) lowStockDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Estoque OK!</div>';
+
+    const anoEl = document.getElementById('chart_year');
+    let anoAtual = new Date().getFullYear();
+    let anosDisp = new Set([anoAtual]);
+    db.veiculos.forEach(v => v.servicos.forEach(s => { if(s.data) anosDisp.add(new Date(s.data + 'T00:00:00').getFullYear()); }));
+    let anoSel = parseInt(anoEl.value) || anoAtual;
+    if (!anoEl.value || !anosDisp.has(anoSel)) {
+        anoEl.innerHTML = [...anosDisp].sort((a,b)=>b-a).map(y => `<option value="${y}" ${y===anoAtual?'selected':''}>${y}</option>`).join('');
+        anoSel = anoAtual;
+    }
+
+    let meses = new Array(12).fill(0);
+    db.veiculos.forEach(v => {
+        v.servicos.forEach(s => {
+            if (s.data) {
+                let d = new Date(s.data + 'T00:00:00');
+                if (d.getFullYear() === anoSel) meses[d.getMonth()] += (s.val || 0);
+            }
+        });
+    });
+
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+            datasets: [{
+                label: `Gastos ${anoSel}`,
+                data: meses,
+                backgroundColor: 'rgba(245,87,108,0.65)',
+                borderColor: '#f5576c',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { labels: { color: '#f1f5f9' } },
+                tooltip: { callbacks: { label: ctx => `R$ ${formatMoney(ctx.raw)}` } }
+            },
+            scales: {
+                y: { ticks: { color: '#94a3b8', callback: v => `R$ ${formatMoney(v)}` }, grid: { color: 'rgba(255,255,255,0.04)' } },
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+            }
+        }
+    });
+}
+
+// ============================================================
+// VEÍCULOS
+// ============================================================
+function renderVeiculos() {
+    document.getElementById('grid-veiculos').innerHTML = db.veiculos.map(v => {
+        let totalGasto = v.servicos.reduce((s, sv) => s + sv.val, 0);
+        let alertasVenc = Object.keys(db.regras).filter(r => {
+            if (v.alertasIgnorados && v.alertasIgnorados.includes(r)) return false;
+            return (db.regras[r] - (v.km - (v.bases[r] || 0))) <= 0;
+        }).length;
+        return `
+            <div class="card car-card" onclick="abrirVeiculo(${v.id})">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                    <div>
+                        <h3 style="margin:0 0 5px">${v.motorista}</h3>
+                        <div style="color:var(--text-secondary)">${v.placa} | ${v.modelo}</div>
+                    </div>
+                    ${alertasVenc > 0 ? `<span class="badge badge-danger">${alertasVenc} vencido${alertasVenc>1?'s':''}</span>` : '<span class="badge badge-success">Em dia</span>'}
+                </div>
+                <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+                    <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span>
+                    <span style="font-size:11px; color:var(--text-secondary)">R$ ${formatMoney(totalGasto)} gastos</span>
+                </div>
+                <div style="font-size:10px; color:var(--text-secondary); margin-top:5px">📅 Atualizado: ${v.ultimaAtualizacao || 'Nunca'}</div>
+            </div>`;
+    }).join('');
+}
+
+function addVeiculo() {
+    let motorista = prompt('Motorista:');
+    let placa     = prompt('Placa:');
+    let modelo    = prompt('Modelo:', 'Saveiro');
+    if (motorista && placa) {
+        db.veiculos.push({
+            id: db.nextId++, motorista, placa, modelo: modelo || 'Saveiro',
+            km: 0, servicos: [], bases: {}, alertas: [], fotos: [], notas: [],
+            ultimaAtualizacao: new Date().toISOString().split('T')[0],
+            alertasIgnorados: []
+        });
+        salvar();
+    }
+}
+
+function abrirVeiculo(id) {
+    veiculoAtual = db.veiculos.find(v => v.id === id);
+    tab('detalhes');
+    renderizarVeiculo();
+}
+
+// ============================================================
+// FIX 2: Alertas de próximas trocas com KM detalhado + barra visual
+// ============================================================
+function renderizarVeiculo() {
+    const v = veiculoAtual;
+    if (!v) return;
+
+    document.getElementById('car-header').innerHTML = `
+        <div class="card" style="margin-bottom:15px">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+                <div>
+                    <h3 style="margin:0">${v.motorista} — ${v.placa} <span style="font-size:12px;color:var(--text-secondary)">${v.modelo}</span></h3>
+                    <div style="margin-top:5px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+                        <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span>
+                        <span style="font-size:11px; color:var(--text-secondary)">📅 ${v.ultimaAtualizacao || 'Nunca'}</span>
+                    </div>
+                </div>
+                <div>
+                    <button class="icon-btn" onclick="editarVeiculo()" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="icon-btn" style="color:var(--danger)" onclick="excluirVeiculo()" title="Excluir"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </div>`;
+
+    // FIX 2: Alertas com KM detalhado + barra de progresso visual
+    let alertsHtml = '';
+    Object.keys(db.regras).forEach(r => {
+        let base     = v.bases[r] || 0;
+        let intervalo = db.regras[r];
+        let rodados  = v.km - base;
+        let falta    = intervalo - rodados;
+        let ignorado = v.alertasIgnorados && v.alertasIgnorados.includes(r);
+
+        let classe = '';
+        if (!ignorado) {
+            if (falta <= 0)      classe = 'vencido';
+            else if (falta <= 500) classe = 'atencao';
+            else if (falta <= 2000) classe = 'atencao';
+            else classe = 'ok';
+        }
+
+        // Barra de progresso: percentual rodado no ciclo atual
+        let pct = Math.min(100, Math.max(0, (rodados / intervalo) * 100));
+        let barColor = falta <= 0 ? 'var(--danger)' : (falta <= 2000 ? 'var(--warn)' : 'var(--success)');
+
+        // Texto de status detalhado
+        let statusTexto = '';
+        let statusDetalhe = '';
+        if (ignorado) {
+            statusTexto = '— Ignorado';
+        } else if (falta <= 0) {
+            let passou = Math.abs(falta);
+            statusTexto = `⛔ VENCIDO — passou ${formatKM(passou)} km`;
+            statusDetalhe = `Rodou ${formatKM(rodados)} km | Intervalo: ${formatKM(intervalo)} km | Base: ${formatKM(base)} km`;
+        } else {
+            statusTexto = `${formatKM(falta)} km restantes`;
+            statusDetalhe = `Rodou ${formatKM(rodados)} km | Intervalo: ${formatKM(intervalo)} km | Próx. troca: ~${formatKM(base + intervalo)} km`;
+        }
+
+        alertsHtml += `
+            <div class="status-mini ${classe} ${ignorado ? 'ignorado' : ''}" style="flex-direction:column; align-items:stretch; gap:6px; cursor:default">
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <span style="font-weight:600; font-size:13px">
+                        ${r}
+                        ${ignorado ? '<span class="badge badge-warn" style="margin-left:5px">Ignorado</span>' : ''}
+                    </span>
+                    <div style="display:flex; align-items:center; gap:8px">
+                        <span style="font-size:12px; font-weight:bold; color:${falta<=0?'var(--danger)':falta<=2000?'var(--warn)':'var(--success)'}">
+                            ${statusTexto}
+                        </span>
+                        <i class="fas fa-${ignorado ? 'eye' : 'eye-slash'} eye-icon"
+                           onclick="ignorarAlerta(${v.id}, '${r}')"
+                           title="${ignorado ? 'Reativar alerta' : 'Ignorar alerta'}"></i>
+                    </div>
+                </div>
+                ${!ignorado ? `
+                <div class="alert-km-bar">
+                    <div class="alert-km-bar-fill" style="width:${pct}%; background:${barColor}"></div>
+                </div>
+                <div class="alert-km-detail">${statusDetalhe}</div>
+                ` : ''}
+            </div>`;
+    });
+    document.getElementById('status_alertas').innerHTML = alertsHtml;
+
+    // Alertas personalizados
+    let alertasHtml = (v.alertas || []).map((a, i) => `
+        <div class="status-mini">
+            <span>
+                <strong>${a.texto}</strong>
+                <br><small style="color:var(--text-secondary)">${a.km ? '📍 KM: ' + formatKM(a.km) : ''} ${a.data ? '📅 ' + a.data : ''}</small>
+            </span>
+            <button class="icon-btn" style="color:var(--danger)" onclick="removerAlerta(${i})"><i class="fas fa-trash"></i></button>
+        </div>`).join('');
+    document.getElementById('alertas_lista').innerHTML = alertasHtml || '<div style="text-align:center;padding:10px;color:var(--text-secondary)">Nenhum alerta</div>';
+
+    // FIX 4: Histórico com botão de EDITAR
+    let sorted = [...v.servicos].map((s,i) => ({...s, _origIdx: i})).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
+    let histHtml = sorted.map(s => `
+        <div class="servico-item">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                <div style="flex:1">
+                    <strong>${s.tipo}</strong>
+                    <div><small style="color:var(--text-secondary)">${s.forn} | ${s.data} | KM: ${formatKM(s.km)}</small></div>
+                    <div style="color:var(--success)">💰 R$ ${formatMoney(s.val)}</div>
+                    ${s.obs ? `<div><small><i class="fas fa-comment"></i> ${s.obs}</small></div>` : ''}
+                </div>
+                <div style="display:flex; gap:6px; align-items:center; flex-shrink:0">
+                    ${s.img ? `<img src="${s.img}" style="width:45px;height:45px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="showImage('${s.img}')">` : ''}
+                    <button class="icon-btn btn-info" style="color:#3b82f6" onclick="abrirModalEditar(${s._origIdx})" title="Editar serviço"><i class="fas fa-edit"></i></button>
+                    <button class="icon-btn" style="color:var(--danger)" onclick="excluirServico(${s._origIdx})" title="Excluir serviço"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </div>`).join('');
+    document.getElementById('historico_lista').innerHTML = histHtml || '<div style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço registrado</div>';
+
+    // Notas
+    let notasHtml = (v.notas || []).map((n, i) => `
+        <div class="nota-item">
+            <span class="nota-del" onclick="removerNota(${i})">×</span>
+            📝 ${n.texto}
+            <br><small>${new Date(n.data).toLocaleString('pt-BR')}</small>
+        </div>`).join('');
+    document.getElementById('notas_lista').innerHTML = notasHtml || '<div style="text-align:center;padding:10px;color:var(--text-secondary)">Nenhuma nota</div>';
+
+    // Fotos
+    let fotosHtml = (v.fotos || []).map((f, i) => `
+        <div class="photo-item">
+            <img src="${f}" onclick="showImage('${f}')" title="Clique para ampliar">
+            <button class="photo-del" onclick="removerFoto(${i})">×</button>
+        </div>`).join('');
+    document.getElementById('fotos_lista').innerHTML = fotosHtml;
+
+    document.getElementById('servico_forn').innerHTML = db.oficinas.map(f => `<option>${f}</option>`).join('');
+    updateTipoSelect();
+    document.getElementById('servico_data').valueAsDate = new Date();
+    document.getElementById('ultima_data').innerHTML = v.ultimaAtualizacao ? `Última atualização: ${v.ultimaAtualizacao}` : '';
+}
+
+function updateTipoSelect() {
+    let forn = document.getElementById('servico_forn').value;
+    let tipoSelect = document.getElementById('servico_tipo');
+    if (forn === 'CHNET Estoque') {
+        tipoSelect.innerHTML = db.estoque.map(e =>
+            `<option value="${e.nome}" ${e.qtd <= 0 ? 'disabled' : ''}>${e.nome} (Estoque: ${e.qtd})</option>`
+        ).join('') || '<option disabled>Sem itens no estoque</option>';
+    } else {
+        tipoSelect.innerHTML = Object.keys(db.regras).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
+    }
+}
+
+function editarVeiculo() {
+    let v = veiculoAtual;
+    let m  = prompt('Motorista:', v.motorista);
+    let p  = prompt('Placa:', v.placa);
+    let mo = prompt('Modelo:', v.modelo);
+    if (m)  v.motorista = m;
+    if (p)  v.placa = p;
+    if (mo) v.modelo = mo;
+    salvar();
+}
+
+function excluirVeiculo() {
+    if (confirm(`Excluir veículo de ${veiculoAtual.motorista} (${veiculoAtual.placa})?`)) {
+        db.veiculos = db.veiculos.filter(v => v.id !== veiculoAtual.id);
+        veiculoAtual = null;
+        salvar();
+        tab('frota');
+    }
+}
+
+function atualizarKM() {
+    let km = parseKM(document.getElementById('det_km').value);
+    if (!km || km <= 0) return alert('Digite um KM válido!');
+    if (km < veiculoAtual.km) {
+        if (!confirm(`O KM informado (${formatKM(km)}) é menor que o atual (${formatKM(veiculoAtual.km)}). Deseja continuar?`)) return;
+    }
+    veiculoAtual.km = km;
+    veiculoAtual.ultimaAtualizacao = new Date().toISOString().split('T')[0];
+    salvar();
+    document.getElementById('det_km').value = '';
+    alert('✅ KM atualizado para ' + formatKM(km) + ' km!');
+}
+
+// ============================================================
+// FIX 1: addServico — alerta some corretamente para CHNET Estoque
+// O alerta some quando o TIPO DO SERVIÇO faz match com uma REGRA (tipoMatchRegra)
+// independente se o fornecedor é Posto Central ou CHNET Estoque
+// ============================================================
+function addServico() {
+    let forn  = document.getElementById('servico_forn').value;
+    let tipo  = document.getElementById('servico_tipo').value;
+    let valor = parseVal(document.getElementById('servico_val').value);
+    let km    = parseKM(document.getElementById('servico_km').value);
+    let data  = document.getElementById('servico_data').value;
+    let obs   = document.getElementById('servico_obs').value;
+    let file  = document.getElementById('servico_foto').files[0];
+
+    if (!forn)  return alert('Selecione a oficina!');
+    if (!tipo)  return alert('Selecione o tipo!');
+    if (!km)    return alert('KM do serviço é obrigatório!');
+    if (!valor) return alert('Valor do serviço é obrigatório!');
+    if (!data)  return alert('Data do serviço é obrigatória!');
+
+    if (forn === 'CHNET Estoque') {
+        let peca = db.estoque.find(e => e.nome === tipo);
+        if (!peca)         return alert('Peça não encontrada no estoque!');
+        if (peca.qtd <= 0) return alert(`Peça "${tipo}" sem estoque!`);
+        peca.qtd--;
+    }
+
+    const processar = (img) => {
+        let servico = { tipo, forn, val: valor, km, data, obs, img };
+        if (servico.km > veiculoAtual.km) veiculoAtual.km = servico.km;
+
+        // FIX 1: Verifica se o tipo do serviço faz match com qualquer regra existente
+        // e atualiza a base e remove o alerta ignorado — independente do fornecedor
+        Object.keys(db.regras).forEach(regra => {
+            if (tipoMatchRegra(servico.tipo, regra)) {
+                veiculoAtual.bases[regra] = servico.km;
+                // Remove da lista de ignorados (serviço foi feito, alerta some)
+                if (veiculoAtual.alertasIgnorados) {
+                    let idx = veiculoAtual.alertasIgnorados.indexOf(regra);
+                    if (idx > -1) veiculoAtual.alertasIgnorados.splice(idx, 1);
+                }
+            }
+        });
+
+        veiculoAtual.servicos.push(servico);
+        veiculoAtual.ultimaAtualizacao = data;
+        salvar();
+        document.getElementById('servico_val').value  = '';
+        document.getElementById('servico_km').value   = '';
+        document.getElementById('servico_obs').value  = '';
+        document.getElementById('servico_foto').value = '';
+        updateTipoSelect();
+        alert('✅ Serviço registrado com sucesso!');
+    };
+
+    if (file) {
+        let r = new FileReader();
+        r.onload = e => processar(e.target.result);
+        r.readAsDataURL(file);
+    } else {
+        processar(null);
+    }
+}
+
+function excluirServico(idx) {
+    if (!confirm('Excluir este serviço?')) return;
+    let servico = veiculoAtual.servicos[idx];
+    if (servico.forn === 'CHNET Estoque') {
+        let peca = db.estoque.find(e => e.nome === servico.tipo);
+        if (peca) peca.qtd++;
+    }
+    veiculoAtual.servicos.splice(idx, 1);
+    salvar();
+}
+
+// ============================================================
+// FIX 4: EDITAR SERVIÇO
+// ============================================================
+function abrirModalEditar(idx) {
+    let s = veiculoAtual.servicos[idx];
+    _editandoIdx = idx;
+
+    // Preenche select de fornecedores
+    document.getElementById('edit_forn').innerHTML = db.oficinas.map(f =>
+        `<option ${f === s.forn ? 'selected' : ''}>${f}</option>`
+    ).join('');
+
+    document.getElementById('edit_tipo').value = s.tipo || '';
+    document.getElementById('edit_val').value  = s.val ? 'R$ ' + s.val.toFixed(2).replace('.', ',') : '';
+    document.getElementById('edit_km').value   = s.km ? formatKM(s.km) : '';
+    document.getElementById('edit_data').value = s.data || '';
+    document.getElementById('edit_obs').value  = s.obs || '';
+
+    document.getElementById('modal-edit-servico').classList.add('active');
+}
+
+function fecharModalEditar() {
+    _editandoIdx = null;
+    document.getElementById('modal-edit-servico').classList.remove('active');
+}
+
+function salvarEdicaoServico() {
+    if (_editandoIdx === null) return;
+    let s = veiculoAtual.servicos[_editandoIdx];
+
+    let novoForn = document.getElementById('edit_forn').value;
+    let novoTipo = document.getElementById('edit_tipo').value.trim();
+    let novoVal  = parseVal(document.getElementById('edit_val').value);
+    let novoKm   = parseKM(document.getElementById('edit_km').value);
+    let novaData = document.getElementById('edit_data').value;
+    let novaObs  = document.getElementById('edit_obs').value;
+
+    if (!novoTipo) return alert('Informe o tipo de serviço!');
+    if (!novoKm)   return alert('Informe o KM!');
+    if (!novaData) return alert('Informe a data!');
+
+    // Se mudou de CHNET para outro, devolve ao estoque
+    if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') {
+        let peca = db.estoque.find(e => e.nome === s.tipo);
+        if (peca) peca.qtd++;
+    }
+    // Se mudou para CHNET, desconta do estoque
+    if (s.forn !== 'CHNET Estoque' && novoForn === 'CHNET Estoque') {
+        let peca = db.estoque.find(e => e.nome === novoTipo);
+        if (!peca)         return alert('Peça não encontrada no estoque!');
+        if (peca.qtd <= 0) return alert(`Peça "${novoTipo}" sem estoque!`);
+        peca.qtd--;
+    }
+
+    s.forn = novoForn;
+    s.tipo = novoTipo;
+    s.val  = novoVal;
+    s.km   = novoKm;
+    s.data = novaData;
+    s.obs  = novaObs;
+
+    // Reprocessa bases das regras com todos os serviços
+    recalcularBases(veiculoAtual);
+
+    salvar();
+    fecharModalEditar();
+    alert('✅ Serviço atualizado!');
+}
+
+// Recalcula bases de todas as regras para um veículo com base no histórico
+function recalcularBases(v) {
+    v.bases = {};
+    // Ordena por KM crescente e atualiza bases
+    let sorted = [...v.servicos].sort((a, b) => (a.km || 0) - (b.km || 0));
+    sorted.forEach(s => {
+        Object.keys(db.regras).forEach(regra => {
+            if (tipoMatchRegra(s.tipo, regra)) {
+                v.bases[regra] = s.km;
+            }
+        });
+    });
+}
+
+// ============================================================
+// ALERTAS
+// ============================================================
+function ignorarAlerta(veiculoId, regra) {
+    let veiculo = db.veiculos.find(v => v.id === veiculoId);
+    if (!veiculo) return;
+    if (!veiculo.alertasIgnorados) veiculo.alertasIgnorados = [];
+    let idx = veiculo.alertasIgnorados.indexOf(regra);
+    if (idx > -1) {
+        veiculo.alertasIgnorados.splice(idx, 1);
+    } else {
+        veiculo.alertasIgnorados.push(regra);
+    }
+    salvar();
+}
+
+function addAlerta() {
+    let texto = document.getElementById('alerta_texto').value.trim();
+    let km    = parseKM(document.getElementById('alerta_km').value);
+    let data  = document.getElementById('alerta_data').value;
+    if (!texto)       return alert('Informe uma descrição!');
+    if (!km && !data) return alert('Informe KM ou Data!');
+    if (!veiculoAtual.alertas) veiculoAtual.alertas = [];
+    veiculoAtual.alertas.push({ texto, km: km || null, data: data || null });
+    salvar();
+    document.getElementById('alerta_texto').value = '';
+    document.getElementById('alerta_km').value    = '';
+    document.getElementById('alerta_data').value  = '';
+}
+
+function removerAlerta(idx) {
+    veiculoAtual.alertas.splice(idx, 1);
+    salvar();
+}
+
+function addNota() {
+    let texto = document.getElementById('nova_nota').value.trim();
+    if (!texto) return;
+    if (!veiculoAtual.notas) veiculoAtual.notas = [];
+    veiculoAtual.notas.unshift({ texto, data: new Date().toISOString() });
+    salvar();
+    document.getElementById('nova_nota').value = '';
+}
+
+function removerNota(idx) {
+    veiculoAtual.notas.splice(idx, 1);
+    salvar();
+}
+
+function addFotos() {
+    let files = document.getElementById('fotos_carro').files;
+    if (!veiculoAtual.fotos) veiculoAtual.fotos = [];
+    for (let f of files) {
+        let r = new FileReader();
+        r.onload = e => {
+            veiculoAtual.fotos.push(e.target.result);
+            salvar();
+        };
+        r.readAsDataURL(f);
+    }
+}
+
+function removerFoto(idx) {
+    veiculoAtual.fotos.splice(idx, 1);
+    salvar();
+}
+
+// ============================================================
+// ESTOQUE
+// ============================================================
+function renderEstoque() {
+    document.getElementById('select_peca').innerHTML =
+        '<option value="">-- Selecione a peça --</option>' +
+        db.estoque.map(e => `<option value="${e.id}">${e.nome} (Estoque: ${e.qtd})</option>`).join('');
+
+    let tbody = db.estoque.map(e => {
+        let baixo = e.qtd <= e.min;
+        return `<tr>
+            <td><strong>${e.nome}</strong></td>
+            <td style="color:${baixo ? 'var(--danger)' : 'inherit'}; font-weight:${baixo?'bold':'normal'}">${e.qtd} ${baixo ? '⚠️' : ''}</td>
+            <td>${e.min}</td>
+            <td>R$ ${formatMoney(e.val)}</td>
+            <td>R$ ${formatMoney(e.qtd * e.val)}</td>
+            <td>${baixo ? '<span class="badge badge-danger">Baixo</span>' : '<span class="badge badge-success">OK</span>'}</td>
+            <td>
+                <button class="btn-small" onclick="editarEstoque(${e.id})" title="Editar peça"><i class="fas fa-edit"></i></button>
+                <button class="btn-small btn-danger" style="margin-left:4px" onclick="excluirEstoque(${e.id})" title="Excluir peça"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('tbl_estoque').querySelector('tbody').innerHTML =
+        tbody || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhuma peça cadastrada</td></tr>';
+}
+
+function addCompra() {
+    let id  = document.getElementById('select_peca').value;
+    if (!id) return alert('Selecione uma peça!');
+    let peca = db.estoque.find(e => e.id == id);
+    let qtd  = parseInt(document.getElementById('compra_qtd').value);
+    let val  = parseVal(document.getElementById('compra_val').value);
+    let data = document.getElementById('compra_data').value || new Date().toISOString().split('T')[0];
+    let forn = document.getElementById('compra_forn').value || 'Não informado';
+    if (!qtd || qtd <= 0) return alert('Informe a quantidade!');
+    peca.qtd += qtd;
+    if (val) peca.val = val;
+    if (!peca.compras) peca.compras = [];
+    peca.compras.unshift({ data, qtd, valorUnit: val || peca.val, fornecedor: forn, total: qtd * (val || peca.val) });
+    salvar();
+    renderEstoque();
+    document.getElementById('compra_qtd').value  = '';
+    document.getElementById('compra_val').value  = '';
+    document.getElementById('compra_forn').value = '';
+    alert(`✅ +${qtd} unidades adicionadas ao estoque de "${peca.nome}"!`);
+}
+
+function addPeca() {
+    let nome = document.getElementById('nova_peca').value.trim();
+    let qtd  = parseInt(document.getElementById('nova_qtd').value) || 0;
+    let min  = parseInt(document.getElementById('nova_min').value) || 5;
+    let val  = parseVal(document.getElementById('nova_val').value) || 0;
+    if (!nome) return alert('Informe o nome da peça!');
+    if (db.estoque.find(e => e.nome.toLowerCase() === nome.toLowerCase())) return alert('Peça já existe!');
+    db.estoque.push({ id: Date.now(), nome, qtd, min, val, compras: [] });
+    salvar();
+    renderEstoque();
+    document.getElementById('nova_peca').value = '';
+    document.getElementById('nova_qtd').value  = '';
+    document.getElementById('nova_val').value  = '';
+    alert('✅ Peça criada!');
+}
+
+function editarEstoque(id) {
+    let p = db.estoque.find(e => e.id == id);
+    if (!p) return;
+
+    document.getElementById('edit_estoque_id').value = id;
+    document.getElementById('edit_nome_peca').value = p.nome;
+    document.getElementById('edit_qtd_peca').value = p.qtd;
+    document.getElementById('edit_min_peca').value = p.min;
+    document.getElementById('edit_val_peca').value = 'R$ ' + formatMoney(p.val || 0);
+
+    document.getElementById('modal-edit-estoque').classList.add('active');
+}
+
+function fecharModalEditarEstoque() {
+    document.getElementById('modal-edit-estoque').classList.remove('active');
+}
+
+function salvarEdicaoEstoque() {
+    let id = document.getElementById('edit_estoque_id').value;
+    let p = db.estoque.find(e => e.id == id);
+    if (!p) return;
+
+    let nome = document.getElementById('edit_nome_peca').value.trim();
+    let qtd = parseInt(document.getElementById('edit_qtd_peca').value);
+    let min = parseInt(document.getElementById('edit_min_peca').value);
+    let val = parseVal(document.getElementById('edit_val_peca').value);
+
+    if (!nome) return alert('Informe o nome da peça!');
+    if (isNaN(qtd) || qtd < 0) return alert('Informe a quantidade válida!');
+    if (isNaN(min) || min < 0) return alert('Informe a quantidade mínima válida!');
+    if (isNaN(val) || val < 0) return alert('Informe o valor unitário válido!');
+
+    p.nome = nome;
+    p.qtd = qtd;
+    p.min = min;
+    p.val = val;
+
+    salvar();
+    renderEstoque();
+    fecharModalEditarEstoque();
+}
+
+function excluirEstoque(id) {
+    let p = db.estoque.find(e => e.id == id);
+    if (confirm(`Excluir "${p.nome}" do estoque?`)) {
+        db.estoque = db.estoque.filter(e => e.id != id);
+        salvar();
+        renderEstoque();
+    }
+}
+
+// ============================================================
+// SERVIÇOS / CONFIG
+// ============================================================
+function renderServicos() {
+    document.getElementById('lista_oficinas').innerHTML = db.oficinas.map((o, i) => `
+        <div class="status-mini">
+            <span>${o}</span>
+            <button class="icon-btn" style="color:var(--danger)" onclick="removerOficina(${i})" title="Remover"><i class="fas fa-trash"></i></button>
+        </div>`).join('');
+
+    document.getElementById('lista_regras').innerHTML = Object.entries(db.regras).map(([k, v]) => `
+        <div class="status-mini">
+            <span>${k} — <strong>${formatKM(v)} km</strong></span>
+            <button class="icon-btn" style="color:var(--danger)" onclick="removerRegra('${k}')" title="Remover"><i class="fas fa-trash"></i></button>
+        </div>`).join('');
+}
+
+function addOficina() {
+    let n = document.getElementById('nova_oficina').value.trim();
+    if (!n) return;
+    if (db.oficinas.includes(n)) return alert('Oficina já existe!');
+    db.oficinas.push(n);
+    salvar();
+    renderServicos();
+    document.getElementById('nova_oficina').value = '';
+}
+
+function removerOficina(i) {
+    if (confirm(`Remover "${db.oficinas[i]}"?`)) {
+        db.oficinas.splice(i, 1);
+        salvar();
+        renderServicos();
+    }
+}
+
+function addRegra() {
+    let n = document.getElementById('novo_item').value.trim();
+    let k = parseKM(document.getElementById('novo_km_regra').value);
+    if (!n) return alert('Informe o nome do item!');
+    if (!k) return alert('Informe o intervalo em KM!');
+    db.regras[n] = k;
+    salvar();
+    renderServicos();
+    document.getElementById('novo_item').value     = '';
+    document.getElementById('novo_km_regra').value = '';
+}
+
+function removerRegra(r) {
+    if (confirm(`Remover regra "${r}"?`)) {
+        delete db.regras[r];
+        salvar();
+        renderServicos();
+    }
+}
+
+// ============================================================
+// RELATÓRIOS
+// ============================================================
+function preencherFiltroAnos() {
+    let anos = new Set([new Date().getFullYear()]);
+    db.veiculos.forEach(v => v.servicos.forEach(s => { if(s.data) anos.add(new Date(s.data+'T00:00:00').getFullYear()); }));
+    let sel = document.getElementById('filter_year');
+    let val = sel.value;
+    sel.innerHTML = '<option value="">Todos os anos</option>' +
+        [...anos].sort((a,b)=>b-a).map(y => `<option value="${y}" ${y==val?'selected':''}>${y}</option>`).join('');
+}
+
+function reRenderRelatorio() { showRelatorio(_relatorioAtual); }
+
+function showRelatorio(tipo) {
+    _relatorioAtual = tipo;
+    const container = document.getElementById('relatorio-content');
+
+    document.querySelectorAll('.relatorio-btn').forEach(b => b.classList.remove('ativo'));
+    const btnEl = document.getElementById('rbtn-' + tipo);
+    if (btnEl) btnEl.classList.add('ativo');
+
+    let filterYear  = document.getElementById('filter_year')?.value  || '';
+    let filterMonth = document.getElementById('filter_month')?.value || '';
+
+    function filtrarServicos(servicos) {
+        return servicos.filter(s => {
+            if (!s.data) return true;
+            let d = new Date(s.data + 'T00:00:00');
+            if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return false;
+            if (filterMonth && (d.getMonth() + 1) != parseInt(filterMonth)) return false;
+            return true;
+        });
+    }
+
+    // ---- GERAL ----
+    if (tipo === 'geral') {
+        let todos = [];
+        db.veiculos.forEach(v => filtrarServicos(v.servicos).forEach(s => todos.push({ ...s, motorista: v.motorista, placa: v.placa })));
+        todos.sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
+        let total   = todos.reduce((s,sv) => s + sv.val, 0);
+        let mediaKM = db.veiculos.length ? Math.round(db.veiculos.reduce((s,v)=>s+v.km,0)/db.veiculos.length) : 0;
+
+        container.innerHTML = `
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:15px">
+                <div class="card stat-box" style="background:rgba(245,87,108,0.08)">
+                    <div class="stat-num" style="color:var(--accent)">R$ ${formatMoney(total)}</div>
+                    <div style="color:var(--text-secondary); font-size:11px; margin-top:4px">Total Gasto</div>
+                </div>
+                <div class="card stat-box" style="background:rgba(16,185,129,0.08)">
+                    <div class="stat-num" style="color:var(--success)">${db.veiculos.length}</div>
+                    <div style="color:var(--text-secondary); font-size:11px; margin-top:4px">Veículos</div>
+                </div>
+                <div class="card stat-box" style="background:rgba(139,92,246,0.08)">
+                    <div class="stat-num" style="color:#8b5cf6">${todos.length}</div>
+                    <div style="color:var(--text-secondary); font-size:11px; margin-top:4px">Serviços</div>
+                </div>
+                <div class="card stat-box" style="background:rgba(245,158,11,0.08)">
+                    <div class="stat-num" style="color:var(--warn)">${formatKM(mediaKM)}</div>
+                    <div style="color:var(--text-secondary); font-size:11px; margin-top:4px">KM Médio</div>
+                </div>
+            </div>
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+                    <h3 style="margin:0">Todos os Serviços</h3>
+                    <button onclick="exportarCSV()" class="btn-small btn-success"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                </div>
+                <div style="overflow-x:auto">
+                    <table>
+                        <thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Oficina</th><th>KM</th><th>Valor</th><th>Obs</th></tr></thead>
+                        <tbody>
+                            ${todos.map(s => `<tr>
+                                <td>${s.data}</td>
+                                <td><strong>${s.motorista}</strong> <span style="color:var(--text-secondary)">(${s.placa})</span></td>
+                                <td>${s.tipo}</td>
+                                <td>${s.forn}</td>
+                                <td>${formatKM(s.km)} km</td>
+                                <td><strong>R$ ${formatMoney(s.val)}</strong></td>
+                                <td style="color:var(--text-secondary); max-width:150px; overflow:hidden; text-overflow:ellipsis">${s.obs || '—'}</td>
+                            </tr>`).join('')}
+                            ${!todos.length ? '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>' : ''}
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+
+    // ---- POR VEÍCULO ----
+    } else if (tipo === 'veiculos') {
+        const renderDetalhesVisiveis = (v) => {
+            const sf = filtrarServicos(v.servicos).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
+            if (!sf.length) return '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço registrado.</div>';
+            return `<div style="padding:8px 10px"><table style="width:100%; border-collapse:collapse;">
+                <thead><tr><th style="text-align:left;padding:6px">Data</th><th style="text-align:left;padding:6px">Tipo</th><th style="text-align:left;padding:6px">Oficina</th><th style="text-align:left;padding:6px">KM</th><th style="text-align:left;padding:6px">Valor</th><th style="text-align:left;padding:6px">Obs</th></tr></thead>
+                <tbody>${sf.map(s => `<tr><td style="padding:4px">${s.data||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${s.forn||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td><td style="padding:4px">${s.obs||'-'}</td></tr>`).join('')}</tbody>
+            </table></div>`;
+        };
+
+        container.innerHTML = `<div class="card">
+            <h3>Gastos por Veículo</h3>
+            <div style="overflow-x:auto"><table>
+                <thead><tr><th></th><th>Motorista</th><th>Placa</th><th>Modelo</th><th>KM Atual</th><th>Serviços</th><th>Total Gasto</th></tr></thead>
+                <tbody>
+                    ${db.veiculos.map(v => {
+                        let sf = filtrarServicos(v.servicos);
+                        let t  = sf.reduce((s,sv) => s + sv.val, 0);
+                        return `<tr class="veiculo-row" onclick="toggleRelatorioVeiculoDetalhes(${v.id})" style="cursor:pointer;">
+                            <td style="padding:6px">▸</td>
+                            <td><strong>${v.motorista}</strong></td><td>${v.placa}</td><td>${v.modelo}</td>
+                            <td>${formatKM(v.km)} km</td><td>${sf.length}</td>
+                            <td><strong style="color:var(--accent)">R$ ${formatMoney(t)}</strong></td>
+                        </tr>
+                        <tr id="detalhes-veiculo-${v.id}" class="hidden">
+                            <td colspan="7" style="border:none;padding:0;">${renderDetalhesVisiveis(v)}</td>
+                        </tr>`;
+                    }).join('')}
+                    ${!db.veiculos.length ? '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum veículo</td></tr>' : ''}
+                </tbody>
+            </table></div>
+        </div>`;
+
+    // ---- POR MECÂNICA ----
+    } else if (tipo === 'mecanicas') {
+        let porMec = {};
+        let detalheMec = {};
+        db.veiculos.forEach(v => filtrarServicos(v.servicos).forEach(s => {
+            let forn = (s.forn || 'Sem mecânica').trim() || 'Sem mecânica';
+            if (!porMec[forn]) porMec[forn] = { total: 0, qtd: 0 };
+            porMec[forn].total += s.val;
+            porMec[forn].qtd++;
+            if (!detalheMec[forn]) detalheMec[forn] = [];
+            detalheMec[forn].push({ ...s, motorista: v.motorista, placa: v.placa });
+        }));
+
+        let entries = Object.entries(porMec).sort((a,b) => b[1].total - a[1].total);
+        const sanitizeId = (str) => String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
+        container.innerHTML = `<div class="card">
+            <h3>Gastos por Mecânica / Fornecedor</h3>
+            <div style="overflow-x:auto"><table>
+                <thead><tr><th></th><th>Mecânica / Fornecedor</th><th>Atendimentos</th><th>Total Gasto</th><th>Ticket Médio</th></tr></thead>
+                <tbody>
+                    ${entries.map(([n,v]) => {
+                        let id = sanitizeId(n);
+                        let detalhes = (detalheMec[n]||[]).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
+                        let detalhesHTML = detalhes.length ? `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="padding:6px;text-align:left">Data</th><th style="padding:6px;text-align:left">Motorista</th><th style="padding:6px;text-align:left">Placa</th><th style="padding:6px;text-align:left">Tipo</th><th style="padding:6px;text-align:left">KM</th><th style="padding:6px;text-align:left">Valor</th></tr></thead><tbody>${detalhes.map(s=>`<tr><td style="padding:4px">${s.data||'-'}</td><td style="padding:4px">${s.motorista||'-'}</td><td style="padding:4px">${s.placa||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td></tr>`).join('')}</tbody></table></div>` : '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço no período.</div>';
+                        return `<tr class="mecanica-row" onclick="toggleRelatorioMecanicaDetalhes('${id}')" style="cursor:pointer;"><td style="padding:6px">▸</td><td><strong>${n}</strong></td><td>${v.qtd}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(v.total)}</strong></td><td>R$ ${formatMoney(v.total/v.qtd)}</td></tr><tr id="detalhes-mecanica-${id}" class="hidden"><td colspan="5" style="border:none;padding:0;">${detalhesHTML}</td></tr>`;
+                    }).join('')}
+                    ${!entries.length ? '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>' : ''}
+                </tbody>
+            </table></div>
+        </div>`;
+
+    // ---- FIX 3: PNEUS — Relatório completo dianteiro + traseiro por motorista ----
+    } else if (tipo === 'pneus') {
+
+        function diffDays(d1, d2) {
+            return Math.max(0, Math.round((new Date(d2+'T00:00:00') - new Date(d1+'T00:00:00')) / 86400000));
+        }
+
+        function ehPneuDianteiro(tipo) {
+            let t = (tipo||'').toLowerCase();
+            return t.includes('pneu') && (t.includes('diant') || t.includes('front'));
+        }
+        function ehPneuTraseiro(tipo) {
+            let t = (tipo||'').toLowerCase();
+            return t.includes('pneu') && (t.includes('tras') || t.includes('rear'));
+        }
+        function ehPneu(tipo) {
+            return (tipo||'').toLowerCase().includes('pneu');
+        }
+
+        function calcCiclos(eventos, kmAtual, hoje) {
+            if (!eventos.length) return null;
+            let ciclos = [];
+            for (let i = 1; i < eventos.length; i++) {
+                let ini = eventos[i-1], fim = eventos[i];
+                let km  = (fim.km||0) - (ini.km||0);
+                let dias = diffDays(ini.data, fim.data);
+                ciclos.push({ ciclo: i, dataIni: ini.data, dataFim: fim.data, km: Math.max(0,km), dias, kmDia: dias ? Math.round(Math.max(0,km)/dias) : 0 });
+            }
+            let ultimo = eventos[eventos.length-1];
+            let kmAtualCiclo = kmAtual - (ultimo.km||0);
+            let diasAtual = diffDays(ultimo.data, hoje);
+            let mediaCiclo = ciclos.length ? Math.round(ciclos.reduce((s,c)=>s+c.km,0)/ciclos.length) : 0;
+            return { ciclos, kmAtualCiclo: Math.max(0,kmAtualCiclo), diasAtual, mediaCiclo, ultimo };
+        }
+
+        let hoje = new Date().toISOString().split('T')[0];
+
+        // Coleta todos os eventos de pneu por motorista, separados por tipo
+        let dadosPneu = db.veiculos.map(v => {
+            let servicosPneu = filtrarServicos(v.servicos).filter(s => ehPneu(s.tipo));
+            let dianteiros = servicosPneu.filter(s => ehPneuDianteiro(s.tipo) || (!ehPneuTraseiro(s.tipo) && !ehPneuDianteiro(s.tipo))).filter(s => s.data && (s.km||s.km===0));
+            let traseiros  = servicosPneu.filter(s => ehPneuTraseiro(s.tipo)).filter(s => s.data && (s.km||s.km===0));
+
+            // Ordena por km
+            dianteiros = dianteiros.sort((a,b)=>(a.km||0)-(b.km||0));
+            traseiros  = traseiros.sort((a,b)=>(a.km||0)-(b.km||0));
+
+            let calcD = calcCiclos(dianteiros, v.km, hoje);
+            let calcT = calcCiclos(traseiros,  v.km, hoje);
+
+            return { v, dianteiros, traseiros, calcD, calcT };
+        });
+
+        // Totais globais para summary
+        let totalTrocasDiant = dadosPneu.reduce((s,d) => s + d.dianteiros.length, 0);
+        let totalTrocasTras  = dadosPneu.reduce((s,d) => s + d.traseiros.length, 0);
+        let mediaKmDiant = 0, mediaKmTras = 0, countD = 0, countT = 0;
+        dadosPneu.forEach(d => {
+            if (d.calcD && d.calcD.mediaCiclo > 0) { mediaKmDiant += d.calcD.mediaCiclo; countD++; }
+            if (d.calcT && d.calcT.mediaCiclo > 0) { mediaKmTras  += d.calcT.mediaCiclo; countT++; }
+        });
+        mediaKmDiant = countD ? Math.round(mediaKmDiant/countD) : 0;
+        mediaKmTras  = countT ? Math.round(mediaKmTras/countT)  : 0;
+
+        const renderCiclosTable = (calc, label) => {
+            if (!calc) return `<div style="color:var(--text-secondary);font-size:12px;padding:8px 0">Nenhuma troca de ${label} registrada.</div>`;
+            let html = '';
+            if (calc.ciclos.length > 0) {
+                html += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
+                    <thead>
+                        <tr style="background:rgba(255,255,255,0.04)">
+                            <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Ciclo</th>
+                            <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Data Início</th>
+                            <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Data Fim</th>
+                            <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM Rodados</th>
+                            <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">Dias</th>
+                            <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM/Dia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${calc.ciclos.map(c => `
+                        <tr>
+                            <td style="padding:5px 8px">#${c.ciclo}</td>
+                            <td style="padding:5px 8px">${c.dataIni}</td>
+                            <td style="padding:5px 8px">${c.dataFim}</td>
+                            <td style="padding:5px 8px;text-align:right"><strong>${formatKM(c.km)}</strong></td>
+                            <td style="padding:5px 8px;text-align:right">${c.dias}d</td>
+                            <td style="padding:5px 8px;text-align:right">${c.kmDia} km/d</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>`;
+            }
+            // Pneu atual
+            let pctAtual = calc.mediaCiclo > 0 ? Math.min(100, Math.round(calc.kmAtualCiclo / calc.mediaCiclo * 100)) : 0;
+            let barColor = pctAtual >= 90 ? 'var(--danger)' : pctAtual >= 70 ? 'var(--warn)' : 'var(--success)';
+            html += `<div style="display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start;margin-top:4px">
+                <div style="flex:1;min-width:180px">
+                    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">PNEU ATUAL (desde ${calc.ultimo?.data||'?'})</div>
+                    <div style="font-size:16px;font-weight:bold;color:${barColor}">${formatKM(calc.kmAtualCiclo)} km</div>
+                    <div style="font-size:11px;color:var(--text-secondary)">${calc.diasAtual} dias em uso</div>
+                    ${calc.mediaCiclo > 0 ? `
+                    <div class="alert-km-bar" style="margin-top:6px">
+                        <div class="alert-km-bar-fill" style="width:${pctAtual}%;background:${barColor}"></div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${pctAtual}% do ciclo médio (${formatKM(calc.mediaCiclo)} km)</div>
+                    ` : ''}
+                </div>
+                ${calc.mediaCiclo > 0 ? `
+                <div style="text-align:right">
+                    <div style="font-size:11px;color:var(--text-secondary)">MÉDIA POR CICLO</div>
+                    <div style="font-size:18px;font-weight:bold;color:#8b5cf6">${formatKM(calc.mediaCiclo)} km</div>
+                    <div style="font-size:11px;color:var(--text-secondary)">${calc.ciclos.length} ciclo(s) completo(s)</div>
+                </div>` : '<div style="font-size:11px;color:var(--text-secondary)">Apenas 1 troca registrada — sem ciclo completo para calcular média.</div>'}
+            </div>`;
+            return html;
+        };
+
+        container.innerHTML = `
+            <!-- RESUMO GERAL -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:15px">
+                <div class="card stat-box" style="background:rgba(59,130,246,0.08)">
+                    <div class="stat-num" style="color:#3b82f6">${totalTrocasDiant}</div>
+                    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Dianteiro</div>
+                </div>
+                <div class="card stat-box" style="background:rgba(139,92,246,0.08)">
+                    <div class="stat-num" style="color:#8b5cf6">${totalTrocasTras}</div>
+                    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Traseiro</div>
+                </div>
+                <div class="card stat-box" style="background:rgba(16,185,129,0.08)">
+                    <div class="stat-num" style="color:var(--success)">${mediaKmDiant > 0 ? formatKM(mediaKmDiant) : '—'}</div>
+                    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Dianteiro</div>
+                </div>
+                <div class="card stat-box" style="background:rgba(245,158,11,0.08)">
+                    <div class="stat-num" style="color:var(--warn)">${mediaKmTras > 0 ? formatKM(mediaKmTras) : '—'}</div>
+                    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Traseiro</div>
+                </div>
+            </div>
+
+            <!-- TABELA POR MOTORISTA -->
+            ${dadosPneu.map(({ v, dianteiros, traseiros, calcD, calcT }) => `
+                <div class="card" style="margin-bottom:15px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                        <div>
+                            <h3 style="margin:0">${v.motorista}</h3>
+                            <span style="font-size:11px;color:var(--text-secondary)">${v.placa} | ${v.modelo} | <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span></span>
+                        </div>
+                        <div style="display:flex;gap:8px">
+                            <span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6">🔵 ${dianteiros.length} trocas dianteiro</span>
+                            <span class="badge" style="background:rgba(139,92,246,0.15);color:#8b5cf6">🟣 ${traseiros.length} trocas traseiro</span>
+                        </div>
+                    </div>
+
+                    <!-- DIANTEIRO -->
+                    <div style="border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:12px;background:rgba(59,130,246,0.04)">
+                        <div style="font-size:12px;font-weight:bold;color:#3b82f6;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                            <i class="fas fa-circle" style="font-size:8px"></i> PNEU DIANTEIRO
+                        </div>
+                        ${renderCiclosTable(calcD, 'pneu dianteiro')}
+                    </div>
+
+                    <!-- TRASEIRO -->
+                    <div style="border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:14px;background:rgba(139,92,246,0.04)">
+                        <div style="font-size:12px;font-weight:bold;color:#8b5cf6;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                            <i class="fas fa-circle" style="font-size:8px"></i> PNEU TRASEIRO
+                        </div>
+                        ${renderCiclosTable(calcT, 'pneu traseiro')}
+                    </div>
+                </div>
+            `).join('')}
+            ${!dadosPneu.length ? '<div class="card" style="text-align:center;padding:30px;color:var(--text-secondary)">Nenhum veículo cadastrado.</div>' : ''}
+        `;
+
+    // ---- ESTOQUE ----
+    } else if (tipo === 'estoque') {
+        let totalEst = db.estoque.reduce((s,e) => s + (e.qtd * e.val), 0);
+        container.innerHTML = `<div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+                <h3 style="margin:0">Inventário do Estoque</h3>
+                <div class="stat-num" style="color:var(--success)">R$ ${formatMoney(totalEst)}</div>
+            </div>
+            <div style="overflow-x:auto"><table>
+                <thead><tr><th>Peça</th><th>Qtd</th><th>Mínimo</th><th>Valor Unit.</th><th>Valor Total</th><th>Status</th></tr></thead>
+                <tbody>
+                    ${db.estoque.map(e => `<tr>
+                        <td><strong>${e.nome}</strong></td><td>${e.qtd}</td><td>${e.min}</td>
+                        <td>R$ ${formatMoney(e.val)}</td><td>R$ ${formatMoney(e.qtd * e.val)}</td>
+                        <td>${e.qtd <= e.min ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✅ OK</span>'}</td>
+                    </tr>`).join('')}
+                    ${!db.estoque.length ? '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary)">Estoque vazio</td></tr>' : ''}
+                </tbody>
+            </table></div>
+        </div>`;
+    }
+}
+
+function toggleRelatorioVeiculoDetalhes(id) {
+    const el = document.getElementById(`detalhes-veiculo-${id}`);
+    if (el) el.classList.toggle('hidden');
+}
+function toggleRelatorioMecanicaDetalhes(id) {
+    const el = document.getElementById(`detalhes-mecanica-${id}`);
+    if (el) el.classList.toggle('hidden');
+}
+
+// ============================================================
+// EXPORTAR CSV
+// ============================================================
+function exportarCSV() {
+    let filterYear  = document.getElementById('filter_year')?.value  || '';
+    let filterMonth = document.getElementById('filter_month')?.value || '';
+    let rows = [['Data', 'Motorista', 'Placa', 'Modelo', 'Tipo', 'Oficina', 'KM', 'Valor (R$)', 'Observações']];
+    db.veiculos.forEach(v => {
+        v.servicos.forEach(s => {
+            if (s.data) {
+                let d = new Date(s.data + 'T00:00:00');
+                if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return;
+                if (filterMonth && (d.getMonth() + 1) != parseInt(filterMonth)) return;
+            }
+            rows.push([s.data||'', v.motorista, v.placa, v.modelo, s.tipo, s.forn, s.km, s.val, s.obs||'']);
+        });
+    });
+    let csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+    let blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    let url  = URL.createObjectURL(blob);
+    let a    = document.createElement('a');
+    a.href   = url;
+    a.download = `frota_relatorio_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// RENDER TUDO
+// ============================================================
+function renderizarTudo() {
+    renderVeiculos();
+    renderDashboard();
+    if (veiculoAtual) renderizarVeiculo();
+}
+
+// ============================================================
+// EXPOR FUNÇÕES GLOBAIS
+// ============================================================
+Object.assign(window, {
+    tab, addVeiculo, abrirVeiculo, editarVeiculo, excluirVeiculo,
+    atualizarKM, addServico, excluirServico, updateTipoSelect,
+    abrirModalEditar, fecharModalEditar, salvarEdicaoServico,
+    addAlerta, removerAlerta, addNota, removerNota, addFotos, removerFoto,
+    addOficina, removerOficina, addRegra, removerRegra,
+    addCompra, addPeca, editarEstoque, excluirEstoque,
+    showRelatorio, reRenderRelatorio, preencherFiltroAnos,
+    salvarDados, maskKM, maskMoney, showImage, ignorarAlerta,
+    exportarCSV, exportarBackup, importarBackup,
+    toggleRelatorioVeiculoDetalhes, toggleRelatorioMecanicaDetalhes
+});
+
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
+carregarDados();
+tab('dash');
+</script>
+</body>
+</html>
