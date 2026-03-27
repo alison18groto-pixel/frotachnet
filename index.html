@@ -44,8 +44,19 @@
         * { box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; font-size: 13px; }
         .sidebar { width: 70px; background: var(--sidebar-bg); height: 100vh; position: fixed; top: 0; left: 0; transition: width 0.3s; border-right: 1px solid var(--border); overflow: hidden; z-index: 100; }
-        .sidebar:hover { width: 240px; }
+        .sidebar:hover { width: 180px; }
         .sidebar-logo { padding: 20px; font-size: 1.5rem; white-space: nowrap; }
+        .sidebar-toggle-button { position: absolute; top: 16px; right: 10px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(255,255,255,0.08); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s; }
+        .sidebar-toggle-button:hover { background: rgba(255,255,255,0.16); }
+        .sidebar-toggle-button i { font-size: 12px; }
+        body.sidebar-collapsed .sidebar { width: 70px !important; }
+        body.sidebar-collapsed .sidebar:hover { width: 70px !important; }
+        body.sidebar-collapsed .sidebar-logo { padding: 20px 8px; }
+        body.sidebar-collapsed .sidebar-logo span { display: none; }
+        body.sidebar-collapsed .sidebar .nav-item { padding: 14px 10px; justify-content: center; }
+        body.sidebar-collapsed .sidebar .nav-item span { display: none; }
+        body.sidebar-collapsed .main { margin-left: 70px; width: calc(100% - 70px); }
+        body.sidebar-collapsed .top-bar { left: 70px; width: calc(100% - 70px); }
         .nav-item { padding: 14px 20px; border-radius: 12px; cursor: pointer; margin: 8px 12px; display: flex; align-items: center; gap: 18px; color: #94a3b8; white-space: nowrap; transition: all 0.3s; }
         .nav-item i { min-width: 16px; text-align: center; }
         .nav-item:hover, .nav-item.active { background: var(--accent-gradient); color: white; transform: translateX(5px); }
@@ -210,6 +221,7 @@
 <!-- SIDEBAR -->
 <div class="sidebar">
     <div class="sidebar-logo"><i class="fas fa-truck-fast" style="color:var(--accent)"></i> <span style="font-size:14px; font-weight:bold; vertical-align:middle">Frota Pro</span></div>
+    <button class="sidebar-toggle-button" onclick="toggleSidebar()" title="Minimizar/Expandir sidebar"><i class="fas fa-chevron-left"></i></button>
     <div class="nav-item active" onclick="tab('dash')"><i class="fas fa-home"></i> <span>Dashboard</span></div>
     <div class="nav-item" onclick="tab('frota')"><i class="fas fa-car"></i> <span>Veículos</span></div>
     <div class="nav-item" onclick="tab('servicos')"><i class="fas fa-tools"></i> <span>Serviços</span></div>
@@ -534,21 +546,27 @@ function limparLogin() {
 
 function toggleSidebar() {
     document.body.classList.toggle('sidebar-collapsed');
-    const btn = document.getElementById('sidebar_toggle_btn');
+    const btnTop = document.getElementById('sidebar_toggle_btn');
+    const btnSide = document.querySelector('.sidebar-toggle-button i');
+
     if (document.body.classList.contains('sidebar-collapsed')) {
-        btn.innerHTML = '<i class="fas fa-bars"></i>';
         localStorage.setItem('sidebarCollapsed', 'true');
+        if (btnTop) btnTop.innerHTML = '<i class="fas fa-bars"></i>';
+        if (btnSide) btnSide.className = 'fas fa-chevron-right';
     } else {
-        btn.innerHTML = '<i class="fas fa-times"></i>';
         localStorage.removeItem('sidebarCollapsed');
+        if (btnTop) btnTop.innerHTML = '<i class="fas fa-times"></i>';
+        if (btnSide) btnSide.className = 'fas fa-chevron-left';
     }
 }
 
 function initSidebarToggle() {
+    const btnSide = document.querySelector('.sidebar-toggle-button i');
     if (localStorage.getItem('sidebarCollapsed') === 'true') {
         document.body.classList.add('sidebar-collapsed');
-        const btn = document.getElementById('sidebar_toggle_btn');
-        if (btn) btn.innerHTML = '<i class="fas fa-bars"></i>';
+        if (btnSide) btnSide.className = 'fas fa-chevron-right';
+    } else {
+        if (btnSide) btnSide.className = 'fas fa-chevron-left';
     }
 }
 
