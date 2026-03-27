@@ -119,9 +119,32 @@
         .modal-close:hover { color: var(--danger); transform: none; }
         .modal-footer { display: flex; gap: 10px; margin-top: 15px; }
         .modal-footer button { flex: 1; }
+        .login-page { position: fixed; inset: 0; background: radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 35%), #04050b; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 2000; }
+        .login-page.hidden { display: none; }
+        .login-box { width: 100%; max-width: 380px; background: #10121b; border: 1px solid var(--border); border-radius: 24px; padding: 30px; box-shadow: 0 24px 80px rgba(0,0,0,0.4); }
+        .login-box h2 { margin: 0 0 20px; font-size: 24px; color: var(--accent); text-align: center; }
+        .login-box label { display: block; margin-bottom: 6px; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .login-box input { margin-bottom: 15px; }
+        .login-box .login-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .login-box .login-error { min-height: 18px; color: #f87171; font-size: 12px; text-align: center; margin-top: 6px; }
     </style>
 </head>
 <body>
+
+<div class="login-page" id="login-page">
+    <div class="login-box">
+        <h2>Entrar</h2>
+        <label>Usuário</label>
+        <input id="login_user" placeholder="Usuário">
+        <label>Senha</label>
+        <input id="login_pass" type="password" placeholder="Senha">
+        <div class="login-error" id="login_error"></div>
+        <div class="login-actions">
+            <button onclick="loginApp()">Entrar</button>
+            <button onclick="limparLogin()" style="background:rgba(255,255,255,0.08)">Limpar</button>
+        </div>
+    </div>
+</div>
 
 <!-- MODAL EDITAR SERVIÇO -->
 <div class="modal-overlay" id="modal-edit-servico">
@@ -467,6 +490,38 @@ function tipoMatchRegra(tipo, regra) {
     // Verifica palavras-chave individualmente (pelo menos 1 palavra principal)
     const palavrasRegra = regraN.split(/\s+/).filter(p => p.length > 3);
     return palavrasRegra.some(p => tipoN.includes(p));
+}
+
+const APP_LOGIN_USER = 'chnet';
+const APP_LOGIN_PASS = '147258';
+
+function checkLogin() {
+    if (localStorage.getItem('frota_logado') === 'true') {
+        document.getElementById('login-page').classList.add('hidden');
+        return;
+    }
+    document.getElementById('login-page').classList.remove('hidden');
+}
+
+function loginApp() {
+    const user = document.getElementById('login_user').value.trim();
+    const pass = document.getElementById('login_pass').value.trim();
+    const error = document.getElementById('login_error');
+
+    if (user === APP_LOGIN_USER && pass === APP_LOGIN_PASS) {
+        localStorage.setItem('frota_logado', 'true');
+        document.getElementById('login-page').classList.add('hidden');
+        error.textContent = '';
+        return;
+    }
+
+    error.textContent = 'Usuário ou senha incorretos.';
+}
+
+function limparLogin() {
+    document.getElementById('login_user').value = '';
+    document.getElementById('login_pass').value = '';
+    document.getElementById('login_error').textContent = '';
 }
 
 // ============================================================
@@ -1737,6 +1792,7 @@ Object.assign(window, {
 // ============================================================
 carregarDados();
 tab('dash');
+checkLogin();
 </script>
 </body>
 </html>
