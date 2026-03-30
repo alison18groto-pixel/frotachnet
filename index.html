@@ -5,25 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frota Pro V47 | Sistema Funcional</title>
 
-
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAd8AmqNArT1IzdzFWXcU5al4e5-VvJ6B8",
-    authDomain: "controle-veiculos-ea81c.firebaseapp.com",
-    databaseURL: "https://controle-veiculos-ea81c-default-rtdb.firebaseio.com",
-    projectId: "controle-veiculos-ea81c",
-    storageBucket: "controle-veiculos-ea81c.firebasestorage.app",
-    messagingSenderId: "907748014805",
-    appId: "1:907748014805:web:56c1c2176d076b84c2405c",
-    measurementId: "G-TZNX312NRV"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-</script>
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyAd8AmqNArT1IzdzFWXcU5al4e5-VvJ6B8",
+        authDomain: "controle-veiculos-ea81c.firebaseapp.com",
+        databaseURL: "https://controle-veiculos-ea81c-default-rtdb.firebaseio.com",
+        projectId: "controle-veiculos-ea81c",
+        storageBucket: "controle-veiculos-ea81c.firebasestorage.app",
+        messagingSenderId: "907748014805",
+        appId: "1:907748014805:web:56c1c2176d076b84c2405c",
+        measurementId: "G-TZNX312NRV"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const database = firebase.database();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -121,13 +119,9 @@
         .relatorio-btn { margin-right: 5px; margin-bottom: 5px; }
         .relatorio-btn.ativo { background: var(--accent-gradient); }
         .relatorio-btn:not(.ativo) { background: rgba(255,255,255,0.08); }
-
-        /* ALERTA KM PROGRESS */
         .alert-km-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); margin-top: 6px; overflow: hidden; }
         .alert-km-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
         .alert-km-detail { font-size: 11px; margin-top: 4px; color: var(--text-secondary); }
-
-        /* MODAL DE EDIÇÃO */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         .modal-overlay.active { display: flex; }
         .modal-box { background: #1a1a2a; border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
@@ -145,6 +139,17 @@
         .login-box input { margin-bottom: 15px; }
         .login-box .login-actions { display: flex; gap: 10px; margin-top: 10px; }
         .login-box .login-error { min-height: 18px; color: #f87171; font-size: 12px; text-align: center; margin-top: 6px; }
+
+        /* ODOMETRO + ABASTECIMENTO integrado */
+        .odo-abast-card { background: var(--card); border-radius: 16px; padding: 18px; border: 1px solid var(--border); margin-bottom: 15px; }
+        .odo-abast-card:hover { background: var(--card-hover); }
+        .odo-tabs { display: flex; gap: 4px; margin-bottom: 14px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 4px; }
+        .odo-tab-btn { flex: 1; padding: 7px 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 12px; font-weight: bold; background: transparent; color: var(--text-secondary); transition: all 0.2s; width: auto; }
+        .odo-tab-btn.active { background: var(--accent-gradient); color: white; transform: none; }
+        .odo-tab-btn:hover:not(.active) { background: rgba(255,255,255,0.08); transform: none; opacity: 1; }
+        .odo-panel { display: none; }
+        .odo-panel.active { display: block; }
+        .media-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(59,130,246,0.15); color: #60a5fa; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -183,7 +188,7 @@
         <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Observações</label>
         <textarea id="edit_obs" rows="3" placeholder="Observações..."></textarea>
         <div class="modal-footer">
-            <button class="btn-danger" onclick="fecharModalEditar()" style="background:rgba(255,255,255,0.08)">Cancelar</button>
+            <button onclick="fecharModalEditar()" style="background:rgba(255,255,255,0.08)">Cancelar</button>
             <button onclick="salvarEdicaoServico()"><i class="fas fa-save"></i> Salvar Alterações</button>
         </div>
     </div>
@@ -204,7 +209,7 @@
         <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Valor unitário</label>
         <input id="edit_val_peca" placeholder="Valor unit." style="margin-bottom:12px" oninput="maskMoney(this)">
         <div class="modal-footer">
-            <button class="btn-danger" onclick="fecharModalEditarEstoque()" style="background:rgba(255,255,255,0.08)">Cancelar</button>
+            <button onclick="fecharModalEditarEstoque()" style="background:rgba(255,255,255,0.08)">Cancelar</button>
             <button onclick="salvarEdicaoEstoque()"><i class="fas fa-save"></i> Salvar Alterações</button>
         </div>
     </div>
@@ -359,12 +364,11 @@
         <div style="display:grid; grid-template-columns:1fr 1.8fr; gap:20px">
             <!-- Coluna esquerda -->
             <div>
-                <div class="card">
-                    <h3>📟 Odômetro</h3>
-                    <input id="det_km" oninput="maskKM(this)" placeholder="KM Atual">
-                    <button onclick="atualizarKM()">Salvar KM</button>
-                    <div id="ultima_data" style="font-size:11px; margin-top:5px; color:var(--text-secondary)"></div>
+                <!-- ODÔMETRO + ABASTECIMENTO INTEGRADO -->
+                <div class="odo-abast-card" id="odo-abast-block">
+                    <!-- Renderizado por JS -->
                 </div>
+
                 <div class="card">
                     <h3>🔧 Registrar Manutenção</h3>
                     <select id="servico_forn" onchange="updateTipoSelect()"></select>
@@ -428,33 +432,63 @@ let db = {
             { data: "2025-10-06", km: 136047, tipo: "Troca de óleo", forn: "Posto Central", val: 350, obs: "Trocado filtro" },
             { data: "2025-08-31", km: 111111, tipo: "Pneu Traseiro", forn: "Mecânica Zimmer", val: 220, obs: "Pneu traseiro" },
             { data: "2025-12-17", km: 139962, tipo: "Troca Cavalete água", forn: "Grotto Usinagens", val: 140, obs: "2 mangueiras" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-05", alertasIgnorados: [] },
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-05", alertasIgnorados: [],
+        abastecimentos: [
+            { data: "2026-01-10", km: 145000, qtd: 54.5, valor: 342.15 },
+            { data: "2026-01-25", km: 148200, qtd: 51.2, valor: 322.56 },
+            { data: "2026-02-15", km: 149588, qtd: 50.0, valor: 315.00 }
+        ]},
         { id: 2, motorista: "Wesley Trevisan", placa: "RLE2127", modelo: "Saveiro", km: 144367, servicos: [
             { data: "2025-12-10", km: 139563, tipo: "Pneu Dianteiro", forn: "CHNET Estoque", val: 88, obs: "" },
             { data: "2025-10-10", km: 124425, tipo: "Troca de óleo", forn: "Posto Central", val: 88, obs: "" },
             { data: "2025-07-21", km: 132009, tipo: "Pneu Traseiro", forn: "Mecânica Zimmer", val: 0, obs: "" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-08", alertasIgnorados: [] },
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-08", alertasIgnorados: [],
+        abastecimentos: [
+            { data: "2026-01-12", km: 140000, qtd: 52.0, valor: 328.00 },
+            { data: "2026-01-28", km: 143500, qtd: 49.8, valor: 314.28 },
+            { data: "2026-02-18", km: 144367, qtd: 48.5, valor: 305.75 }
+        ]},
         { id: 3, motorista: "Rodrigo Machado", placa: "RLK4F55", modelo: "Saveiro", km: 78004, servicos: [
             { data: "2026-03-10", km: 66070, tipo: "Troca de filtro de ar", forn: "Posto Central", val: 18, obs: "" },
             { data: "2024-11-11", km: 59179, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 260, obs: "" },
             { data: "2024-12-12", km: 42120, tipo: "Correia Dentada", forn: "Mecânica Zimmer", val: 0, obs: "" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-03-26", alertasIgnorados: [] },
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-03-26", alertasIgnorados: [],
+        abastecimentos: [
+            { data: "2026-02-05", km: 75000, qtd: 48.0, valor: 302.40 },
+            { data: "2026-02-25", km: 77500, qtd: 46.5, valor: 293.10 },
+            { data: "2026-03-20", km: 78004, qtd: 45.2, valor: 285.26 }
+        ]},
         { id: 4, motorista: "Jian Gubert", placa: "RAJ7B96", modelo: "Saveiro", km: 128929, servicos: [
             { data: "2026-02-10", km: 70095, tipo: "Troca de óleo", forn: "Posto Central", val: 88, obs: "" },
             { data: "2025-09-05", km: 100145, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 280, obs: "" },
             { data: "2025-06-25", km: 96113, tipo: "Correia alternador", forn: "Mecânica Zimmer", val: 100, obs: "" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-24", alertasIgnorados: [] },
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-24", alertasIgnorados: [],
+        abastecimentos: [
+            { data: "2026-01-08", km: 124000, qtd: 51.5, valor: 325.00 },
+            { data: "2026-01-26", km: 127500, qtd: 50.0, valor: 315.00 },
+            { data: "2026-02-20", km: 128929, qtd: 49.5, valor: 312.15 }
+        ]},
         { id: 5, motorista: "Anderson da Silva Maria", placa: "RXS5F06", modelo: "Saveiro", km: 73407, servicos: [
             { data: "2026-02-10", km: 70095, tipo: "Troca de óleo", forn: "Posto Central", val: 88, obs: "" },
             { data: "2024-11-08", km: 51000, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 220, obs: "" },
             { data: "2025-07-19", km: 63000, tipo: "Pneu Dianteiro", forn: "CHNET Estoque", val: 0, obs: "" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-10", alertasIgnorados: [] },
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-10", alertasIgnorados: [],
+        abastecimentos: [
+            { data: "2026-02-08", km: 70800, qtd: 46.0, valor: 290.40 },
+            { data: "2026-02-28", km: 72500, qtd: 44.5, valor: 280.75 },
+            { data: "2026-03-22", km: 73407, qtd: 43.8, valor: 276.36 }
+        ]},
         { id: 6, motorista: "Escritório", placa: "ESCRT1", modelo: "Saveiro", km: 10273, servicos: [
             { data: "2024-07-24", km: 10273, tipo: "Troca de óleo", forn: "Posto Central", val: 350, obs: "" },
             { data: "2024-07-24", km: 10273, tipo: "Troca de filtro de ar", forn: "Posto Central", val: 18, obs: "" },
             { data: "2022-11-04", km: 0, tipo: "Correia Dentada", forn: "Mecânica Zimmer", val: 0, obs: "" },
             { data: "2025-04-23", km: 7000, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 220, obs: "" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2025-07-24", alertasIgnorados: [] }
+        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2025-07-24", alertasIgnorados: [],
+        abastecimentos: [
+            { data: "2025-08-15", km: 8000, qtd: 38.5, valor: 242.95 },
+            { data: "2025-10-10", km: 9200, qtd: 36.0, valor: 227.20 },
+            { data: "2026-01-05", km: 10273, qtd: 40.5, valor: 255.15 }
+        ]}
     ],
     regras: {
         "Troca de óleo": 10000,
@@ -474,40 +508,20 @@ let db = {
 let veiculoAtual = null;
 let chart = null;
 let _relatorioAtual = 'geral';
-let _editandoIdx = null; // índice do serviço sendo editado
+let _editandoIdx = null;
 
 // ============================================================
-// HELPER: verifica se um tipo de serviço bate com uma regra
-// Lógica de matching: o tipo do serviço contém palavras-chave da regra
+// HELPER: verifica se tipo de serviço bate com uma regra
 // ============================================================
 function tipoMatchRegra(tipo, regra) {
-    // Normaliza para minúsculo sem acento para comparação
-    const normalizar = s => s.toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const normalizar = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const tipoN = normalizar(tipo || '');
     const regraN = normalizar(regra || '');
-
-    // Match direto
     if (tipoN.includes(regraN)) return true;
-
-    // Regras específicas de pneu
-    if (regraN === 'pneu') {
-        return tipoN.includes('pneu') || tipoN.includes('pneus');
-    }
-    // Regras específicas de óleo
-    if (regraN.includes('oleo') || regraN.includes('oil')) {
-        return tipoN.includes('oleo') || tipoN.includes('oil');
-    }
-    // Correia dentada
-    if (regraN.includes('correia dentada')) {
-        return tipoN.includes('correia dentada');
-    }
-    // Pastilha
-    if (regraN.includes('pastilha')) {
-        return tipoN.includes('pastilha');
-    }
-
-    // Verifica palavras-chave individualmente (pelo menos 1 palavra principal)
+    if (regraN === 'pneu') return tipoN.includes('pneu') || tipoN.includes('pneus');
+    if (regraN.includes('oleo') || regraN.includes('oil')) return tipoN.includes('oleo') || tipoN.includes('oil');
+    if (regraN.includes('correia dentada')) return tipoN.includes('correia dentada');
+    if (regraN.includes('pastilha')) return tipoN.includes('pastilha');
     const palavrasRegra = regraN.split(/\s+/).filter(p => p.length > 3);
     return palavrasRegra.some(p => tipoN.includes(p));
 }
@@ -527,14 +541,12 @@ function loginApp() {
     const user = document.getElementById('login_user').value.trim();
     const pass = document.getElementById('login_pass').value.trim();
     const error = document.getElementById('login_error');
-
     if (user === APP_LOGIN_USER && pass === APP_LOGIN_PASS) {
         localStorage.setItem('frota_logado', 'true');
         document.getElementById('login-page').classList.add('hidden');
         error.textContent = '';
         return;
     }
-
     error.textContent = 'Usuário ou senha incorretos.';
 }
 
@@ -548,7 +560,6 @@ function toggleSidebar() {
     const body = document.body;
     const btnTop = document.getElementById('sidebar_toggle_btn');
     const btnSide = document.querySelector('.sidebar-toggle-button i');
-
     if (body.classList.contains('sidebar-expanded')) {
         body.classList.remove('sidebar-expanded');
         body.classList.add('sidebar-collapsed');
@@ -557,7 +568,6 @@ function toggleSidebar() {
         if (btnSide) btnSide.className = 'fas fa-chevron-right';
         return;
     }
-
     body.classList.remove('sidebar-collapsed');
     body.classList.add('sidebar-expanded');
     localStorage.setItem('sidebarState', 'expanded');
@@ -569,7 +579,6 @@ function initSidebarToggle() {
     const btnTop = document.getElementById('sidebar_toggle_btn');
     const btnSide = document.querySelector('.sidebar-toggle-button i');
     const state = localStorage.getItem('sidebarState');
-
     if (state === 'expanded') {
         document.body.classList.add('sidebar-expanded');
         if (btnTop) btnTop.innerHTML = '<i class="fas fa-times"></i>';
@@ -585,7 +594,6 @@ function initSidebarToggle() {
 // PERSISTÊNCIA
 // ============================================================
 function salvarDados() {
-    // 1. Envia os dados para o Firebase (Nuvem)
     database.ref('appData').set(db)
         .then(() => {
             const btn = document.querySelector('.top-btn:last-child');
@@ -593,24 +601,19 @@ function salvarDados() {
                 btn.innerHTML = '<i class="fas fa-check"></i> Sincronizado!';
                 setTimeout(() => btn.innerHTML = '<i class="fas fa-save"></i> Salvar', 1500);
             }
-            console.log("Sincronizado com Firebase!");
         })
         .catch(error => {
             console.error("Erro ao sincronizar:", error);
             alert("Erro ao salvar na nuvem!");
         });
-    
-    // 2. Mantém o backup no navegador por segurança
     localStorage.setItem('frota_pro_v47', JSON.stringify(db));
 }
 
 function carregarDados() {
-    // Escuta o Firebase em tempo real
     database.ref('appData').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
             db = data;
-            // Garante que as listas internas existam para não dar erro
             db.veiculos.forEach(v => {
                 if (!v.alertasIgnorados) v.alertasIgnorados = [];
                 if (!v.servicos) v.servicos = [];
@@ -618,6 +621,7 @@ function carregarDados() {
                 if (!v.fotos) v.fotos = [];
                 if (!v.alertas) v.alertas = [];
                 if (!v.bases) v.bases = {};
+                if (!v.abastecimentos) v.abastecimentos = [];
             });
             renderizarTudo();
         }
@@ -625,7 +629,6 @@ function carregarDados() {
 }
 
 function salvar() {
-    // Agora o salvar chama a sincronização com o Firebase
     salvarDados();
     renderizarTudo();
 }
@@ -732,7 +735,6 @@ function renderDashboard() {
                 let status = vencido
                     ? `Passou ${formatKM(Math.abs(falta))} km além do intervalo`
                     : `Faltam ${formatKM(falta)} km`;
-
                 alertsDiv.innerHTML += `
                     <div class="card status-mini ${classe}" onclick="abrirVeiculo(${v.id})" style="cursor:pointer">
                         <div>
@@ -818,6 +820,8 @@ function renderVeiculos() {
             if (v.alertasIgnorados && v.alertasIgnorados.includes(r)) return false;
             return (db.regras[r] - (v.km - (v.bases[r] || 0))) <= 0;
         }).length;
+        let media = calcularMediaConsumo(v);
+        let mediaTexto = media.media > 0 ? `⛽ ${media.media.toFixed(2)} km/l` : '⛽ Sem dados';
         return `
             <div class="card car-card" onclick="abrirVeiculo(${v.id})">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start">
@@ -829,6 +833,9 @@ function renderVeiculos() {
                 </div>
                 <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
                     <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span>
+                    <span class="km-tag" style="background:rgba(59,130,246,0.8)">${mediaTexto}</span>
+                </div>
+                <div style="margin-top:5px">
                     <span style="font-size:11px; color:var(--text-secondary)">R$ ${formatMoney(totalGasto)} gastos</span>
                 </div>
                 <div style="font-size:10px; color:var(--text-secondary); margin-top:5px">📅 Atualizado: ${v.ultimaAtualizacao || 'Nunca'}</div>
@@ -845,7 +852,7 @@ function addVeiculo() {
             id: db.nextId++, motorista, placa, modelo: modelo || 'Saveiro',
             km: 0, servicos: [], bases: {}, alertas: [], fotos: [], notas: [],
             ultimaAtualizacao: new Date().toISOString().split('T')[0],
-            alertasIgnorados: []
+            alertasIgnorados: [], abastecimentos: []
         });
         salvar();
     }
@@ -858,7 +865,142 @@ function abrirVeiculo(id) {
 }
 
 // ============================================================
-// FIX 2: Alertas de próximas trocas com KM detalhado + barra visual
+// BLOCO ODÔMETRO + ABASTECIMENTO INTEGRADO
+// Renderiza o painel unificado com abas
+// ============================================================
+function renderOdoAbastBlock() {
+    const v = veiculoAtual;
+    if (!v) return;
+    if (!v.abastecimentos) v.abastecimentos = [];
+
+    const media = calcularMediaConsumo(v);
+    const mediaTexto = media.media > 0
+        ? `<span class="media-badge">⛽ ${media.media.toFixed(2)} km/l</span>`
+        : `<span class="media-badge" style="color:var(--text-secondary); background:rgba(255,255,255,0.05)">⛽ Sem média</span>`;
+
+    // Últimas 3 abastecidas em ordem decrescente
+    const sorted = [...v.abastecimentos].sort((a, b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
+    const recentes = sorted.slice(0, 3);
+
+    let recentesHtml = '';
+    if (recentes.length === 0) {
+        recentesHtml = '<div style="text-align:center;padding:12px;color:var(--text-secondary);font-size:12px">Nenhuma abastecida registrada</div>';
+    } else {
+        recentes.forEach((a) => {
+            const origIdx = v.abastecimentos.indexOf(a);
+            // Calcula consumo desta abastecida
+            const sortedAsc = [...v.abastecimentos].sort((x,y)=>(x.km||0)-(y.km||0));
+            const posAsc = sortedAsc.findIndex(x => x === a);
+            let consumo = 0;
+            if (posAsc > 0) {
+                const ant = sortedAsc[posAsc - 1];
+                const kmRod = a.km - ant.km;
+                if (kmRod > 0) consumo = kmRod / a.qtd;
+            }
+            recentesHtml += `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+                    <div>
+                        <div style="font-size:12px;font-weight:600">📅 ${a.data} — <span style="color:var(--accent)">${formatKM(a.km)} km</span></div>
+                        <div style="font-size:11px;color:var(--text-secondary)">${a.qtd.toFixed(2)}L · R$ ${formatMoney(a.valor)} · ${a.qtd > 0 ? 'R$ ' + formatMoney(a.valor/a.qtd) + '/L' : ''}</div>
+                        ${consumo > 0 ? `<div style="font-size:11px;color:var(--success)">⛽ ${consumo.toFixed(2)} km/l neste abastecimento</div>` : '<div style="font-size:11px;color:var(--text-secondary)">Primeiro registro</div>'}
+                    </div>
+                    <button class="icon-btn" style="color:var(--danger)" onclick="excluirAbastecimento(${origIdx})" title="Excluir"><i class="fas fa-trash"></i></button>
+                </div>`;
+        });
+        if (sorted.length > 3) {
+            recentesHtml += `<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary)">(${sorted.length - 3} abastecimento(s) mais antigo(s) não exibido(s))</div>`;
+        }
+    }
+
+    const totalLitros = v.abastecimentos.reduce((s,a) => s + (a.qtd||0), 0);
+    const totalGasto  = v.abastecimentos.reduce((s,a) => s + (a.valor||0), 0);
+
+    const block = document.getElementById('odo-abast-block');
+    block.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <h3 style="margin:0">📟 Odômetro & Abastecimento</h3>
+            ${mediaTexto}
+        </div>
+
+        <div class="odo-tabs">
+            <button class="odo-tab-btn active" id="odo-tab-btn-km" onclick="switchOdoTab('km')">📟 KM Manual</button>
+            <button class="odo-tab-btn" id="odo-tab-btn-abast" onclick="switchOdoTab('abast')">⛽ Abastecimento</button>
+        </div>
+
+        <!-- PAINEL KM MANUAL -->
+        <div class="odo-panel active" id="odo-panel-km">
+            <div style="font-size:22px;font-weight:bold;color:var(--accent);margin-bottom:8px">${formatKM(v.km)} km</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Última atualização: ${v.ultimaAtualizacao || 'Nunca'}</div>
+            <input id="det_km" oninput="maskKM(this)" placeholder="Novo KM (ex: 150.000)" style="margin-bottom:8px">
+            <button onclick="atualizarKM()"><i class="fas fa-save"></i> Salvar KM</button>
+        </div>
+
+        <!-- PAINEL ABASTECIMENTO -->
+        <div class="odo-panel" id="odo-panel-abast">
+            <!-- Estatísticas rápidas -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+                <div style="background:rgba(59,130,246,0.08);border-radius:10px;padding:8px;text-align:center">
+                    <div style="font-size:15px;font-weight:bold;color:#60a5fa">${media.media > 0 ? media.media.toFixed(2) : '—'}</div>
+                    <div style="font-size:10px;color:var(--text-secondary)">km/l média</div>
+                </div>
+                <div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:8px;text-align:center">
+                    <div style="font-size:15px;font-weight:bold;color:var(--success)">${totalLitros.toFixed(1)}L</div>
+                    <div style="font-size:10px;color:var(--text-secondary)">Total litros</div>
+                </div>
+                <div style="background:rgba(245,87,108,0.08);border-radius:10px;padding:8px;text-align:center">
+                    <div style="font-size:15px;font-weight:bold;color:var(--accent)">R$ ${formatMoney(totalGasto)}</div>
+                    <div style="font-size:10px;color:var(--text-secondary)">Total gasto</div>
+                </div>
+            </div>
+
+            <!-- Formulário de abastecimento -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                <div>
+                    <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Data</label>
+                    <input type="date" id="abast_data" style="margin-bottom:0">
+                </div>
+                <div>
+                    <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">KM no abastecimento</label>
+                    <input id="abast_km" oninput="maskKM(this)" placeholder="Ex: 150.000" style="margin-bottom:0">
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+                <div>
+                    <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Litros</label>
+                    <input id="abast_qtd" type="number" step="0.01" placeholder="Ex: 50.5" style="margin-bottom:0">
+                </div>
+                <div>
+                    <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Valor (R$)</label>
+                    <input id="abast_valor" oninput="maskMoney(this)" placeholder="R$ 0,00" style="margin-bottom:0">
+                </div>
+            </div>
+            <button onclick="addAbastecimento()"><i class="fas fa-gas-pump"></i> Registrar Abastecimento</button>
+
+            <!-- Histórico recente -->
+            <div style="margin-top:12px">
+                <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Últimos abastecimentos</div>
+                ${recentesHtml}
+            </div>
+        </div>
+    `;
+
+    // Define data padrão
+    const abastDataEl = document.getElementById('abast_data');
+    if (abastDataEl) abastDataEl.valueAsDate = new Date();
+}
+
+function switchOdoTab(tab) {
+    document.getElementById('odo-panel-km').classList.remove('active');
+    document.getElementById('odo-panel-abast').classList.remove('active');
+    document.getElementById('odo-tab-btn-km').classList.remove('active');
+    document.getElementById('odo-tab-btn-abast').classList.remove('active');
+
+    document.getElementById('odo-panel-' + tab).classList.add('active');
+    document.getElementById('odo-tab-btn-' + tab).classList.add('active');
+}
+
+// ============================================================
+// RENDERIZAR VEÍCULO DETALHES
 // ============================================================
 function renderizarVeiculo() {
     const v = veiculoAtual;
@@ -881,7 +1023,10 @@ function renderizarVeiculo() {
             </div>
         </div>`;
 
-    // FIX 2: Alertas com KM detalhado + barra de progresso visual
+    // Renderiza bloco integrado Odômetro + Abastecimento
+    renderOdoAbastBlock();
+
+    // Alertas próximas trocas
     let alertsHtml = '';
     Object.keys(db.regras).forEach(r => {
         let base     = v.bases[r] || 0;
@@ -889,33 +1034,25 @@ function renderizarVeiculo() {
         let rodados  = v.km - base;
         let falta    = intervalo - rodados;
         let ignorado = v.alertasIgnorados && v.alertasIgnorados.includes(r);
-
         let classe = '';
         if (!ignorado) {
-            if (falta <= 0)      classe = 'vencido';
-            else if (falta <= 500) classe = 'atencao';
+            if (falta <= 0)       classe = 'vencido';
             else if (falta <= 2000) classe = 'atencao';
             else classe = 'ok';
         }
-
-        // Barra de progresso: percentual rodado no ciclo atual
         let pct = Math.min(100, Math.max(0, (rodados / intervalo) * 100));
         let barColor = falta <= 0 ? 'var(--danger)' : (falta <= 2000 ? 'var(--warn)' : 'var(--success)');
-
-        // Texto de status detalhado
         let statusTexto = '';
         let statusDetalhe = '';
         if (ignorado) {
             statusTexto = '— Ignorado';
         } else if (falta <= 0) {
-            let passou = Math.abs(falta);
-            statusTexto = `⛔ VENCIDO — passou ${formatKM(passou)} km`;
+            statusTexto = `⛔ VENCIDO — passou ${formatKM(Math.abs(falta))} km`;
             statusDetalhe = `Rodou ${formatKM(rodados)} km | Intervalo: ${formatKM(intervalo)} km | Base: ${formatKM(base)} km`;
         } else {
             statusTexto = `${formatKM(falta)} km restantes`;
             statusDetalhe = `Rodou ${formatKM(rodados)} km | Intervalo: ${formatKM(intervalo)} km | Próx. troca: ~${formatKM(base + intervalo)} km`;
         }
-
         alertsHtml += `
             <div class="status-mini ${classe} ${ignorado ? 'ignorado' : ''}" style="flex-direction:column; align-items:stretch; gap:6px; cursor:default">
                 <div style="display:flex; justify-content:space-between; align-items:center">
@@ -953,7 +1090,7 @@ function renderizarVeiculo() {
         </div>`).join('');
     document.getElementById('alertas_lista').innerHTML = alertasHtml || '<div style="text-align:center;padding:10px;color:var(--text-secondary)">Nenhum alerta</div>';
 
-    // FIX 4: Histórico com botão de EDITAR
+    // Histórico de serviços
     let sorted = [...v.servicos].map((s,i) => ({...s, _origIdx: i})).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
     let histHtml = sorted.map(s => `
         <div class="servico-item">
@@ -993,7 +1130,112 @@ function renderizarVeiculo() {
     document.getElementById('servico_forn').innerHTML = db.oficinas.map(f => `<option>${f}</option>`).join('');
     updateTipoSelect();
     document.getElementById('servico_data').valueAsDate = new Date();
-    document.getElementById('ultima_data').innerHTML = v.ultimaAtualizacao ? `Última atualização: ${v.ultimaAtualizacao}` : '';
+}
+
+// ============================================================
+// ABASTECIMENTO — salva EXCLUSIVAMENTE no veículo atual
+// Atualiza o odômetro automaticamente se KM for maior
+// ============================================================
+function addAbastecimento() {
+    // Garante que estamos operando no veículo correto via ID
+    const vid = veiculoAtual ? veiculoAtual.id : null;
+    if (!vid) return alert('Nenhum veículo selecionado!');
+    const v = db.veiculos.find(x => x.id === vid);
+    if (!v) return alert('Veículo não encontrado!');
+
+    const data  = document.getElementById('abast_data').value;
+    const km    = parseKM(document.getElementById('abast_km').value);
+    const qtd   = parseFloat(document.getElementById('abast_qtd').value);
+    const valor = parseVal(document.getElementById('abast_valor').value);
+
+    if (!data)          return alert('Informe a data!');
+    if (!km || km <= 0) return alert('Informe o KM válido!');
+    if (!qtd || qtd <= 0) return alert('Informe a quantidade válida!');
+    if (!valor || valor <= 0) return alert('Informe o valor válido!');
+
+    if (!v.abastecimentos) v.abastecimentos = [];
+
+    // Verifica se KM é menor que algum já registrado (avisa mas permite)
+    const kmMaxRegistrado = v.abastecimentos.reduce((max, a) => Math.max(max, a.km || 0), 0);
+    if (km < kmMaxRegistrado) {
+        if (!confirm(`O KM informado (${formatKM(km)}) é menor que um abastecimento já registrado (${formatKM(kmMaxRegistrado)}). Deseja continuar?`)) return;
+    }
+
+    v.abastecimentos.push({ data, km, qtd, valor });
+
+    // ATUALIZA ODÔMETRO automaticamente se o KM for maior que o atual
+    if (km > v.km) {
+        v.km = km;
+        v.ultimaAtualizacao = data;
+    }
+
+    // veiculoAtual aponta para o mesmo objeto, mas reconfirma
+    veiculoAtual = v;
+
+    salvar();
+
+    // Limpa campos
+    document.getElementById('abast_km').value    = '';
+    document.getElementById('abast_qtd').value   = '';
+    document.getElementById('abast_valor').value = '';
+    document.getElementById('abast_data').valueAsDate = new Date();
+
+    // Re-renderiza a tela inteira do veículo para atualizar KM e médias
+    renderizarVeiculo();
+}
+
+function excluirAbastecimento(idx) {
+    const vid = veiculoAtual ? veiculoAtual.id : null;
+    if (vid === null) return;
+    const v = db.veiculos.find(x => x.id === vid);
+    if (!v) return;
+    if (!confirm('Excluir este abastecimento?')) return;
+    v.abastecimentos.splice(idx, 1);
+    veiculoAtual = v;
+    salvar();
+    renderizarVeiculo();
+}
+
+// ============================================================
+// CALCULAR MÉDIA DE CONSUMO — usa APENAS os abastecimentos
+// do veículo passado como parâmetro (não usa veiculoAtual)
+// ============================================================
+function calcularMediaConsumo(v) {
+    const abast = v.abastecimentos || [];
+    if (abast.length < 2) return { media: 0, total: 0 };
+    const sorted = [...abast].sort((a, b) => (a.km || 0) - (b.km || 0));
+    let totalKm = 0, totalLitros = 0;
+    for (let i = 1; i < sorted.length; i++) {
+        const kmRod = sorted[i].km - sorted[i-1].km;
+        if (kmRod > 0) {
+            totalKm += kmRod;
+            totalLitros += sorted[i].qtd;
+        }
+    }
+    return {
+        media: totalLitros > 0 ? totalKm / totalLitros : 0,
+        total: totalLitros
+    };
+}
+
+// ============================================================
+// KM MANUAL
+// ============================================================
+function atualizarKM() {
+    const vid = veiculoAtual ? veiculoAtual.id : null;
+    if (!vid) return;
+    const v = db.veiculos.find(x => x.id === vid);
+    let km = parseKM(document.getElementById('det_km').value);
+    if (!km || km <= 0) return alert('Digite um KM válido!');
+    if (km < v.km) {
+        if (!confirm(`O KM informado (${formatKM(km)}) é menor que o atual (${formatKM(v.km)}). Deseja continuar?`)) return;
+    }
+    v.km = km;
+    v.ultimaAtualizacao = new Date().toISOString().split('T')[0];
+    veiculoAtual = v;
+    salvar();
+    document.getElementById('det_km').value = '';
+    alert('✅ KM atualizado para ' + formatKM(km) + ' km!');
 }
 
 function updateTipoSelect() {
@@ -1028,25 +1270,11 @@ function excluirVeiculo() {
     }
 }
 
-function atualizarKM() {
-    let km = parseKM(document.getElementById('det_km').value);
-    if (!km || km <= 0) return alert('Digite um KM válido!');
-    if (km < veiculoAtual.km) {
-        if (!confirm(`O KM informado (${formatKM(km)}) é menor que o atual (${formatKM(veiculoAtual.km)}). Deseja continuar?`)) return;
-    }
-    veiculoAtual.km = km;
-    veiculoAtual.ultimaAtualizacao = new Date().toISOString().split('T')[0];
-    salvar();
-    document.getElementById('det_km').value = '';
-    alert('✅ KM atualizado para ' + formatKM(km) + ' km!');
-}
-
-// ============================================================
-// FIX 1: addServico — alerta some corretamente para CHNET Estoque
-// O alerta some quando o TIPO DO SERVIÇO faz match com uma REGRA (tipoMatchRegra)
-// independente se o fornecedor é Posto Central ou CHNET Estoque
-// ============================================================
 function addServico() {
+    const vid = veiculoAtual ? veiculoAtual.id : null;
+    if (!vid) return;
+    const v = db.veiculos.find(x => x.id === vid);
+
     let forn  = document.getElementById('servico_forn').value;
     let tipo  = document.getElementById('servico_tipo').value;
     let valor = parseVal(document.getElementById('servico_val').value);
@@ -1070,23 +1298,19 @@ function addServico() {
 
     const processar = (img) => {
         let servico = { tipo, forn, val: valor, km, data, obs, img };
-        if (servico.km > veiculoAtual.km) veiculoAtual.km = servico.km;
-
-        // FIX 1: Verifica se o tipo do serviço faz match com qualquer regra existente
-        // e atualiza a base e remove o alerta ignorado — independente do fornecedor
+        if (servico.km > v.km) v.km = servico.km;
         Object.keys(db.regras).forEach(regra => {
             if (tipoMatchRegra(servico.tipo, regra)) {
-                veiculoAtual.bases[regra] = servico.km;
-                // Remove da lista de ignorados (serviço foi feito, alerta some)
-                if (veiculoAtual.alertasIgnorados) {
-                    let idx = veiculoAtual.alertasIgnorados.indexOf(regra);
-                    if (idx > -1) veiculoAtual.alertasIgnorados.splice(idx, 1);
+                v.bases[regra] = servico.km;
+                if (v.alertasIgnorados) {
+                    let idx = v.alertasIgnorados.indexOf(regra);
+                    if (idx > -1) v.alertasIgnorados.splice(idx, 1);
                 }
             }
         });
-
-        veiculoAtual.servicos.push(servico);
-        veiculoAtual.ultimaAtualizacao = data;
+        v.servicos.push(servico);
+        v.ultimaAtualizacao = data;
+        veiculoAtual = v;
         salvar();
         document.getElementById('servico_val').value  = '';
         document.getElementById('servico_km').value   = '';
@@ -1107,33 +1331,31 @@ function addServico() {
 
 function excluirServico(idx) {
     if (!confirm('Excluir este serviço?')) return;
-    let servico = veiculoAtual.servicos[idx];
+    const v = db.veiculos.find(x => x.id === veiculoAtual.id);
+    let servico = v.servicos[idx];
     if (servico.forn === 'CHNET Estoque') {
         let peca = db.estoque.find(e => e.nome === servico.tipo);
         if (peca) peca.qtd++;
     }
-    veiculoAtual.servicos.splice(idx, 1);
+    v.servicos.splice(idx, 1);
+    veiculoAtual = v;
     salvar();
 }
 
 // ============================================================
-// FIX 4: EDITAR SERVIÇO
+// EDITAR SERVIÇO
 // ============================================================
 function abrirModalEditar(idx) {
     let s = veiculoAtual.servicos[idx];
     _editandoIdx = idx;
-
-    // Preenche select de fornecedores
     document.getElementById('edit_forn').innerHTML = db.oficinas.map(f =>
         `<option ${f === s.forn ? 'selected' : ''}>${f}</option>`
     ).join('');
-
     document.getElementById('edit_tipo').value = s.tipo || '';
     document.getElementById('edit_val').value  = s.val ? 'R$ ' + s.val.toFixed(2).replace('.', ',') : '';
     document.getElementById('edit_km').value   = s.km ? formatKM(s.km) : '';
     document.getElementById('edit_data').value = s.data || '';
     document.getElementById('edit_obs').value  = s.obs || '';
-
     document.getElementById('modal-edit-servico').classList.add('active');
 }
 
@@ -1144,7 +1366,8 @@ function fecharModalEditar() {
 
 function salvarEdicaoServico() {
     if (_editandoIdx === null) return;
-    let s = veiculoAtual.servicos[_editandoIdx];
+    const v = db.veiculos.find(x => x.id === veiculoAtual.id);
+    let s = v.servicos[_editandoIdx];
 
     let novoForn = document.getElementById('edit_forn').value;
     let novoTipo = document.getElementById('edit_tipo').value.trim();
@@ -1157,12 +1380,10 @@ function salvarEdicaoServico() {
     if (!novoKm)   return alert('Informe o KM!');
     if (!novaData) return alert('Informe a data!');
 
-    // Se mudou de CHNET para outro, devolve ao estoque
     if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') {
         let peca = db.estoque.find(e => e.nome === s.tipo);
         if (peca) peca.qtd++;
     }
-    // Se mudou para CHNET, desconta do estoque
     if (s.forn !== 'CHNET Estoque' && novoForn === 'CHNET Estoque') {
         let peca = db.estoque.find(e => e.nome === novoTipo);
         if (!peca)         return alert('Peça não encontrada no estoque!');
@@ -1177,24 +1398,19 @@ function salvarEdicaoServico() {
     s.data = novaData;
     s.obs  = novaObs;
 
-    // Reprocessa bases das regras com todos os serviços
-    recalcularBases(veiculoAtual);
-
+    recalcularBases(v);
+    veiculoAtual = v;
     salvar();
     fecharModalEditar();
     alert('✅ Serviço atualizado!');
 }
 
-// Recalcula bases de todas as regras para um veículo com base no histórico
 function recalcularBases(v) {
     v.bases = {};
-    // Ordena por KM crescente e atualiza bases
     let sorted = [...v.servicos].sort((a, b) => (a.km || 0) - (b.km || 0));
     sorted.forEach(s => {
         Object.keys(db.regras).forEach(regra => {
-            if (tipoMatchRegra(s.tipo, regra)) {
-                v.bases[regra] = s.km;
-            }
+            if (tipoMatchRegra(s.tipo, regra)) v.bases[regra] = s.km;
         });
     });
 }
@@ -1207,11 +1423,8 @@ function ignorarAlerta(veiculoId, regra) {
     if (!veiculo) return;
     if (!veiculo.alertasIgnorados) veiculo.alertasIgnorados = [];
     let idx = veiculo.alertasIgnorados.indexOf(regra);
-    if (idx > -1) {
-        veiculo.alertasIgnorados.splice(idx, 1);
-    } else {
-        veiculo.alertasIgnorados.push(regra);
-    }
+    if (idx > -1) veiculo.alertasIgnorados.splice(idx, 1);
+    else veiculo.alertasIgnorados.push(regra);
     salvar();
 }
 
@@ -1334,13 +1547,11 @@ function addPeca() {
 function editarEstoque(id) {
     let p = db.estoque.find(e => e.id == id);
     if (!p) return;
-
     document.getElementById('edit_estoque_id').value = id;
     document.getElementById('edit_nome_peca').value = p.nome;
     document.getElementById('edit_qtd_peca').value = p.qtd;
     document.getElementById('edit_min_peca').value = p.min;
     document.getElementById('edit_val_peca').value = 'R$ ' + formatMoney(p.val || 0);
-
     document.getElementById('modal-edit-estoque').classList.add('active');
 }
 
@@ -1352,22 +1563,15 @@ function salvarEdicaoEstoque() {
     let id = document.getElementById('edit_estoque_id').value;
     let p = db.estoque.find(e => e.id == id);
     if (!p) return;
-
     let nome = document.getElementById('edit_nome_peca').value.trim();
     let qtd = parseInt(document.getElementById('edit_qtd_peca').value);
     let min = parseInt(document.getElementById('edit_min_peca').value);
     let val = parseVal(document.getElementById('edit_val_peca').value);
-
     if (!nome) return alert('Informe o nome da peça!');
     if (isNaN(qtd) || qtd < 0) return alert('Informe a quantidade válida!');
     if (isNaN(min) || min < 0) return alert('Informe a quantidade mínima válida!');
     if (isNaN(val) || val < 0) return alert('Informe o valor unitário válido!');
-
-    p.nome = nome;
-    p.qtd = qtd;
-    p.min = min;
-    p.val = val;
-
+    p.nome = nome; p.qtd = qtd; p.min = min; p.val = val;
     salvar();
     renderEstoque();
     fecharModalEditarEstoque();
@@ -1454,7 +1658,6 @@ function reRenderRelatorio() { showRelatorio(_relatorioAtual); }
 function showRelatorio(tipo) {
     _relatorioAtual = tipo;
     const container = document.getElementById('relatorio-content');
-
     document.querySelectorAll('.relatorio-btn').forEach(b => b.classList.remove('ativo'));
     const btnEl = document.getElementById('rbtn-' + tipo);
     if (btnEl) btnEl.classList.add('ativo');
@@ -1472,7 +1675,6 @@ function showRelatorio(tipo) {
         });
     }
 
-    // ---- GERAL ----
     if (tipo === 'geral') {
         let todos = [];
         db.veiculos.forEach(v => filtrarServicos(v.servicos).forEach(s => todos.push({ ...s, motorista: v.motorista, placa: v.placa })));
@@ -1511,8 +1713,7 @@ function showRelatorio(tipo) {
                             ${todos.map(s => `<tr>
                                 <td>${s.data}</td>
                                 <td><strong>${s.motorista}</strong> <span style="color:var(--text-secondary)">(${s.placa})</span></td>
-                                <td>${s.tipo}</td>
-                                <td>${s.forn}</td>
+                                <td>${s.tipo}</td><td>${s.forn}</td>
                                 <td>${formatKM(s.km)} km</td>
                                 <td><strong>R$ ${formatMoney(s.val)}</strong></td>
                                 <td style="color:var(--text-secondary); max-width:150px; overflow:hidden; text-overflow:ellipsis">${s.obs || '—'}</td>
@@ -1523,7 +1724,6 @@ function showRelatorio(tipo) {
                 </div>
             </div>`;
 
-    // ---- POR VEÍCULO ----
     } else if (tipo === 'veiculos') {
         const renderDetalhesVisiveis = (v) => {
             const sf = filtrarServicos(v.servicos).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
@@ -1533,7 +1733,6 @@ function showRelatorio(tipo) {
                 <tbody>${sf.map(s => `<tr><td style="padding:4px">${s.data||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${s.forn||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td><td style="padding:4px">${s.obs||'-'}</td></tr>`).join('')}</tbody>
             </table></div>`;
         };
-
         container.innerHTML = `<div class="card">
             <h3>Gastos por Veículo</h3>
             <div style="overflow-x:auto"><table>
@@ -1552,15 +1751,12 @@ function showRelatorio(tipo) {
                             <td colspan="7" style="border:none;padding:0;">${renderDetalhesVisiveis(v)}</td>
                         </tr>`;
                     }).join('')}
-                    ${!db.veiculos.length ? '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum veículo</td></tr>' : ''}
                 </tbody>
             </table></div>
         </div>`;
 
-    // ---- POR MECÂNICA ----
     } else if (tipo === 'mecanicas') {
-        let porMec = {};
-        let detalheMec = {};
+        let porMec = {}, detalheMec = {};
         db.veiculos.forEach(v => filtrarServicos(v.servicos).forEach(s => {
             let forn = (s.forn || 'Sem mecânica').trim() || 'Sem mecânica';
             if (!porMec[forn]) porMec[forn] = { total: 0, qtd: 0 };
@@ -1569,7 +1765,6 @@ function showRelatorio(tipo) {
             if (!detalheMec[forn]) detalheMec[forn] = [];
             detalheMec[forn].push({ ...s, motorista: v.motorista, placa: v.placa });
         }));
-
         let entries = Object.entries(porMec).sort((a,b) => b[1].total - a[1].total);
         const sanitizeId = (str) => String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
         container.innerHTML = `<div class="card">
@@ -1581,32 +1776,19 @@ function showRelatorio(tipo) {
                         let id = sanitizeId(n);
                         let detalhes = (detalheMec[n]||[]).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
                         let detalhesHTML = detalhes.length ? `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="padding:6px;text-align:left">Data</th><th style="padding:6px;text-align:left">Motorista</th><th style="padding:6px;text-align:left">Placa</th><th style="padding:6px;text-align:left">Tipo</th><th style="padding:6px;text-align:left">KM</th><th style="padding:6px;text-align:left">Valor</th></tr></thead><tbody>${detalhes.map(s=>`<tr><td style="padding:4px">${s.data||'-'}</td><td style="padding:4px">${s.motorista||'-'}</td><td style="padding:4px">${s.placa||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td></tr>`).join('')}</tbody></table></div>` : '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço no período.</div>';
-                        return `<tr class="mecanica-row" onclick="toggleRelatorioMecanicaDetalhes('${id}')" style="cursor:pointer;"><td style="padding:6px">▸</td><td><strong>${n}</strong></td><td>${v.qtd}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(v.total)}</strong></td><td>R$ ${formatMoney(v.total/v.qtd)}</td></tr><tr id="detalhes-mecanica-${id}" class="hidden"><td colspan="5" style="border:none;padding:0;">${detalhesHTML}</td></tr>`;
+                        return `<tr onclick="toggleRelatorioMecanicaDetalhes('${id}')" style="cursor:pointer;"><td style="padding:6px">▸</td><td><strong>${n}</strong></td><td>${v.qtd}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(v.total)}</strong></td><td>R$ ${formatMoney(v.total/v.qtd)}</td></tr><tr id="detalhes-mecanica-${id}" class="hidden"><td colspan="5" style="border:none;padding:0;">${detalhesHTML}</td></tr>`;
                     }).join('')}
-                    ${!entries.length ? '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>' : ''}
                 </tbody>
             </table></div>
         </div>`;
 
-    // ---- FIX 3: PNEUS — Relatório completo dianteiro + traseiro por motorista ----
     } else if (tipo === 'pneus') {
-
         function diffDays(d1, d2) {
             return Math.max(0, Math.round((new Date(d2+'T00:00:00') - new Date(d1+'T00:00:00')) / 86400000));
         }
-
-        function ehPneuDianteiro(tipo) {
-            let t = (tipo||'').toLowerCase();
-            return t.includes('pneu') && (t.includes('diant') || t.includes('front'));
-        }
-        function ehPneuTraseiro(tipo) {
-            let t = (tipo||'').toLowerCase();
-            return t.includes('pneu') && (t.includes('tras') || t.includes('rear'));
-        }
-        function ehPneu(tipo) {
-            return (tipo||'').toLowerCase().includes('pneu');
-        }
-
+        function ehPneuDianteiro(tipo) { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('diant')||t.includes('front')); }
+        function ehPneuTraseiro(tipo)  { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('tras')||t.includes('rear')); }
+        function ehPneu(tipo) { return (tipo||'').toLowerCase().includes('pneu'); }
         function calcCiclos(eventos, kmAtual, hoje) {
             if (!eventos.length) return null;
             let ciclos = [];
@@ -1622,26 +1804,15 @@ function showRelatorio(tipo) {
             let mediaCiclo = ciclos.length ? Math.round(ciclos.reduce((s,c)=>s+c.km,0)/ciclos.length) : 0;
             return { ciclos, kmAtualCiclo: Math.max(0,kmAtualCiclo), diasAtual, mediaCiclo, ultimo };
         }
-
         let hoje = new Date().toISOString().split('T')[0];
-
-        // Coleta todos os eventos de pneu por motorista, separados por tipo
         let dadosPneu = db.veiculos.map(v => {
             let servicosPneu = filtrarServicos(v.servicos).filter(s => ehPneu(s.tipo));
             let dianteiros = servicosPneu.filter(s => ehPneuDianteiro(s.tipo) || (!ehPneuTraseiro(s.tipo) && !ehPneuDianteiro(s.tipo))).filter(s => s.data && (s.km||s.km===0));
             let traseiros  = servicosPneu.filter(s => ehPneuTraseiro(s.tipo)).filter(s => s.data && (s.km||s.km===0));
-
-            // Ordena por km
             dianteiros = dianteiros.sort((a,b)=>(a.km||0)-(b.km||0));
             traseiros  = traseiros.sort((a,b)=>(a.km||0)-(b.km||0));
-
-            let calcD = calcCiclos(dianteiros, v.km, hoje);
-            let calcT = calcCiclos(traseiros,  v.km, hoje);
-
-            return { v, dianteiros, traseiros, calcD, calcT };
+            return { v, dianteiros, traseiros, calcD: calcCiclos(dianteiros, v.km, hoje), calcT: calcCiclos(traseiros, v.km, hoje) };
         });
-
-        // Totais globais para summary
         let totalTrocasDiant = dadosPneu.reduce((s,d) => s + d.dianteiros.length, 0);
         let totalTrocasTras  = dadosPneu.reduce((s,d) => s + d.traseiros.length, 0);
         let mediaKmDiant = 0, mediaKmTras = 0, countD = 0, countT = 0;
@@ -1657,30 +1828,23 @@ function showRelatorio(tipo) {
             let html = '';
             if (calc.ciclos.length > 0) {
                 html += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
-                    <thead>
-                        <tr style="background:rgba(255,255,255,0.04)">
-                            <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Ciclo</th>
-                            <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Data Início</th>
-                            <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Data Fim</th>
-                            <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM Rodados</th>
-                            <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">Dias</th>
-                            <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM/Dia</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${calc.ciclos.map(c => `
-                        <tr>
-                            <td style="padding:5px 8px">#${c.ciclo}</td>
-                            <td style="padding:5px 8px">${c.dataIni}</td>
-                            <td style="padding:5px 8px">${c.dataFim}</td>
-                            <td style="padding:5px 8px;text-align:right"><strong>${formatKM(c.km)}</strong></td>
-                            <td style="padding:5px 8px;text-align:right">${c.dias}d</td>
-                            <td style="padding:5px 8px;text-align:right">${c.kmDia} km/d</td>
-                        </tr>`).join('')}
-                    </tbody>
+                    <thead><tr style="background:rgba(255,255,255,0.04)">
+                        <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Ciclo</th>
+                        <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Início</th>
+                        <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Fim</th>
+                        <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM Rodados</th>
+                        <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">Dias</th>
+                        <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM/Dia</th>
+                    </tr></thead>
+                    <tbody>${calc.ciclos.map(c => `<tr>
+                        <td style="padding:5px 8px">#${c.ciclo}</td><td style="padding:5px 8px">${c.dataIni}</td>
+                        <td style="padding:5px 8px">${c.dataFim}</td>
+                        <td style="padding:5px 8px;text-align:right"><strong>${formatKM(c.km)}</strong></td>
+                        <td style="padding:5px 8px;text-align:right">${c.dias}d</td>
+                        <td style="padding:5px 8px;text-align:right">${c.kmDia} km/d</td>
+                    </tr>`).join('')}</tbody>
                 </table>`;
             }
-            // Pneu atual
             let pctAtual = calc.mediaCiclo > 0 ? Math.min(100, Math.round(calc.kmAtualCiclo / calc.mediaCiclo * 100)) : 0;
             let barColor = pctAtual >= 90 ? 'var(--danger)' : pctAtual >= 70 ? 'var(--warn)' : 'var(--success)';
             html += `<div style="display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start;margin-top:4px">
@@ -1692,75 +1856,44 @@ function showRelatorio(tipo) {
                     <div class="alert-km-bar" style="margin-top:6px">
                         <div class="alert-km-bar-fill" style="width:${pctAtual}%;background:${barColor}"></div>
                     </div>
-                    <div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${pctAtual}% do ciclo médio (${formatKM(calc.mediaCiclo)} km)</div>
-                    ` : ''}
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${pctAtual}% do ciclo médio (${formatKM(calc.mediaCiclo)} km)</div>` : ''}
                 </div>
                 ${calc.mediaCiclo > 0 ? `
                 <div style="text-align:right">
                     <div style="font-size:11px;color:var(--text-secondary)">MÉDIA POR CICLO</div>
                     <div style="font-size:18px;font-weight:bold;color:#8b5cf6">${formatKM(calc.mediaCiclo)} km</div>
-                    <div style="font-size:11px;color:var(--text-secondary)">${calc.ciclos.length} ciclo(s) completo(s)</div>
-                </div>` : '<div style="font-size:11px;color:var(--text-secondary)">Apenas 1 troca registrada — sem ciclo completo para calcular média.</div>'}
+                    <div style="font-size:11px;color:var(--text-secondary)">${calc.ciclos.length} ciclo(s)</div>
+                </div>` : '<div style="font-size:11px;color:var(--text-secondary)">Apenas 1 troca — sem ciclo para média.</div>'}
             </div>`;
             return html;
         };
 
         container.innerHTML = `
-            <!-- RESUMO GERAL -->
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:15px">
-                <div class="card stat-box" style="background:rgba(59,130,246,0.08)">
-                    <div class="stat-num" style="color:#3b82f6">${totalTrocasDiant}</div>
-                    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Dianteiro</div>
-                </div>
-                <div class="card stat-box" style="background:rgba(139,92,246,0.08)">
-                    <div class="stat-num" style="color:#8b5cf6">${totalTrocasTras}</div>
-                    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Traseiro</div>
-                </div>
-                <div class="card stat-box" style="background:rgba(16,185,129,0.08)">
-                    <div class="stat-num" style="color:var(--success)">${mediaKmDiant > 0 ? formatKM(mediaKmDiant) : '—'}</div>
-                    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Dianteiro</div>
-                </div>
-                <div class="card stat-box" style="background:rgba(245,158,11,0.08)">
-                    <div class="stat-num" style="color:var(--warn)">${mediaKmTras > 0 ? formatKM(mediaKmTras) : '—'}</div>
-                    <div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Traseiro</div>
-                </div>
+                <div class="card stat-box" style="background:rgba(59,130,246,0.08)"><div class="stat-num" style="color:#3b82f6">${totalTrocasDiant}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Dianteiro</div></div>
+                <div class="card stat-box" style="background:rgba(139,92,246,0.08)"><div class="stat-num" style="color:#8b5cf6">${totalTrocasTras}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Traseiro</div></div>
+                <div class="card stat-box" style="background:rgba(16,185,129,0.08)"><div class="stat-num" style="color:var(--success)">${mediaKmDiant > 0 ? formatKM(mediaKmDiant) : '—'}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Dianteiro</div></div>
+                <div class="card stat-box" style="background:rgba(245,158,11,0.08)"><div class="stat-num" style="color:var(--warn)">${mediaKmTras > 0 ? formatKM(mediaKmTras) : '—'}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Traseiro</div></div>
             </div>
-
-            <!-- TABELA POR MOTORISTA -->
             ${dadosPneu.map(({ v, dianteiros, traseiros, calcD, calcT }) => `
                 <div class="card" style="margin-bottom:15px">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                        <div>
-                            <h3 style="margin:0">${v.motorista}</h3>
-                            <span style="font-size:11px;color:var(--text-secondary)">${v.placa} | ${v.modelo} | <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span></span>
-                        </div>
+                        <div><h3 style="margin:0">${v.motorista}</h3><span style="font-size:11px;color:var(--text-secondary)">${v.placa} | ${v.modelo} | <span class="km-tag">${formatKM(v.km)} km</span></span></div>
                         <div style="display:flex;gap:8px">
-                            <span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6">🔵 ${dianteiros.length} trocas dianteiro</span>
-                            <span class="badge" style="background:rgba(139,92,246,0.15);color:#8b5cf6">🟣 ${traseiros.length} trocas traseiro</span>
+                            <span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6">🔵 ${dianteiros.length} dianteiro</span>
+                            <span class="badge" style="background:rgba(139,92,246,0.15);color:#8b5cf6">🟣 ${traseiros.length} traseiro</span>
                         </div>
                     </div>
-
-                    <!-- DIANTEIRO -->
                     <div style="border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:12px;background:rgba(59,130,246,0.04)">
-                        <div style="font-size:12px;font-weight:bold;color:#3b82f6;margin-bottom:10px;display:flex;align-items:center;gap:6px">
-                            <i class="fas fa-circle" style="font-size:8px"></i> PNEU DIANTEIRO
-                        </div>
+                        <div style="font-size:12px;font-weight:bold;color:#3b82f6;margin-bottom:10px">● PNEU DIANTEIRO</div>
                         ${renderCiclosTable(calcD, 'pneu dianteiro')}
                     </div>
-
-                    <!-- TRASEIRO -->
                     <div style="border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:14px;background:rgba(139,92,246,0.04)">
-                        <div style="font-size:12px;font-weight:bold;color:#8b5cf6;margin-bottom:10px;display:flex;align-items:center;gap:6px">
-                            <i class="fas fa-circle" style="font-size:8px"></i> PNEU TRASEIRO
-                        </div>
+                        <div style="font-size:12px;font-weight:bold;color:#8b5cf6;margin-bottom:10px">● PNEU TRASEIRO</div>
                         ${renderCiclosTable(calcT, 'pneu traseiro')}
                     </div>
-                </div>
-            `).join('')}
-            ${!dadosPneu.length ? '<div class="card" style="text-align:center;padding:30px;color:var(--text-secondary)">Nenhum veículo cadastrado.</div>' : ''}
-        `;
+                </div>`).join('')}`;
 
-    // ---- ESTOQUE ----
     } else if (tipo === 'estoque') {
         let totalEst = db.estoque.reduce((s,e) => s + (e.qtd * e.val), 0);
         container.innerHTML = `<div class="card">
@@ -1792,9 +1925,6 @@ function toggleRelatorioMecanicaDetalhes(id) {
     if (el) el.classList.toggle('hidden');
 }
 
-// ============================================================
-// EXPORTAR CSV
-// ============================================================
 function exportarCSV() {
     let filterYear  = document.getElementById('filter_year')?.value  || '';
     let filterMonth = document.getElementById('filter_month')?.value || '';
@@ -1825,7 +1955,11 @@ function exportarCSV() {
 function renderizarTudo() {
     renderVeiculos();
     renderDashboard();
-    if (veiculoAtual) renderizarVeiculo();
+    if (veiculoAtual) {
+        // Reconfirma referência pelo ID para evitar objeto stale
+        veiculoAtual = db.veiculos.find(v => v.id === veiculoAtual.id) || veiculoAtual;
+        renderizarVeiculo();
+    }
 }
 
 // ============================================================
@@ -1837,11 +1971,13 @@ Object.assign(window, {
     abrirModalEditar, fecharModalEditar, salvarEdicaoServico,
     addAlerta, removerAlerta, addNota, removerNota, addFotos, removerFoto,
     addOficina, removerOficina, addRegra, removerRegra,
-    addCompra, addPeca, editarEstoque, excluirEstoque,
+    addCompra, addPeca, editarEstoque, excluirEstoque, salvarEdicaoEstoque, fecharModalEditarEstoque,
     showRelatorio, reRenderRelatorio, preencherFiltroAnos,
     salvarDados, maskKM, maskMoney, showImage, ignorarAlerta,
     exportarCSV, exportarBackup, importarBackup,
-    toggleRelatorioVeiculoDetalhes, toggleRelatorioMecanicaDetalhes
+    toggleRelatorioVeiculoDetalhes, toggleRelatorioMecanicaDetalhes,
+    addAbastecimento, excluirAbastecimento, switchOdoTab,
+    loginApp, limparLogin, toggleSidebar
 });
 
 // ============================================================
