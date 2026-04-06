@@ -150,6 +150,18 @@
         .odo-panel { display: none; }
         .odo-panel.active { display: block; }
         .media-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(59,130,246,0.15); color: #60a5fa; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: bold; }
+
+        /* ===== MODAL ALARMES POR VEÍCULO ===== */
+        .modal-box-wide { background: #1a1a2a; border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
+        .alarme-edit-row { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+        .alarme-edit-row:hover { background: rgba(255,255,255,0.06); }
+        .alarme-edit-grid { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: end; }
+        .alarme-edit-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+        .alarme-edit-grid input, .alarme-edit-grid select { margin-bottom: 0; font-size: 12px; }
+        .alarme-edit-grid .btn-danger-small { background: rgba(239,68,68,0.2); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; width: auto; font-weight: bold; transition: all 0.2s; }
+        .alarme-edit-grid .btn-danger-small:hover { background: rgba(239,68,68,0.4); transform: none; }
+        .alarme-status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; margin-left: 8px; }
+        .alarme-status-badge.ignorado { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
     </style>
 </head>
 <body>
@@ -215,6 +227,27 @@
     </div>
 </div>
 
+<!-- ===== MODAL EDITAR ALARMES DO VEÍCULO ===== -->
+<div class="modal-overlay" id="modal-alarmes-veiculo">
+    <div class="modal-box-wide">
+        <button class="modal-close" onclick="fecharModalAlarmes()" style="float:right">✕</button>
+        <h3 style="margin:0 0 6px 0"><i class="fas fa-bell"></i> Próximas Trocas — Editar Alarmes</h3>
+        <p style="color:var(--text-secondary);font-size:12px;margin:0 0 18px 0">
+            Edite os alarmes deste veículo. Você pode alterar o nome, o intervalo de km, o km base da última troca, e se o alarme está ignorado.
+        </p>
+        <div id="alarmes-editor-lista"></div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <button onclick="adicionarAlarmeVeiculo()" style="background:rgba(16,185,129,0.15);color:var(--success);border:1px solid rgba(16,185,129,0.3);width:auto;padding:7px 16px;font-size:12px">
+                <i class="fas fa-plus"></i> Adicionar Alarme
+            </button>
+        </div>
+        <div class="modal-footer">
+            <button onclick="fecharModalAlarmes()" style="background:rgba(255,255,255,0.08)">Cancelar</button>
+            <button onclick="salvarAlarmesVeiculo()"><i class="fas fa-save"></i> Salvar Alarmes</button>
+        </div>
+    </div>
+</div>
+
 <!-- TOP BAR -->
 <div class="top-bar">
     <button id="sidebar_toggle_btn" class="top-btn sidebar-toggle" style="background:#f59e0b" onclick="toggleSidebar()" title="Mostrar/ocultar menu"><i class="fas fa-bars"></i></button>
@@ -274,7 +307,8 @@
                 <div style="margin-top:10px" id="lista_oficinas"></div>
             </div>
             <div class="card">
-                <h3>Intervalos de Manutenção (KM)</h3>
+                <h3>Intervalos de Manutenção (KM) — Padrão Global</h3>
+                <p style="font-size:11px;color:var(--text-secondary);margin:0 0 10px 0">Estes são os alarmes padrão. Cada veículo pode ter seus próprios alarmes personalizados editados na tela do veículo.</p>
                 <div class="flex-row">
                     <input id="novo_item" placeholder="Ex: Troca de óleo" style="flex:2; margin-bottom:0">
                     <input id="novo_km_regra" oninput="maskKM(this)" placeholder="KM" style="flex:1; margin-bottom:0">
@@ -365,9 +399,7 @@
             <!-- Coluna esquerda -->
             <div>
                 <!-- ODÔMETRO + ABASTECIMENTO INTEGRADO -->
-                <div class="odo-abast-card" id="odo-abast-block">
-                    <!-- Renderizado por JS -->
-                </div>
+                <div class="odo-abast-card" id="odo-abast-block"></div>
 
                 <div class="card">
                     <h3>🔧 Registrar Manutenção</h3>
@@ -401,7 +433,12 @@
             <!-- Coluna direita -->
             <div>
                 <div class="card">
-                    <h3>⚠️ Próximas Trocas</h3>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                        <h3 style="margin:0">⚠️ Próximas Trocas</h3>
+                        <button onclick="abrirModalAlarmes()" class="btn-small" style="background:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);font-size:11px">
+                            <i class="fas fa-sliders-h"></i> Editar Alarmes
+                        </button>
+                    </div>
                     <div id="status_alertas"></div>
                 </div>
                 <div class="card">
@@ -526,6 +563,17 @@ function tipoMatchRegra(tipo, regra) {
     return palavrasRegra.some(p => tipoN.includes(p));
 }
 
+// ============================================================
+// HELPER: obtem as regras efetivas de um veículo
+// Se o veículo tiver regrasProprias, usa elas; senão usa db.regras
+// ============================================================
+function getRegrasVeiculo(v) {
+    if (v.regrasProprias && Object.keys(v.regrasProprias).length > 0) {
+        return v.regrasProprias;
+    }
+    return db.regras;
+}
+
 const APP_LOGIN_USER = 'chnet';
 const APP_LOGIN_PASS = '147258';
 
@@ -622,6 +670,8 @@ function carregarDados() {
                 if (!v.alertas) v.alertas = [];
                 if (!v.bases) v.bases = {};
                 if (!v.abastecimentos) v.abastecimentos = [];
+                // NOVO: garante regrasProprias
+                if (!v.regrasProprias) v.regrasProprias = {};
             });
             renderizarTudo();
         }
@@ -724,9 +774,10 @@ function renderDashboard() {
     lowStockDiv.innerHTML = '';
 
     db.veiculos.forEach(v => {
-        Object.keys(db.regras).forEach(r => {
+        const regras = getRegrasVeiculo(v);
+        Object.keys(regras).forEach(r => {
             if (v.alertasIgnorados && v.alertasIgnorados.includes(r)) return;
-            let intervalo = db.regras[r];
+            let intervalo = regras[r];
             let rodados = v.km - (v.bases[r] || 0);
             let falta = intervalo - rodados;
             if (falta <= 2000) {
@@ -816,9 +867,10 @@ function renderDashboard() {
 function renderVeiculos() {
     document.getElementById('grid-veiculos').innerHTML = db.veiculos.map(v => {
         let totalGasto = v.servicos.reduce((s, sv) => s + sv.val, 0);
-        let alertasVenc = Object.keys(db.regras).filter(r => {
+        const regras = getRegrasVeiculo(v);
+        let alertasVenc = Object.keys(regras).filter(r => {
             if (v.alertasIgnorados && v.alertasIgnorados.includes(r)) return false;
-            return (db.regras[r] - (v.km - (v.bases[r] || 0))) <= 0;
+            return (regras[r] - (v.km - (v.bases[r] || 0))) <= 0;
         }).length;
         let media = calcularMediaConsumo(v);
         let mediaTexto = media.media > 0 ? `⛽ ${media.media.toFixed(2)} km/l` : '⛽ Sem dados';
@@ -852,7 +904,7 @@ function addVeiculo() {
             id: db.nextId++, motorista, placa, modelo: modelo || 'Saveiro',
             km: 0, servicos: [], bases: {}, alertas: [], fotos: [], notas: [],
             ultimaAtualizacao: new Date().toISOString().split('T')[0],
-            alertasIgnorados: [], abastecimentos: []
+            alertasIgnorados: [], abastecimentos: [], regrasProprias: {}
         });
         salvar();
     }
@@ -866,7 +918,6 @@ function abrirVeiculo(id) {
 
 // ============================================================
 // BLOCO ODÔMETRO + ABASTECIMENTO INTEGRADO
-// Renderiza o painel unificado com abas
 // ============================================================
 function renderOdoAbastBlock() {
     const v = veiculoAtual;
@@ -878,7 +929,6 @@ function renderOdoAbastBlock() {
         ? `<span class="media-badge">⛽ ${media.media.toFixed(2)} km/l</span>`
         : `<span class="media-badge" style="color:var(--text-secondary); background:rgba(255,255,255,0.05)">⛽ Sem média</span>`;
 
-    // Últimas 3 abastecidas em ordem decrescente
     const sorted = [...v.abastecimentos].sort((a, b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
     const recentes = sorted.slice(0, 3);
 
@@ -888,7 +938,6 @@ function renderOdoAbastBlock() {
     } else {
         recentes.forEach((a) => {
             const origIdx = v.abastecimentos.indexOf(a);
-            // Calcula consumo desta abastecida
             const sortedAsc = [...v.abastecimentos].sort((x,y)=>(x.km||0)-(y.km||0));
             const posAsc = sortedAsc.findIndex(x => x === a);
             let consumo = 0;
@@ -921,23 +970,17 @@ function renderOdoAbastBlock() {
             <h3 style="margin:0">📟 Odômetro & Abastecimento</h3>
             ${mediaTexto}
         </div>
-
         <div class="odo-tabs">
             <button class="odo-tab-btn active" id="odo-tab-btn-km" onclick="switchOdoTab('km')">📟 KM Manual</button>
             <button class="odo-tab-btn" id="odo-tab-btn-abast" onclick="switchOdoTab('abast')">⛽ Abastecimento</button>
         </div>
-
-        <!-- PAINEL KM MANUAL -->
         <div class="odo-panel active" id="odo-panel-km">
             <div style="font-size:22px;font-weight:bold;color:var(--accent);margin-bottom:8px">${formatKM(v.km)} km</div>
             <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Última atualização: ${v.ultimaAtualizacao || 'Nunca'}</div>
             <input id="det_km" oninput="maskKM(this)" placeholder="Novo KM (ex: 150.000)" style="margin-bottom:8px">
             <button onclick="atualizarKM()"><i class="fas fa-save"></i> Salvar KM</button>
         </div>
-
-        <!-- PAINEL ABASTECIMENTO -->
         <div class="odo-panel" id="odo-panel-abast">
-            <!-- Estatísticas rápidas -->
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
                 <div style="background:rgba(59,130,246,0.08);border-radius:10px;padding:8px;text-align:center">
                     <div style="font-size:15px;font-weight:bold;color:#60a5fa">${media.media > 0 ? media.media.toFixed(2) : '—'}</div>
@@ -952,8 +995,6 @@ function renderOdoAbastBlock() {
                     <div style="font-size:10px;color:var(--text-secondary)">Total gasto</div>
                 </div>
             </div>
-
-            <!-- Formulário de abastecimento -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
                 <div>
                     <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Data</label>
@@ -975,8 +1016,6 @@ function renderOdoAbastBlock() {
                 </div>
             </div>
             <button onclick="addAbastecimento()"><i class="fas fa-gas-pump"></i> Registrar Abastecimento</button>
-
-            <!-- Histórico recente -->
             <div style="margin-top:12px">
                 <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Últimos abastecimentos</div>
                 ${recentesHtml}
@@ -984,7 +1023,6 @@ function renderOdoAbastBlock() {
         </div>
     `;
 
-    // Define data padrão
     const abastDataEl = document.getElementById('abast_data');
     if (abastDataEl) abastDataEl.valueAsDate = new Date();
 }
@@ -994,7 +1032,6 @@ function switchOdoTab(tab) {
     document.getElementById('odo-panel-abast').classList.remove('active');
     document.getElementById('odo-tab-btn-km').classList.remove('active');
     document.getElementById('odo-tab-btn-abast').classList.remove('active');
-
     document.getElementById('odo-panel-' + tab).classList.add('active');
     document.getElementById('odo-tab-btn-' + tab).classList.add('active');
 }
@@ -1023,22 +1060,22 @@ function renderizarVeiculo() {
             </div>
         </div>`;
 
-    // Renderiza bloco integrado Odômetro + Abastecimento
     renderOdoAbastBlock();
 
-    // Alertas próximas trocas
+    // Próximas Trocas — usa regras do veículo
+    const regras = getRegrasVeiculo(v);
     let alertsHtml = '';
-    Object.keys(db.regras).forEach(r => {
-        let base     = v.bases[r] || 0;
-        let intervalo = db.regras[r];
-        let rodados  = v.km - base;
-        let falta    = intervalo - rodados;
-        let ignorado = v.alertasIgnorados && v.alertasIgnorados.includes(r);
+    Object.keys(regras).forEach(r => {
+        let base      = v.bases[r] || 0;
+        let intervalo = regras[r];
+        let rodados   = v.km - base;
+        let falta     = intervalo - rodados;
+        let ignorado  = v.alertasIgnorados && v.alertasIgnorados.includes(r);
         let classe = '';
         if (!ignorado) {
-            if (falta <= 0)       classe = 'vencido';
+            if (falta <= 0)         classe = 'vencido';
             else if (falta <= 2000) classe = 'atencao';
-            else classe = 'ok';
+            else                    classe = 'ok';
         }
         let pct = Math.min(100, Math.max(0, (rodados / intervalo) * 100));
         let barColor = falta <= 0 ? 'var(--danger)' : (falta <= 2000 ? 'var(--warn)' : 'var(--success)');
@@ -1133,11 +1170,157 @@ function renderizarVeiculo() {
 }
 
 // ============================================================
-// ABASTECIMENTO — salva EXCLUSIVAMENTE no veículo atual
-// Atualiza o odômetro automaticamente se KM for maior
+// ===== MODAL EDITAR ALARMES DO VEÍCULO =====
+// Permite editar nome, intervalo, km base, e ignorado
+// de cada alarme do veículo atual de forma independente.
+// ============================================================
+function abrirModalAlarmes() {
+    const v = veiculoAtual;
+    if (!v) return;
+    if (!v.regrasProprias) v.regrasProprias = {};
+
+    // Se ainda não tem regras próprias, copia das globais com bases atuais
+    const regrasBase = getRegrasVeiculo(v);
+
+    // Monta lista de alarmes editáveis
+    // Estrutura: { nome, intervalo, base, ignorado }
+    const lista = Object.keys(regrasBase).map(nome => ({
+        nome,
+        intervalo: regrasBase[nome],
+        base: v.bases[nome] || 0,
+        ignorado: (v.alertasIgnorados || []).includes(nome)
+    }));
+
+    renderAlarmesEditor(lista);
+    document.getElementById('modal-alarmes-veiculo').classList.add('active');
+}
+
+function renderAlarmesEditor(lista) {
+    const container = document.getElementById('alarmes-editor-lista');
+    container.innerHTML = lista.map((a, i) => `
+        <div class="alarme-edit-row" id="alarme-row-${i}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Alarme #${i+1}</span>
+                <button class="btn-danger-small" onclick="removerAlarmeEditor(${i})"><i class="fas fa-trash"></i> Remover</button>
+            </div>
+            <div class="alarme-edit-grid">
+                <div>
+                    <div class="alarme-edit-label">Nome do alarme</div>
+                    <input id="ae-nome-${i}" value="${a.nome}" placeholder="Ex: Troca de óleo" style="margin-bottom:0">
+                </div>
+                <div>
+                    <div class="alarme-edit-label">Intervalo (km)</div>
+                    <input id="ae-intervalo-${i}" type="number" value="${a.intervalo}" placeholder="10000" style="margin-bottom:0">
+                </div>
+                <div>
+                    <div class="alarme-edit-label">KM da última troca</div>
+                    <input id="ae-base-${i}" type="number" value="${a.base}" placeholder="0" style="margin-bottom:0">
+                </div>
+                <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:4px">
+                    <div class="alarme-edit-label">Ignorar</div>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0">
+                        <input type="checkbox" id="ae-ignorado-${i}" ${a.ignorado ? 'checked' : ''} style="width:auto;margin:0">
+                        <span style="font-size:12px;color:var(--text-secondary)">Sim</span>
+                    </label>
+                </div>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-secondary)">
+                Rodou: <strong style="color:var(--text)">${formatKM(Math.max(0,(veiculoAtual.km||0) - a.base))} km</strong> desde a última troca |
+                Próx. troca: <strong style="color:var(--text)">~${formatKM((a.base||0) + (a.intervalo||0))} km</strong>
+            </div>
+        </div>
+    `).join('');
+
+    // Guarda lista no dataset para recuperar ao salvar
+    container.dataset.count = lista.length;
+    container.dataset.lista = JSON.stringify(lista);
+}
+
+function adicionarAlarmeVeiculo() {
+    const container = document.getElementById('alarmes-editor-lista');
+    const lista = JSON.parse(container.dataset.lista || '[]');
+    // Lê valores atuais dos inputs antes de adicionar
+    const listaAtual = lerListaEditor(lista.length);
+    listaAtual.push({ nome: 'Novo Alarme', intervalo: 10000, base: veiculoAtual.km || 0, ignorado: false });
+    renderAlarmesEditor(listaAtual);
+}
+
+function removerAlarmeEditor(idx) {
+    const container = document.getElementById('alarmes-editor-lista');
+    const count = parseInt(container.dataset.count || 0);
+    const lista = lerListaEditor(count);
+    lista.splice(idx, 1);
+    renderAlarmesEditor(lista);
+}
+
+function lerListaEditor(count) {
+    const lista = [];
+    for (let i = 0; i < count; i++) {
+        const nomeEl     = document.getElementById(`ae-nome-${i}`);
+        const intervaloEl = document.getElementById(`ae-intervalo-${i}`);
+        const baseEl     = document.getElementById(`ae-base-${i}`);
+        const ignoradoEl = document.getElementById(`ae-ignorado-${i}`);
+        if (!nomeEl) continue;
+        lista.push({
+            nome:      nomeEl.value.trim() || `Alarme ${i+1}`,
+            intervalo: parseInt(intervaloEl.value) || 0,
+            base:      parseInt(baseEl.value) || 0,
+            ignorado:  ignoradoEl ? ignoradoEl.checked : false
+        });
+    }
+    return lista;
+}
+
+function salvarAlarmesVeiculo() {
+    const v = veiculoAtual;
+    if (!v) return;
+
+    const container = document.getElementById('alarmes-editor-lista');
+    const count = parseInt(container.dataset.count || 0);
+    const lista = lerListaEditor(count);
+
+    if (lista.length === 0) {
+        alert('Adicione pelo menos um alarme.');
+        return;
+    }
+
+    // Valida nomes duplicados
+    const nomes = lista.map(a => a.nome.toLowerCase());
+    const duplicados = nomes.filter((n, i) => nomes.indexOf(n) !== i);
+    if (duplicados.length > 0) {
+        alert(`Existem nomes duplicados: ${[...new Set(duplicados)].join(', ')}\nCorrija antes de salvar.`);
+        return;
+    }
+
+    // Aplica regrasProprias
+    v.regrasProprias = {};
+    lista.forEach(a => { v.regrasProprias[a.nome] = a.intervalo; });
+
+    // Atualiza bases
+    lista.forEach(a => { v.bases[a.nome] = a.base; });
+
+    // Remove bases de alarmes que foram removidos
+    const nomesNovos = lista.map(a => a.nome);
+    Object.keys(v.bases).forEach(k => {
+        if (!nomesNovos.includes(k)) delete v.bases[k];
+    });
+
+    // Atualiza alertasIgnorados
+    v.alertasIgnorados = lista.filter(a => a.ignorado).map(a => a.nome);
+
+    veiculoAtual = v;
+    salvar();
+    fecharModalAlarmes();
+}
+
+function fecharModalAlarmes() {
+    document.getElementById('modal-alarmes-veiculo').classList.remove('active');
+}
+
+// ============================================================
+// ABASTECIMENTO
 // ============================================================
 function addAbastecimento() {
-    // Garante que estamos operando no veículo correto via ID
     const vid = veiculoAtual ? veiculoAtual.id : null;
     if (!vid) return alert('Nenhum veículo selecionado!');
     const v = db.veiculos.find(x => x.id === vid);
@@ -1148,14 +1331,13 @@ function addAbastecimento() {
     const qtd   = parseFloat(document.getElementById('abast_qtd').value);
     const valor = parseVal(document.getElementById('abast_valor').value);
 
-    if (!data)          return alert('Informe a data!');
-    if (!km || km <= 0) return alert('Informe o KM válido!');
+    if (!data)            return alert('Informe a data!');
+    if (!km || km <= 0)   return alert('Informe o KM válido!');
     if (!qtd || qtd <= 0) return alert('Informe a quantidade válida!');
     if (!valor || valor <= 0) return alert('Informe o valor válido!');
 
     if (!v.abastecimentos) v.abastecimentos = [];
 
-    // Verifica se KM é menor que algum já registrado (avisa mas permite)
     const kmMaxRegistrado = v.abastecimentos.reduce((max, a) => Math.max(max, a.km || 0), 0);
     if (km < kmMaxRegistrado) {
         if (!confirm(`O KM informado (${formatKM(km)}) é menor que um abastecimento já registrado (${formatKM(kmMaxRegistrado)}). Deseja continuar?`)) return;
@@ -1163,24 +1345,19 @@ function addAbastecimento() {
 
     v.abastecimentos.push({ data, km, qtd, valor });
 
-    // ATUALIZA ODÔMETRO automaticamente se o KM for maior que o atual
     if (km > v.km) {
         v.km = km;
         v.ultimaAtualizacao = data;
     }
 
-    // veiculoAtual aponta para o mesmo objeto, mas reconfirma
     veiculoAtual = v;
-
     salvar();
 
-    // Limpa campos
     document.getElementById('abast_km').value    = '';
     document.getElementById('abast_qtd').value   = '';
     document.getElementById('abast_valor').value = '';
     document.getElementById('abast_data').valueAsDate = new Date();
 
-    // Re-renderiza a tela inteira do veículo para atualizar KM e médias
     renderizarVeiculo();
 }
 
@@ -1196,10 +1373,6 @@ function excluirAbastecimento(idx) {
     renderizarVeiculo();
 }
 
-// ============================================================
-// CALCULAR MÉDIA DE CONSUMO — usa APENAS os abastecimentos
-// do veículo passado como parâmetro (não usa veiculoAtual)
-// ============================================================
 function calcularMediaConsumo(v) {
     const abast = v.abastecimentos || [];
     if (abast.length < 2) return { media: 0, total: 0 };
@@ -1246,7 +1419,9 @@ function updateTipoSelect() {
             `<option value="${e.nome}" ${e.qtd <= 0 ? 'disabled' : ''}>${e.nome} (Estoque: ${e.qtd})</option>`
         ).join('') || '<option disabled>Sem itens no estoque</option>';
     } else {
-        tipoSelect.innerHTML = Object.keys(db.regras).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
+        // Usa regras do veículo atual para popular o select
+        const regras = veiculoAtual ? getRegrasVeiculo(veiculoAtual) : db.regras;
+        tipoSelect.innerHTML = Object.keys(regras).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
     }
 }
 
@@ -1270,6 +1445,19 @@ function excluirVeiculo() {
     }
 }
 
+// ============================================================
+// ===== CORRIGIDO: addServico =====
+// BUG ORIGINAL: atualizava v.bases para TODAS as regras que
+// batiam com o tipoMatchRegra, mesmo que fossem de outros alarmes.
+// Quando o tipo vinha do CHNET Estoque (ex: "Filtro Ar Cond. WEGA"),
+// a função tipoMatchRegra fazia match amplo demais.
+//
+// CORREÇÃO:
+// 1. Se for CHNET Estoque: usa o mapeamento exato da peça → regra
+//    (procura regra cujo nome está CONTIDO no nome da peça ou vice-versa)
+// 2. Para outros fornecedores: usa tipoMatchRegra normal, mas só
+//    atualiza a regra EXATA que foi selecionada no select, não todas.
+// ============================================================
 function addServico() {
     const vid = veiculoAtual ? veiculoAtual.id : null;
     if (!vid) return;
@@ -1298,16 +1486,60 @@ function addServico() {
 
     const processar = (img) => {
         let servico = { tipo, forn, val: valor, km, data, obs, img };
+
+        // Atualiza odômetro se necessário
         if (servico.km > v.km) v.km = servico.km;
-        Object.keys(db.regras).forEach(regra => {
-            if (tipoMatchRegra(servico.tipo, regra)) {
-                v.bases[regra] = servico.km;
+
+        // ===== CORREÇÃO PRINCIPAL =====
+        // Determina quais regras atualizar baseado na seleção exata
+        const regras = getRegrasVeiculo(v);
+
+        if (forn === 'CHNET Estoque') {
+            // Para CHNET Estoque: o tipo é o nome EXATO da peça no estoque.
+            // Procura regra cujo nome esteja contido no tipo da peça (match mais restrito).
+            // Só atualiza se encontrar correspondência direta — NÃO atualiza todas.
+            const normalizar = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const tipoN = normalizar(tipo);
+            let regraAtualizada = false;
+            Object.keys(regras).forEach(regra => {
+                const regraN = normalizar(regra);
+                // Match restrito: a regra precisa estar contida no nome da peça
+                if (tipoN.includes(regraN) || regraN.includes(tipoN)) {
+                    v.bases[regra] = servico.km;
+                    // Remove do ignorado se estava ignorado
+                    if (v.alertasIgnorados) {
+                        let idx = v.alertasIgnorados.indexOf(regra);
+                        if (idx > -1) v.alertasIgnorados.splice(idx, 1);
+                    }
+                    regraAtualizada = true;
+                }
+            });
+            // Se não achou regra correspondente, NÃO atualiza nada (correto — é apenas uma peça de estoque)
+        } else {
+            // Para outros fornecedores: o tipo foi selecionado diretamente do select de regras.
+            // Atualiza APENAS a regra que bate com o tipo selecionado.
+            // NÃO faz loop em todas as regras para evitar atualizações indevidas.
+            let regraBatida = null;
+
+            // Primeiro tenta match exato (nome igual ao selecionado)
+            if (regras.hasOwnProperty(tipo)) {
+                regraBatida = tipo;
+            } else {
+                // Fallback: match por tipoMatchRegra — mas pega APENAS a primeira que bater
+                const matched = Object.keys(regras).find(r => tipoMatchRegra(tipo, r));
+                if (matched) regraBatida = matched;
+            }
+
+            if (regraBatida) {
+                v.bases[regraBatida] = servico.km;
                 if (v.alertasIgnorados) {
-                    let idx = v.alertasIgnorados.indexOf(regra);
+                    let idx = v.alertasIgnorados.indexOf(regraBatida);
                     if (idx > -1) v.alertasIgnorados.splice(idx, 1);
                 }
             }
-        });
+        }
+        // ===== FIM DA CORREÇÃO =====
+
         v.servicos.push(servico);
         v.ultimaAtualizacao = data;
         veiculoAtual = v;
@@ -1408,8 +1640,9 @@ function salvarEdicaoServico() {
 function recalcularBases(v) {
     v.bases = {};
     let sorted = [...v.servicos].sort((a, b) => (a.km || 0) - (b.km || 0));
+    const regras = getRegrasVeiculo(v);
     sorted.forEach(s => {
-        Object.keys(db.regras).forEach(regra => {
+        Object.keys(regras).forEach(regra => {
             if (tipoMatchRegra(s.tipo, regra)) v.bases[regra] = s.km;
         });
     });
@@ -1956,7 +2189,6 @@ function renderizarTudo() {
     renderVeiculos();
     renderDashboard();
     if (veiculoAtual) {
-        // Reconfirma referência pelo ID para evitar objeto stale
         veiculoAtual = db.veiculos.find(v => v.id === veiculoAtual.id) || veiculoAtual;
         renderizarVeiculo();
     }
@@ -1977,7 +2209,10 @@ Object.assign(window, {
     exportarCSV, exportarBackup, importarBackup,
     toggleRelatorioVeiculoDetalhes, toggleRelatorioMecanicaDetalhes,
     addAbastecimento, excluirAbastecimento, switchOdoTab,
-    loginApp, limparLogin, toggleSidebar
+    loginApp, limparLogin, toggleSidebar,
+    // Novos — modal alarmes
+    abrirModalAlarmes, fecharModalAlarmes, salvarAlarmesVeiculo,
+    adicionarAlarmeVeiculo, removerAlarmeEditor
 });
 
 // ============================================================
