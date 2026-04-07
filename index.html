@@ -38,6 +38,7 @@
             --warn: #f59e0b;
             --success: #10b981;
             --sidebar-bg: #07070c;
+            --custom-alert: #06b6d4;
         }
         * { box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; font-size: 13px; }
@@ -77,6 +78,11 @@
         .atencao { border-left-color: var(--warn) !important; background: rgba(245,158,11,0.08) !important; }
         .ok { border-left-color: var(--success) !important; background: rgba(16,185,129,0.05) !important; }
         .ignorado { opacity: 0.5; filter: grayscale(0.3); border-left-color: var(--text-secondary) !important; }
+        /* ===== NOVO: Estilo para alertas personalizados no dashboard ===== */
+        .personalizado { border-left-color: var(--custom-alert) !important; background: rgba(6,182,212,0.08) !important; cursor: pointer; }
+        .personalizado:hover { background: rgba(6,182,212,0.14) !important; }
+        .badge-custom { background: rgba(6,182,212,0.2); color: var(--custom-alert); }
+        /* ============================================================== */
         .hidden { display: none; }
         .km-tag { background: var(--accent-gradient); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; display: inline-block; }
         table { width: 100%; border-collapse: collapse; }
@@ -274,6 +280,12 @@
     <div id="tab-dash">
         <h2>⚠️ Alertas de Manutenção</h2>
         <div class="grid" id="dash-alerts"></div>
+
+        <!-- ===== NOVO: Alertas Personalizados no Dashboard ===== -->
+        <h2 style="color: var(--custom-alert);">📌 Alertas Personalizados</h2>
+        <div class="grid" id="dash-custom-alerts"></div>
+        <!-- ===================================================== -->
+
         <h2>⚠️ Estoque Baixo</h2>
         <div class="grid" id="low-stock-alerts"></div>
         <div class="card">
@@ -565,7 +577,6 @@ function tipoMatchRegra(tipo, regra) {
 
 // ============================================================
 // HELPER: obtem as regras efetivas de um veículo
-// Se o veículo tiver regrasProprias, usa elas; senão usa db.regras
 // ============================================================
 function getRegrasVeiculo(v) {
     if (v.regrasProprias && Object.keys(v.regrasProprias).length > 0) {
@@ -670,7 +681,6 @@ function carregarDados() {
                 if (!v.alertas) v.alertas = [];
                 if (!v.bases) v.bases = {};
                 if (!v.abastecimentos) v.abastecimentos = [];
-                // NOVO: garante regrasProprias
                 if (!v.regrasProprias) v.regrasProprias = {};
             });
             renderizarTudo();
@@ -768,11 +778,14 @@ function tab(t) {
 // DASHBOARD
 // ============================================================
 function renderDashboard() {
-    const alertsDiv   = document.getElementById('dash-alerts');
-    const lowStockDiv = document.getElementById('low-stock-alerts');
-    alertsDiv.innerHTML   = '';
-    lowStockDiv.innerHTML = '';
+    const alertsDiv      = document.getElementById('dash-alerts');
+    const customAlertDiv = document.getElementById('dash-custom-alerts');
+    const lowStockDiv    = document.getElementById('low-stock-alerts');
+    alertsDiv.innerHTML      = '';
+    customAlertDiv.innerHTML = '';
+    lowStockDiv.innerHTML    = '';
 
+    // ── Alertas de Manutenção (KM) ──────────────────────────
     db.veiculos.forEach(v => {
         const regras = getRegrasVeiculo(v);
         Object.keys(regras).forEach(r => {
@@ -799,6 +812,66 @@ function renderDashboard() {
         });
     });
 
+    // ── Alertas Personalizados ───────────────────────────────
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    db.veiculos.forEach(v => {
+        const alertas = v.alertas || [];
+        alertas.forEach(a => {
+            let mostrar = false;
+            let detalhe = '';
+            let vencido = false;
+
+            // Verifica por KM
+            if (a.km && v.km) {
+                const faltaKm = a.km - v.km;
+                if (faltaKm <= 2000) {
+                    mostrar = true;
+                    vencido = faltaKm <= 0;
+                    detalhe = vencido
+                        ? `KM ultrapassado em ${formatKM(Math.abs(faltaKm))} km`
+                        : `Faltam ${formatKM(faltaKm)} km (KM alvo: ${formatKM(a.km)})`;
+                }
+            }
+
+            // Verifica por Data
+            if (a.data) {
+                const dataAlerta = new Date(a.data + 'T00:00:00');
+                const diffDias = Math.round((dataAlerta - hoje) / 86400000);
+                if (diffDias <= 7) {
+                    mostrar = true;
+                    vencido = diffDias < 0;
+                    if (vencido) {
+                        detalhe = `Venceu há ${Math.abs(diffDias)} dia(s) (${a.data})`;
+                    } else if (diffDias === 0) {
+                        detalhe = `Vence HOJE (${a.data})`;
+                    } else {
+                        detalhe = `Vence em ${diffDias} dia(s) (${a.data})`;
+                    }
+                }
+            }
+
+            if (mostrar) {
+                customAlertDiv.innerHTML += `
+                    <div class="card status-mini personalizado" onclick="abrirVeiculo(${v.id})" style="cursor:pointer">
+                        <div>
+                            <strong>${v.motorista}</strong>
+                            <span style="color:var(--text-secondary)"> (${v.placa})</span>
+                            <span class="badge badge-custom" style="margin-left:6px">Personalizado</span>
+                            <br><small style="color:var(--custom-alert); font-weight:600">📌 ${a.texto}</small>
+                            <br><small style="color:var(--text-secondary)">${detalhe}</small>
+                        </div>
+                        <i class="fas fa-arrow-right" style="color:var(--custom-alert); opacity:0.7; font-size:14px"></i>
+                    </div>`;
+            }
+        });
+    });
+
+    if (!alertsDiv.innerHTML)      alertsDiv.innerHTML      = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Tudo em dia!</div>';
+    if (!customAlertDiv.innerHTML) customAlertDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--custom-alert)"></i> Nenhum alerta personalizado ativo.</div>';
+
+    // ── Estoque baixo ────────────────────────────────────────
     db.estoque.forEach(e => {
         if (e.qtd <= e.min) {
             lowStockDiv.innerHTML += `
@@ -808,10 +881,9 @@ function renderDashboard() {
                 </div>`;
         }
     });
-
-    if (!alertsDiv.innerHTML)   alertsDiv.innerHTML   = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Tudo em dia!</div>';
     if (!lowStockDiv.innerHTML) lowStockDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Estoque OK!</div>';
 
+    // ── Gráfico ──────────────────────────────────────────────
     const anoEl = document.getElementById('chart_year');
     let anoAtual = new Date().getFullYear();
     let anosDisp = new Set([anoAtual]);
@@ -1062,7 +1134,7 @@ function renderizarVeiculo() {
 
     renderOdoAbastBlock();
 
-    // Próximas Trocas — usa regras do veículo
+    // Próximas Trocas
     const regras = getRegrasVeiculo(v);
     let alertsHtml = '';
     Object.keys(regras).forEach(r => {
@@ -1171,19 +1243,14 @@ function renderizarVeiculo() {
 
 // ============================================================
 // ===== MODAL EDITAR ALARMES DO VEÍCULO =====
-// Permite editar nome, intervalo, km base, e ignorado
-// de cada alarme do veículo atual de forma independente.
 // ============================================================
 function abrirModalAlarmes() {
     const v = veiculoAtual;
     if (!v) return;
     if (!v.regrasProprias) v.regrasProprias = {};
 
-    // Se ainda não tem regras próprias, copia das globais com bases atuais
     const regrasBase = getRegrasVeiculo(v);
 
-    // Monta lista de alarmes editáveis
-    // Estrutura: { nome, intervalo, base, ignorado }
     const lista = Object.keys(regrasBase).map(nome => ({
         nome,
         intervalo: regrasBase[nome],
@@ -1231,7 +1298,6 @@ function renderAlarmesEditor(lista) {
         </div>
     `).join('');
 
-    // Guarda lista no dataset para recuperar ao salvar
     container.dataset.count = lista.length;
     container.dataset.lista = JSON.stringify(lista);
 }
@@ -1239,7 +1305,6 @@ function renderAlarmesEditor(lista) {
 function adicionarAlarmeVeiculo() {
     const container = document.getElementById('alarmes-editor-lista');
     const lista = JSON.parse(container.dataset.lista || '[]');
-    // Lê valores atuais dos inputs antes de adicionar
     const listaAtual = lerListaEditor(lista.length);
     listaAtual.push({ nome: 'Novo Alarme', intervalo: 10000, base: veiculoAtual.km || 0, ignorado: false });
     renderAlarmesEditor(listaAtual);
@@ -1284,7 +1349,6 @@ function salvarAlarmesVeiculo() {
         return;
     }
 
-    // Valida nomes duplicados
     const nomes = lista.map(a => a.nome.toLowerCase());
     const duplicados = nomes.filter((n, i) => nomes.indexOf(n) !== i);
     if (duplicados.length > 0) {
@@ -1292,20 +1356,16 @@ function salvarAlarmesVeiculo() {
         return;
     }
 
-    // Aplica regrasProprias
     v.regrasProprias = {};
     lista.forEach(a => { v.regrasProprias[a.nome] = a.intervalo; });
 
-    // Atualiza bases
     lista.forEach(a => { v.bases[a.nome] = a.base; });
 
-    // Remove bases de alarmes que foram removidos
     const nomesNovos = lista.map(a => a.nome);
     Object.keys(v.bases).forEach(k => {
         if (!nomesNovos.includes(k)) delete v.bases[k];
     });
 
-    // Atualiza alertasIgnorados
     v.alertasIgnorados = lista.filter(a => a.ignorado).map(a => a.nome);
 
     veiculoAtual = v;
@@ -1419,7 +1479,6 @@ function updateTipoSelect() {
             `<option value="${e.nome}" ${e.qtd <= 0 ? 'disabled' : ''}>${e.nome} (Estoque: ${e.qtd})</option>`
         ).join('') || '<option disabled>Sem itens no estoque</option>';
     } else {
-        // Usa regras do veículo atual para popular o select
         const regras = veiculoAtual ? getRegrasVeiculo(veiculoAtual) : db.regras;
         tipoSelect.innerHTML = Object.keys(regras).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
     }
@@ -1446,17 +1505,7 @@ function excluirVeiculo() {
 }
 
 // ============================================================
-// ===== CORRIGIDO: addServico =====
-// BUG ORIGINAL: atualizava v.bases para TODAS as regras que
-// batiam com o tipoMatchRegra, mesmo que fossem de outros alarmes.
-// Quando o tipo vinha do CHNET Estoque (ex: "Filtro Ar Cond. WEGA"),
-// a função tipoMatchRegra fazia match amplo demais.
-//
-// CORREÇÃO:
-// 1. Se for CHNET Estoque: usa o mapeamento exato da peça → regra
-//    (procura regra cujo nome está CONTIDO no nome da peça ou vice-versa)
-// 2. Para outros fornecedores: usa tipoMatchRegra normal, mas só
-//    atualiza a regra EXATA que foi selecionada no select, não todas.
+// addServico
 // ============================================================
 function addServico() {
     const vid = veiculoAtual ? veiculoAtual.id : null;
@@ -1487,45 +1536,29 @@ function addServico() {
     const processar = (img) => {
         let servico = { tipo, forn, val: valor, km, data, obs, img };
 
-        // Atualiza odômetro se necessário
         if (servico.km > v.km) v.km = servico.km;
 
-        // ===== CORREÇÃO PRINCIPAL =====
-        // Determina quais regras atualizar baseado na seleção exata
         const regras = getRegrasVeiculo(v);
 
         if (forn === 'CHNET Estoque') {
-            // Para CHNET Estoque: o tipo é o nome EXATO da peça no estoque.
-            // Procura regra cujo nome esteja contido no tipo da peça (match mais restrito).
-            // Só atualiza se encontrar correspondência direta — NÃO atualiza todas.
             const normalizar = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const tipoN = normalizar(tipo);
-            let regraAtualizada = false;
             Object.keys(regras).forEach(regra => {
                 const regraN = normalizar(regra);
-                // Match restrito: a regra precisa estar contida no nome da peça
                 if (tipoN.includes(regraN) || regraN.includes(tipoN)) {
                     v.bases[regra] = servico.km;
-                    // Remove do ignorado se estava ignorado
                     if (v.alertasIgnorados) {
                         let idx = v.alertasIgnorados.indexOf(regra);
                         if (idx > -1) v.alertasIgnorados.splice(idx, 1);
                     }
-                    regraAtualizada = true;
                 }
             });
-            // Se não achou regra correspondente, NÃO atualiza nada (correto — é apenas uma peça de estoque)
         } else {
-            // Para outros fornecedores: o tipo foi selecionado diretamente do select de regras.
-            // Atualiza APENAS a regra que bate com o tipo selecionado.
-            // NÃO faz loop em todas as regras para evitar atualizações indevidas.
             let regraBatida = null;
 
-            // Primeiro tenta match exato (nome igual ao selecionado)
             if (regras.hasOwnProperty(tipo)) {
                 regraBatida = tipo;
             } else {
-                // Fallback: match por tipoMatchRegra — mas pega APENAS a primeira que bater
                 const matched = Object.keys(regras).find(r => tipoMatchRegra(tipo, r));
                 if (matched) regraBatida = matched;
             }
@@ -1538,7 +1571,6 @@ function addServico() {
                 }
             }
         }
-        // ===== FIM DA CORREÇÃO =====
 
         v.servicos.push(servico);
         v.ultimaAtualizacao = data;
@@ -2210,7 +2242,6 @@ Object.assign(window, {
     toggleRelatorioVeiculoDetalhes, toggleRelatorioMecanicaDetalhes,
     addAbastecimento, excluirAbastecimento, switchOdoTab,
     loginApp, limparLogin, toggleSidebar,
-    // Novos — modal alarmes
     abrirModalAlarmes, fecharModalAlarmes, salvarAlarmesVeiculo,
     adicionarAlarmeVeiculo, removerAlarmeEditor
 });
