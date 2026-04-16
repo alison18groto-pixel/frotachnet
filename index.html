@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frota Pro V47 | Sistema Funcional</title>
+    <title>Frota Pro V48 | Sistema Funcional</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -78,11 +78,9 @@
         .atencao { border-left-color: var(--warn) !important; background: rgba(245,158,11,0.08) !important; }
         .ok { border-left-color: var(--success) !important; background: rgba(16,185,129,0.05) !important; }
         .ignorado { opacity: 0.5; filter: grayscale(0.3); border-left-color: var(--text-secondary) !important; }
-        /* ===== NOVO: Estilo para alertas personalizados no dashboard ===== */
         .personalizado { border-left-color: var(--custom-alert) !important; background: rgba(6,182,212,0.08) !important; cursor: pointer; }
         .personalizado:hover { background: rgba(6,182,212,0.14) !important; }
         .badge-custom { background: rgba(6,182,212,0.2); color: var(--custom-alert); }
-        /* ============================================================== */
         .hidden { display: none; }
         .km-tag { background: var(--accent-gradient); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; display: inline-block; }
         table { width: 100%; border-collapse: collapse; }
@@ -145,8 +143,6 @@
         .login-box input { margin-bottom: 15px; }
         .login-box .login-actions { display: flex; gap: 10px; margin-top: 10px; }
         .login-box .login-error { min-height: 18px; color: #f87171; font-size: 12px; text-align: center; margin-top: 6px; }
-
-        /* ODOMETRO + ABASTECIMENTO integrado */
         .odo-abast-card { background: var(--card); border-radius: 16px; padding: 18px; border: 1px solid var(--border); margin-bottom: 15px; }
         .odo-abast-card:hover { background: var(--card-hover); }
         .odo-tabs { display: flex; gap: 4px; margin-bottom: 14px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 4px; }
@@ -156,8 +152,6 @@
         .odo-panel { display: none; }
         .odo-panel.active { display: block; }
         .media-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(59,130,246,0.15); color: #60a5fa; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: bold; }
-
-        /* ===== MODAL ALARMES POR VEÍCULO ===== */
         .modal-box-wide { background: #1a1a2a; border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
         .alarme-edit-row { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
         .alarme-edit-row:hover { background: rgba(255,255,255,0.06); }
@@ -168,6 +162,34 @@
         .alarme-edit-grid .btn-danger-small:hover { background: rgba(239,68,68,0.4); transform: none; }
         .alarme-status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; margin-left: 8px; }
         .alarme-status-badge.ignorado { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
+
+        /* ===== ESTILOS PARA EDIÇÃO INLINE ===== */
+        .item-editavel { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: background 0.2s; }
+        .item-editavel:hover { background: rgba(255,255,255,0.06); }
+        .item-editavel.editando { background: rgba(245,87,108,0.06); border-color: rgba(245,87,108,0.3); }
+        .item-info { flex: 1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .item-nome { font-weight: 600; font-size: 13px; }
+        .item-detalhe { font-size: 11px; color: var(--text-secondary); }
+        .item-km-badge { background: rgba(139,92,246,0.15); color: #a78bfa; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+        .item-acoes { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+        .btn-edit-inline { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; width: auto; font-weight: bold; transition: all 0.2s; }
+        .btn-edit-inline:hover { background: rgba(59,130,246,0.3); transform: none; }
+        .btn-save-inline { background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; width: auto; font-weight: bold; transition: all 0.2s; }
+        .btn-save-inline:hover { background: rgba(16,185,129,0.3); transform: none; }
+        .btn-cancel-inline { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; width: auto; font-weight: bold; transition: all 0.2s; }
+        .btn-cancel-inline:hover { background: rgba(255,255,255,0.12); transform: none; }
+        .btn-del-inline { background: rgba(239,68,68,0.12); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; width: auto; font-weight: bold; transition: all 0.2s; }
+        .btn-del-inline:hover { background: rgba(239,68,68,0.3); transform: none; }
+        .form-inline { display: flex; gap: 6px; align-items: center; flex: 1; flex-wrap: wrap; }
+        .form-inline input { margin-bottom: 0; padding: 5px 8px; font-size: 12px; }
+        .form-inline .fi-nome { flex: 2; min-width: 120px; }
+        .form-inline .fi-km  { flex: 1; min-width: 90px; }
+        .form-inline .fi-data { flex: 1; min-width: 120px; }
+
+        /* Alerta editavel no veículo */
+        .alerta-item-edit { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+        .alerta-item-edit:hover { background: rgba(255,255,255,0.05); }
+        .alerta-item-edit.editando { background: rgba(6,182,212,0.06); border-color: rgba(6,182,212,0.3); }
     </style>
 </head>
 <body>
@@ -233,7 +255,7 @@
     </div>
 </div>
 
-<!-- ===== MODAL EDITAR ALARMES DO VEÍCULO ===== -->
+<!-- MODAL EDITAR ALARMES DO VEÍCULO -->
 <div class="modal-overlay" id="modal-alarmes-veiculo">
     <div class="modal-box-wide">
         <button class="modal-close" onclick="fecharModalAlarmes()" style="float:right">✕</button>
@@ -276,16 +298,12 @@
 <!-- MAIN CONTENT -->
 <div class="main">
 
-    <!-- ===== DASHBOARD ===== -->
+    <!-- DASHBOARD -->
     <div id="tab-dash">
         <h2>⚠️ Alertas de Manutenção</h2>
         <div class="grid" id="dash-alerts"></div>
-
-        <!-- ===== NOVO: Alertas Personalizados no Dashboard ===== -->
         <h2 style="color: var(--custom-alert);">📌 Alertas Personalizados</h2>
         <div class="grid" id="dash-custom-alerts"></div>
-        <!-- ===================================================== -->
-
         <h2>⚠️ Estoque Baixo</h2>
         <div class="grid" id="low-stock-alerts"></div>
         <div class="card">
@@ -297,7 +315,7 @@
         </div>
     </div>
 
-    <!-- ===== FROTA ===== -->
+    <!-- FROTA -->
     <div id="tab-frota" class="hidden">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
             <h2 style="margin:0">🚗 Veículos</h2>
@@ -306,32 +324,37 @@
         <div class="grid" id="grid-veiculos"></div>
     </div>
 
-    <!-- ===== SERVIÇOS/CONFIG ===== -->
+    <!-- SERVIÇOS/CONFIG -->
     <div id="tab-servicos" class="hidden">
         <h2>🔧 Configurações</h2>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+
+            <!-- OFICINAS -->
             <div class="card">
                 <h3>Oficinas / Fornecedores</h3>
-                <div class="flex-row">
+                <div class="flex-row" style="margin-bottom:12px">
                     <input id="nova_oficina" placeholder="Nome da oficina" style="flex:1; margin-bottom:0">
                     <button onclick="addOficina()" class="btn-small" style="margin-bottom:0">+ Add</button>
                 </div>
-                <div style="margin-top:10px" id="lista_oficinas"></div>
+                <div id="lista_oficinas"></div>
             </div>
+
+            <!-- REGRAS GLOBAIS -->
             <div class="card">
                 <h3>Intervalos de Manutenção (KM) — Padrão Global</h3>
-                <p style="font-size:11px;color:var(--text-secondary);margin:0 0 10px 0">Estes são os alarmes padrão. Cada veículo pode ter seus próprios alarmes personalizados editados na tela do veículo.</p>
-                <div class="flex-row">
+                <p style="font-size:11px;color:var(--text-secondary);margin:0 0 12px 0">Estes são os alarmes padrão. Cada veículo pode ter seus próprios alarmes personalizados editados na tela do veículo.</p>
+                <div class="flex-row" style="margin-bottom:12px">
                     <input id="novo_item" placeholder="Ex: Troca de óleo" style="flex:2; margin-bottom:0">
                     <input id="novo_km_regra" oninput="maskKM(this)" placeholder="KM" style="flex:1; margin-bottom:0">
                     <button onclick="addRegra()" class="btn-small" style="margin-bottom:0">+ Add</button>
                 </div>
-                <div style="margin-top:10px" id="lista_regras"></div>
+                <div id="lista_regras"></div>
             </div>
+
         </div>
     </div>
 
-    <!-- ===== ESTOQUE ===== -->
+    <!-- ESTOQUE -->
     <div id="tab-estoque" class="hidden">
         <h2>📦 Estoque</h2>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
@@ -374,7 +397,7 @@
         </div>
     </div>
 
-    <!-- ===== RELATÓRIOS ===== -->
+    <!-- RELATÓRIOS -->
     <div id="tab-relatorios" class="hidden">
         <h2>📄 Relatórios</h2>
         <div class="filter-bar">
@@ -401,18 +424,15 @@
         <div id="relatorio-content"></div>
     </div>
 
-    <!-- ===== DETALHES VEÍCULO ===== -->
+    <!-- DETALHES VEÍCULO -->
     <div id="tab-detalhes" class="hidden">
         <button onclick="tab('frota')" class="btn-small" style="background:#2d2d3a; margin-bottom:15px">
             <i class="fas fa-arrow-left"></i> Voltar para Frota
         </button>
         <div id="car-header"></div>
         <div style="display:grid; grid-template-columns:1fr 1.8fr; gap:20px">
-            <!-- Coluna esquerda -->
             <div>
-                <!-- ODÔMETRO + ABASTECIMENTO INTEGRADO -->
                 <div class="odo-abast-card" id="odo-abast-block"></div>
-
                 <div class="card">
                     <h3>🔧 Registrar Manutenção</h3>
                     <select id="servico_forn" onchange="updateTipoSelect()"></select>
@@ -425,24 +445,25 @@
                     <input type="file" id="servico_foto" accept="image/*">
                     <button onclick="addServico()" style="margin-top:5px">Salvar Serviço</button>
                 </div>
+
+                <!-- ALERTAS PERSONALIZADOS DO VEÍCULO -->
                 <div class="card">
                     <h3>🔔 Alertas Personalizados</h3>
-                    <div class="flex-row">
+                    <div class="flex-row" style="margin-bottom:10px">
                         <input id="alerta_texto" placeholder="Descrição" style="flex:2; margin-bottom:0">
                         <input id="alerta_km" oninput="maskKM(this)" placeholder="KM" style="flex:1; margin-bottom:0">
                         <input id="alerta_data" type="date" style="flex:1; margin-bottom:0">
                         <button onclick="addAlerta()" class="btn-small" style="margin-bottom:0">Add</button>
                     </div>
-                    <div style="margin-top:10px" id="alertas_lista"></div>
+                    <div id="alertas_lista"></div>
                 </div>
+
                 <div class="card">
                     <h3>📸 Fotos do Veículo</h3>
                     <input type="file" id="fotos_carro" accept="image/*" multiple onchange="addFotos()">
                     <div id="fotos_lista" class="flex-row" style="margin-top:10px; flex-wrap:wrap"></div>
                 </div>
             </div>
-
-            <!-- Coluna direita -->
             <div>
                 <div class="card">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -560,7 +581,7 @@ let _relatorioAtual = 'geral';
 let _editandoIdx = null;
 
 // ============================================================
-// HELPER: verifica se tipo de serviço bate com uma regra
+// HELPERS
 // ============================================================
 function tipoMatchRegra(tipo, regra) {
     const normalizar = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -575,16 +596,14 @@ function tipoMatchRegra(tipo, regra) {
     return palavrasRegra.some(p => tipoN.includes(p));
 }
 
-// ============================================================
-// HELPER: obtem as regras efetivas de um veículo
-// ============================================================
 function getRegrasVeiculo(v) {
-    if (v.regrasProprias && Object.keys(v.regrasProprias).length > 0) {
-        return v.regrasProprias;
-    }
+    if (v.regrasProprias && Object.keys(v.regrasProprias).length > 0) return v.regrasProprias;
     return db.regras;
 }
 
+// ============================================================
+// LOGIN
+// ============================================================
 const APP_LOGIN_USER = 'chnet';
 const APP_LOGIN_PASS = '147258';
 
@@ -615,6 +634,9 @@ function limparLogin() {
     document.getElementById('login_error').textContent = '';
 }
 
+// ============================================================
+// SIDEBAR
+// ============================================================
 function toggleSidebar() {
     const body = document.body;
     const btnTop = document.getElementById('sidebar_toggle_btn');
@@ -661,10 +683,7 @@ function salvarDados() {
                 setTimeout(() => btn.innerHTML = '<i class="fas fa-save"></i> Salvar', 1500);
             }
         })
-        .catch(error => {
-            console.error("Erro ao sincronizar:", error);
-            alert("Erro ao salvar na nuvem!");
-        });
+        .catch(error => { console.error("Erro ao sincronizar:", error); alert("Erro ao salvar na nuvem!"); });
     localStorage.setItem('frota_pro_v47', JSON.stringify(db));
 }
 
@@ -688,29 +707,22 @@ function carregarDados() {
     });
 }
 
-function salvar() {
-    salvarDados();
-    renderizarTudo();
-}
+function salvar() { salvarDados(); renderizarTudo(); }
 
 // ============================================================
-// BACKUP / RESTORE
+// BACKUP
 // ============================================================
 function exportarBackup() {
-    let json = JSON.stringify(db, null, 2);
-    let blob = new Blob([json], { type: 'application/json' });
-    let url = URL.createObjectURL(blob);
+    let blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
     let a = document.createElement('a');
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = `frota_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    URL.revokeObjectURL(url);
 }
 
 function importarBackup() {
     let input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    input.type = 'file'; input.accept = '.json';
     input.onchange = e => {
         let file = e.target.files[0];
         if (!file) return;
@@ -718,16 +730,9 @@ function importarBackup() {
         reader.onload = evt => {
             try {
                 let data = JSON.parse(evt.target.result);
-                if (data && data.veiculos) {
-                    db = data;
-                    salvar();
-                    alert('✅ Backup restaurado com sucesso!');
-                } else {
-                    alert('❌ Arquivo inválido!');
-                }
-            } catch(err) {
-                alert('❌ Erro ao ler arquivo: ' + err.message);
-            }
+                if (data && data.veiculos) { db = data; salvar(); alert('✅ Backup restaurado!'); }
+                else alert('❌ Arquivo inválido!');
+            } catch(err) { alert('❌ Erro: ' + err.message); }
         };
         reader.readAsText(file);
     };
@@ -781,30 +786,21 @@ function renderDashboard() {
     const alertsDiv      = document.getElementById('dash-alerts');
     const customAlertDiv = document.getElementById('dash-custom-alerts');
     const lowStockDiv    = document.getElementById('low-stock-alerts');
-    alertsDiv.innerHTML      = '';
-    customAlertDiv.innerHTML = '';
-    lowStockDiv.innerHTML    = '';
+    alertsDiv.innerHTML = customAlertDiv.innerHTML = lowStockDiv.innerHTML = '';
 
-    // ── Alertas de Manutenção (KM) ──────────────────────────
     db.veiculos.forEach(v => {
         const regras = getRegrasVeiculo(v);
         Object.keys(regras).forEach(r => {
             if (v.alertasIgnorados && v.alertasIgnorados.includes(r)) return;
-            let intervalo = regras[r];
-            let rodados = v.km - (v.bases[r] || 0);
-            let falta = intervalo - rodados;
+            let falta = regras[r] - (v.km - (v.bases[r] || 0));
             if (falta <= 2000) {
                 let vencido = falta <= 0;
-                let classe  = vencido ? 'vencido' : (falta <= 500 ? 'atencao' : '');
-                let status = vencido
-                    ? `Passou ${formatKM(Math.abs(falta))} km além do intervalo`
-                    : `Faltam ${formatKM(falta)} km`;
                 alertsDiv.innerHTML += `
-                    <div class="card status-mini ${classe}" onclick="abrirVeiculo(${v.id})" style="cursor:pointer">
+                    <div class="card status-mini ${vencido ? 'vencido' : (falta <= 500 ? 'atencao' : '')}" onclick="abrirVeiculo(${v.id})">
                         <div>
                             <strong>${v.motorista}</strong> <span style="color:var(--text-secondary)">(${v.placa})</span>
                             <br><small>${r}: <strong>${vencido ? '⛔ VENCIDO' : '⚠️ Em breve'}</strong></small>
-                            <br><small>${status}</small>
+                            <br><small>${vencido ? `Passou ${formatKM(Math.abs(falta))} km` : `Faltam ${formatKM(falta)} km`}</small>
                         </div>
                         <i class="fas fa-eye-slash eye-icon" onclick="event.stopPropagation(); ignorarAlerta(${v.id}, '${r}')" title="Ignorar alerta"></i>
                     </div>`;
@@ -812,57 +808,29 @@ function renderDashboard() {
         });
     });
 
-    // ── Alertas Personalizados ───────────────────────────────
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
     db.veiculos.forEach(v => {
-        const alertas = v.alertas || [];
-        alertas.forEach(a => {
-            let mostrar = false;
-            let detalhe = '';
-            let vencido = false;
-
-            // Verifica por KM
+        (v.alertas || []).forEach(a => {
+            let mostrar = false, detalhe = '', vencido = false;
             if (a.km && v.km) {
                 const faltaKm = a.km - v.km;
-                if (faltaKm <= 2000) {
-                    mostrar = true;
-                    vencido = faltaKm <= 0;
-                    detalhe = vencido
-                        ? `KM ultrapassado em ${formatKM(Math.abs(faltaKm))} km`
-                        : `Faltam ${formatKM(faltaKm)} km (KM alvo: ${formatKM(a.km)})`;
-                }
+                if (faltaKm <= 2000) { mostrar = true; vencido = faltaKm <= 0; detalhe = vencido ? `KM ultrapassado em ${formatKM(Math.abs(faltaKm))} km` : `Faltam ${formatKM(faltaKm)} km (KM alvo: ${formatKM(a.km)})`; }
             }
-
-            // Verifica por Data
             if (a.data) {
                 const dataAlerta = new Date(a.data + 'T00:00:00');
                 const diffDias = Math.round((dataAlerta - hoje) / 86400000);
-                if (diffDias <= 7) {
-                    mostrar = true;
-                    vencido = diffDias < 0;
-                    if (vencido) {
-                        detalhe = `Venceu há ${Math.abs(diffDias)} dia(s) (${a.data})`;
-                    } else if (diffDias === 0) {
-                        detalhe = `Vence HOJE (${a.data})`;
-                    } else {
-                        detalhe = `Vence em ${diffDias} dia(s) (${a.data})`;
-                    }
-                }
+                if (diffDias <= 7) { mostrar = true; vencido = diffDias < 0; detalhe = vencido ? `Venceu há ${Math.abs(diffDias)} dia(s)` : diffDias === 0 ? `Vence HOJE` : `Vence em ${diffDias} dia(s) (${a.data})`; }
             }
-
             if (mostrar) {
                 customAlertDiv.innerHTML += `
-                    <div class="card status-mini personalizado" onclick="abrirVeiculo(${v.id})" style="cursor:pointer">
+                    <div class="card status-mini personalizado" onclick="abrirVeiculo(${v.id})">
                         <div>
-                            <strong>${v.motorista}</strong>
-                            <span style="color:var(--text-secondary)"> (${v.placa})</span>
+                            <strong>${v.motorista}</strong> <span style="color:var(--text-secondary)">(${v.placa})</span>
                             <span class="badge badge-custom" style="margin-left:6px">Personalizado</span>
-                            <br><small style="color:var(--custom-alert); font-weight:600">📌 ${a.texto}</small>
+                            <br><small style="color:var(--custom-alert);font-weight:600">📌 ${a.texto}</small>
                             <br><small style="color:var(--text-secondary)">${detalhe}</small>
                         </div>
-                        <i class="fas fa-arrow-right" style="color:var(--custom-alert); opacity:0.7; font-size:14px"></i>
+                        <i class="fas fa-arrow-right" style="color:var(--custom-alert);opacity:0.7;font-size:14px"></i>
                     </div>`;
             }
         });
@@ -871,65 +839,30 @@ function renderDashboard() {
     if (!alertsDiv.innerHTML)      alertsDiv.innerHTML      = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Tudo em dia!</div>';
     if (!customAlertDiv.innerHTML) customAlertDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--custom-alert)"></i> Nenhum alerta personalizado ativo.</div>';
 
-    // ── Estoque baixo ────────────────────────────────────────
     db.estoque.forEach(e => {
-        if (e.qtd <= e.min) {
-            lowStockDiv.innerHTML += `
-                <div class="card status-mini vencido">
-                    <span><strong>⚠️ ${e.nome}</strong><br><small>Estoque: ${e.qtd} | Mínimo: ${e.min}</small></span>
-                    <span class="badge badge-danger">Repor</span>
-                </div>`;
-        }
+        if (e.qtd <= e.min) lowStockDiv.innerHTML += `<div class="card status-mini vencido"><span><strong>⚠️ ${e.nome}</strong><br><small>Estoque: ${e.qtd} | Mínimo: ${e.min}</small></span><span class="badge badge-danger">Repor</span></div>`;
     });
     if (!lowStockDiv.innerHTML) lowStockDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Estoque OK!</div>';
 
-    // ── Gráfico ──────────────────────────────────────────────
     const anoEl = document.getElementById('chart_year');
     let anoAtual = new Date().getFullYear();
     let anosDisp = new Set([anoAtual]);
-    db.veiculos.forEach(v => v.servicos.forEach(s => { if(s.data) anosDisp.add(new Date(s.data + 'T00:00:00').getFullYear()); }));
+    db.veiculos.forEach(v => v.servicos.forEach(s => { if(s.data) anosDisp.add(new Date(s.data+'T00:00:00').getFullYear()); }));
     let anoSel = parseInt(anoEl.value) || anoAtual;
     if (!anoEl.value || !anosDisp.has(anoSel)) {
         anoEl.innerHTML = [...anosDisp].sort((a,b)=>b-a).map(y => `<option value="${y}" ${y===anoAtual?'selected':''}>${y}</option>`).join('');
         anoSel = anoAtual;
     }
-
     let meses = new Array(12).fill(0);
-    db.veiculos.forEach(v => {
-        v.servicos.forEach(s => {
-            if (s.data) {
-                let d = new Date(s.data + 'T00:00:00');
-                if (d.getFullYear() === anoSel) meses[d.getMonth()] += (s.val || 0);
-            }
-        });
-    });
-
+    db.veiculos.forEach(v => v.servicos.forEach(s => {
+        if (s.data) { let d = new Date(s.data+'T00:00:00'); if (d.getFullYear() === anoSel) meses[d.getMonth()] += (s.val || 0); }
+    }));
     const ctx = document.getElementById('mainChart').getContext('2d');
     if (chart) chart.destroy();
     chart = new Chart(ctx, {
         type: 'bar',
-        data: {
-            labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-            datasets: [{
-                label: `Gastos ${anoSel}`,
-                data: meses,
-                backgroundColor: 'rgba(245,87,108,0.65)',
-                borderColor: '#f5576c',
-                borderWidth: 1,
-                borderRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { labels: { color: '#f1f5f9' } },
-                tooltip: { callbacks: { label: ctx => `R$ ${formatMoney(ctx.raw)}` } }
-            },
-            scales: {
-                y: { ticks: { color: '#94a3b8', callback: v => `R$ ${formatMoney(v)}` }, grid: { color: 'rgba(255,255,255,0.04)' } },
-                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } }
-            }
-        }
+        data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ label: `Gastos ${anoSel}`, data: meses, backgroundColor: 'rgba(245,87,108,0.65)', borderColor: '#f5576c', borderWidth: 1, borderRadius: 6 }] },
+        options: { responsive: true, plugins: { legend: { labels: { color: '#f1f5f9' } }, tooltip: { callbacks: { label: ctx => `R$ ${formatMoney(ctx.raw)}` } } }, scales: { y: { ticks: { color: '#94a3b8', callback: v => `R$ ${formatMoney(v)}` }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.04)' } } } }
     });
 }
 
@@ -946,38 +879,27 @@ function renderVeiculos() {
         }).length;
         let media = calcularMediaConsumo(v);
         let mediaTexto = media.media > 0 ? `⛽ ${media.media.toFixed(2)} km/l` : '⛽ Sem dados';
-        return `
-            <div class="card car-card" onclick="abrirVeiculo(${v.id})">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start">
-                    <div>
-                        <h3 style="margin:0 0 5px">${v.motorista}</h3>
-                        <div style="color:var(--text-secondary)">${v.placa} | ${v.modelo}</div>
-                    </div>
-                    ${alertasVenc > 0 ? `<span class="badge badge-danger">${alertasVenc} vencido${alertasVenc>1?'s':''}</span>` : '<span class="badge badge-success">Em dia</span>'}
-                </div>
-                <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
-                    <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span>
-                    <span class="km-tag" style="background:rgba(59,130,246,0.8)">${mediaTexto}</span>
-                </div>
-                <div style="margin-top:5px">
-                    <span style="font-size:11px; color:var(--text-secondary)">R$ ${formatMoney(totalGasto)} gastos</span>
-                </div>
-                <div style="font-size:10px; color:var(--text-secondary); margin-top:5px">📅 Atualizado: ${v.ultimaAtualizacao || 'Nunca'}</div>
-            </div>`;
+        return `<div class="card car-card" onclick="abrirVeiculo(${v.id})">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div><h3 style="margin:0 0 5px">${v.motorista}</h3><div style="color:var(--text-secondary)">${v.placa} | ${v.modelo}</div></div>
+                ${alertasVenc > 0 ? `<span class="badge badge-danger">${alertasVenc} vencido${alertasVenc>1?'s':''}</span>` : '<span class="badge badge-success">Em dia</span>'}
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+                <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span>
+                <span class="km-tag" style="background:rgba(59,130,246,0.8)">${mediaTexto}</span>
+            </div>
+            <div style="margin-top:5px"><span style="font-size:11px;color:var(--text-secondary)">R$ ${formatMoney(totalGasto)} gastos</span></div>
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:5px">📅 Atualizado: ${v.ultimaAtualizacao || 'Nunca'}</div>
+        </div>`;
     }).join('');
 }
 
 function addVeiculo() {
     let motorista = prompt('Motorista:');
-    let placa     = prompt('Placa:');
-    let modelo    = prompt('Modelo:', 'Saveiro');
+    let placa = prompt('Placa:');
+    let modelo = prompt('Modelo:', 'Saveiro');
     if (motorista && placa) {
-        db.veiculos.push({
-            id: db.nextId++, motorista, placa, modelo: modelo || 'Saveiro',
-            km: 0, servicos: [], bases: {}, alertas: [], fotos: [], notas: [],
-            ultimaAtualizacao: new Date().toISOString().split('T')[0],
-            alertasIgnorados: [], abastecimentos: [], regrasProprias: {}
-        });
+        db.veiculos.push({ id: db.nextId++, motorista, placa, modelo: modelo || 'Saveiro', km: 0, servicos: [], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: new Date().toISOString().split('T')[0], alertasIgnorados: [], abastecimentos: [], regrasProprias: {} });
         salvar();
     }
 }
@@ -989,58 +911,43 @@ function abrirVeiculo(id) {
 }
 
 // ============================================================
-// BLOCO ODÔMETRO + ABASTECIMENTO INTEGRADO
+// ODÔMETRO + ABASTECIMENTO
 // ============================================================
 function renderOdoAbastBlock() {
     const v = veiculoAtual;
     if (!v) return;
     if (!v.abastecimentos) v.abastecimentos = [];
-
     const media = calcularMediaConsumo(v);
-    const mediaTexto = media.media > 0
-        ? `<span class="media-badge">⛽ ${media.media.toFixed(2)} km/l</span>`
-        : `<span class="media-badge" style="color:var(--text-secondary); background:rgba(255,255,255,0.05)">⛽ Sem média</span>`;
-
+    const mediaTexto = media.media > 0 ? `<span class="media-badge">⛽ ${media.media.toFixed(2)} km/l</span>` : `<span class="media-badge" style="color:var(--text-secondary);background:rgba(255,255,255,0.05)">⛽ Sem média</span>`;
     const sorted = [...v.abastecimentos].sort((a, b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
     const recentes = sorted.slice(0, 3);
-
     let recentesHtml = '';
     if (recentes.length === 0) {
         recentesHtml = '<div style="text-align:center;padding:12px;color:var(--text-secondary);font-size:12px">Nenhuma abastecida registrada</div>';
     } else {
         recentes.forEach((a) => {
             const origIdx = v.abastecimentos.indexOf(a);
-            const sortedAsc = [...v.abastecimentos].sort((x,y)=>(x.km||0)-(y.km||0));
+            const sortedAsc = [...v.abastecimentos].sort((x,y) => (x.km||0)-(y.km||0));
             const posAsc = sortedAsc.findIndex(x => x === a);
             let consumo = 0;
-            if (posAsc > 0) {
-                const ant = sortedAsc[posAsc - 1];
-                const kmRod = a.km - ant.km;
-                if (kmRod > 0) consumo = kmRod / a.qtd;
-            }
-            recentesHtml += `
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-                    <div>
-                        <div style="font-size:12px;font-weight:600">📅 ${a.data} — <span style="color:var(--accent)">${formatKM(a.km)} km</span></div>
-                        <div style="font-size:11px;color:var(--text-secondary)">${a.qtd.toFixed(2)}L · R$ ${formatMoney(a.valor)} · ${a.qtd > 0 ? 'R$ ' + formatMoney(a.valor/a.qtd) + '/L' : ''}</div>
-                        ${consumo > 0 ? `<div style="font-size:11px;color:var(--success)">⛽ ${consumo.toFixed(2)} km/l neste abastecimento</div>` : '<div style="font-size:11px;color:var(--text-secondary)">Primeiro registro</div>'}
-                    </div>
-                    <button class="icon-btn" style="color:var(--danger)" onclick="excluirAbastecimento(${origIdx})" title="Excluir"><i class="fas fa-trash"></i></button>
-                </div>`;
+            if (posAsc > 0) { const ant = sortedAsc[posAsc-1]; const kmRod = a.km - ant.km; if (kmRod > 0) consumo = kmRod / a.qtd; }
+            recentesHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                <div>
+                    <div style="font-size:12px;font-weight:600">📅 ${a.data} — <span style="color:var(--accent)">${formatKM(a.km)} km</span></div>
+                    <div style="font-size:11px;color:var(--text-secondary)">${a.qtd.toFixed(2)}L · R$ ${formatMoney(a.valor)} · ${a.qtd > 0 ? 'R$ ' + formatMoney(a.valor/a.qtd) + '/L' : ''}</div>
+                    ${consumo > 0 ? `<div style="font-size:11px;color:var(--success)">⛽ ${consumo.toFixed(2)} km/l</div>` : '<div style="font-size:11px;color:var(--text-secondary)">Primeiro registro</div>'}
+                </div>
+                <button class="icon-btn" style="color:var(--danger)" onclick="excluirAbastecimento(${origIdx})"><i class="fas fa-trash"></i></button>
+            </div>`;
         });
-        if (sorted.length > 3) {
-            recentesHtml += `<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary)">(${sorted.length - 3} abastecimento(s) mais antigo(s) não exibido(s))</div>`;
-        }
+        if (sorted.length > 3) recentesHtml += `<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary)">(${sorted.length-3} mais antigo(s))</div>`;
     }
-
-    const totalLitros = v.abastecimentos.reduce((s,a) => s + (a.qtd||0), 0);
-    const totalGasto  = v.abastecimentos.reduce((s,a) => s + (a.valor||0), 0);
-
+    const totalLitros = v.abastecimentos.reduce((s,a) => s+(a.qtd||0), 0);
+    const totalGasto  = v.abastecimentos.reduce((s,a) => s+(a.valor||0), 0);
     const block = document.getElementById('odo-abast-block');
     block.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <h3 style="margin:0">📟 Odômetro & Abastecimento</h3>
-            ${mediaTexto}
+            <h3 style="margin:0">📟 Odômetro & Abastecimento</h3>${mediaTexto}
         </div>
         <div class="odo-tabs">
             <button class="odo-tab-btn active" id="odo-tab-btn-km" onclick="switchOdoTab('km')">📟 KM Manual</button>
@@ -1054,58 +961,35 @@ function renderOdoAbastBlock() {
         </div>
         <div class="odo-panel" id="odo-panel-abast">
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
-                <div style="background:rgba(59,130,246,0.08);border-radius:10px;padding:8px;text-align:center">
-                    <div style="font-size:15px;font-weight:bold;color:#60a5fa">${media.media > 0 ? media.media.toFixed(2) : '—'}</div>
-                    <div style="font-size:10px;color:var(--text-secondary)">km/l média</div>
-                </div>
-                <div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:8px;text-align:center">
-                    <div style="font-size:15px;font-weight:bold;color:var(--success)">${totalLitros.toFixed(1)}L</div>
-                    <div style="font-size:10px;color:var(--text-secondary)">Total litros</div>
-                </div>
-                <div style="background:rgba(245,87,108,0.08);border-radius:10px;padding:8px;text-align:center">
-                    <div style="font-size:15px;font-weight:bold;color:var(--accent)">R$ ${formatMoney(totalGasto)}</div>
-                    <div style="font-size:10px;color:var(--text-secondary)">Total gasto</div>
-                </div>
+                <div style="background:rgba(59,130,246,0.08);border-radius:10px;padding:8px;text-align:center"><div style="font-size:15px;font-weight:bold;color:#60a5fa">${media.media > 0 ? media.media.toFixed(2) : '—'}</div><div style="font-size:10px;color:var(--text-secondary)">km/l média</div></div>
+                <div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:8px;text-align:center"><div style="font-size:15px;font-weight:bold;color:var(--success)">${totalLitros.toFixed(1)}L</div><div style="font-size:10px;color:var(--text-secondary)">Total litros</div></div>
+                <div style="background:rgba(245,87,108,0.08);border-radius:10px;padding:8px;text-align:center"><div style="font-size:15px;font-weight:bold;color:var(--accent)">R$ ${formatMoney(totalGasto)}</div><div style="font-size:10px;color:var(--text-secondary)">Total gasto</div></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-                <div>
-                    <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Data</label>
-                    <input type="date" id="abast_data" style="margin-bottom:0">
-                </div>
-                <div>
-                    <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">KM no abastecimento</label>
-                    <input id="abast_km" oninput="maskKM(this)" placeholder="Ex: 150.000" style="margin-bottom:0">
-                </div>
+                <div><label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Data</label><input type="date" id="abast_data" style="margin-bottom:0"></div>
+                <div><label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">KM no abastecimento</label><input id="abast_km" oninput="maskKM(this)" placeholder="Ex: 150.000" style="margin-bottom:0"></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-                <div>
-                    <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Litros</label>
-                    <input id="abast_qtd" type="number" step="0.01" placeholder="Ex: 50.5" style="margin-bottom:0">
-                </div>
-                <div>
-                    <label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Valor (R$)</label>
-                    <input id="abast_valor" oninput="maskMoney(this)" placeholder="R$ 0,00" style="margin-bottom:0">
-                </div>
+                <div><label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Litros</label><input id="abast_qtd" type="number" step="0.01" placeholder="Ex: 50.5" style="margin-bottom:0"></div>
+                <div><label style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:3px">Valor (R$)</label><input id="abast_valor" oninput="maskMoney(this)" placeholder="R$ 0,00" style="margin-bottom:0"></div>
             </div>
             <button onclick="addAbastecimento()"><i class="fas fa-gas-pump"></i> Registrar Abastecimento</button>
             <div style="margin-top:12px">
                 <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Últimos abastecimentos</div>
                 ${recentesHtml}
             </div>
-        </div>
-    `;
-
+        </div>`;
     const abastDataEl = document.getElementById('abast_data');
     if (abastDataEl) abastDataEl.valueAsDate = new Date();
 }
 
-function switchOdoTab(tab) {
-    document.getElementById('odo-panel-km').classList.remove('active');
-    document.getElementById('odo-panel-abast').classList.remove('active');
-    document.getElementById('odo-tab-btn-km').classList.remove('active');
-    document.getElementById('odo-tab-btn-abast').classList.remove('active');
-    document.getElementById('odo-panel-' + tab).classList.add('active');
-    document.getElementById('odo-tab-btn-' + tab).classList.add('active');
+function switchOdoTab(t) {
+    ['km','abast'].forEach(k => {
+        document.getElementById('odo-panel-'+k).classList.remove('active');
+        document.getElementById('odo-tab-btn-'+k).classList.remove('active');
+    });
+    document.getElementById('odo-panel-'+t).classList.add('active');
+    document.getElementById('odo-tab-btn-'+t).classList.add('active');
 }
 
 // ============================================================
@@ -1117,12 +1001,12 @@ function renderizarVeiculo() {
 
     document.getElementById('car-header').innerHTML = `
         <div class="card" style="margin-bottom:15px">
-            <div style="display:flex; justify-content:space-between; align-items:center">
+            <div style="display:flex;justify-content:space-between;align-items:center">
                 <div>
                     <h3 style="margin:0">${v.motorista} — ${v.placa} <span style="font-size:12px;color:var(--text-secondary)">${v.modelo}</span></h3>
-                    <div style="margin-top:5px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+                    <div style="margin-top:5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                         <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span>
-                        <span style="font-size:11px; color:var(--text-secondary)">📅 ${v.ultimaAtualizacao || 'Nunca'}</span>
+                        <span style="font-size:11px;color:var(--text-secondary)">📅 ${v.ultimaAtualizacao || 'Nunca'}</span>
                     </div>
                 </div>
                 <div>
@@ -1138,103 +1022,61 @@ function renderizarVeiculo() {
     const regras = getRegrasVeiculo(v);
     let alertsHtml = '';
     Object.keys(regras).forEach(r => {
-        let base      = v.bases[r] || 0;
-        let intervalo = regras[r];
-        let rodados   = v.km - base;
-        let falta     = intervalo - rodados;
-        let ignorado  = v.alertasIgnorados && v.alertasIgnorados.includes(r);
+        let base = v.bases[r] || 0, intervalo = regras[r];
+        let rodados = v.km - base, falta = intervalo - rodados;
+        let ignorado = v.alertasIgnorados && v.alertasIgnorados.includes(r);
         let classe = '';
-        if (!ignorado) {
-            if (falta <= 0)         classe = 'vencido';
-            else if (falta <= 2000) classe = 'atencao';
-            else                    classe = 'ok';
-        }
-        let pct = Math.min(100, Math.max(0, (rodados / intervalo) * 100));
+        if (!ignorado) { if (falta <= 0) classe = 'vencido'; else if (falta <= 2000) classe = 'atencao'; else classe = 'ok'; }
+        let pct = Math.min(100, Math.max(0, (rodados/intervalo)*100));
         let barColor = falta <= 0 ? 'var(--danger)' : (falta <= 2000 ? 'var(--warn)' : 'var(--success)');
-        let statusTexto = '';
-        let statusDetalhe = '';
-        if (ignorado) {
-            statusTexto = '— Ignorado';
-        } else if (falta <= 0) {
-            statusTexto = `⛔ VENCIDO — passou ${formatKM(Math.abs(falta))} km`;
-            statusDetalhe = `Rodou ${formatKM(rodados)} km | Intervalo: ${formatKM(intervalo)} km | Base: ${formatKM(base)} km`;
-        } else {
-            statusTexto = `${formatKM(falta)} km restantes`;
-            statusDetalhe = `Rodou ${formatKM(rodados)} km | Intervalo: ${formatKM(intervalo)} km | Próx. troca: ~${formatKM(base + intervalo)} km`;
-        }
+        let statusTexto = ignorado ? '— Ignorado' : falta <= 0 ? `⛔ VENCIDO — passou ${formatKM(Math.abs(falta))} km` : `${formatKM(falta)} km restantes`;
+        let statusDetalhe = falta <= 0 ? `Rodou ${formatKM(rodados)} km | Intervalo: ${formatKM(intervalo)} km | Base: ${formatKM(base)} km` : `Rodou ${formatKM(rodados)} km | Intervalo: ${formatKM(intervalo)} km | Próx. troca: ~${formatKM(base+intervalo)} km`;
         alertsHtml += `
-            <div class="status-mini ${classe} ${ignorado ? 'ignorado' : ''}" style="flex-direction:column; align-items:stretch; gap:6px; cursor:default">
-                <div style="display:flex; justify-content:space-between; align-items:center">
-                    <span style="font-weight:600; font-size:13px">
-                        ${r}
-                        ${ignorado ? '<span class="badge badge-warn" style="margin-left:5px">Ignorado</span>' : ''}
-                    </span>
-                    <div style="display:flex; align-items:center; gap:8px">
-                        <span style="font-size:12px; font-weight:bold; color:${falta<=0?'var(--danger)':falta<=2000?'var(--warn)':'var(--success)'}">
-                            ${statusTexto}
-                        </span>
-                        <i class="fas fa-${ignorado ? 'eye' : 'eye-slash'} eye-icon"
-                           onclick="ignorarAlerta(${v.id}, '${r}')"
-                           title="${ignorado ? 'Reativar alerta' : 'Ignorar alerta'}"></i>
+            <div class="status-mini ${classe} ${ignorado ? 'ignorado' : ''}" style="flex-direction:column;align-items:stretch;gap:6px;cursor:default">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-weight:600;font-size:13px">${r} ${ignorado ? '<span class="badge badge-warn" style="margin-left:5px">Ignorado</span>' : ''}</span>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:12px;font-weight:bold;color:${falta<=0?'var(--danger)':falta<=2000?'var(--warn)':'var(--success)'}">${statusTexto}</span>
+                        <i class="fas fa-${ignorado ? 'eye' : 'eye-slash'} eye-icon" onclick="ignorarAlerta(${v.id}, '${r}')" title="${ignorado ? 'Reativar' : 'Ignorar'}"></i>
                     </div>
                 </div>
-                ${!ignorado ? `
-                <div class="alert-km-bar">
-                    <div class="alert-km-bar-fill" style="width:${pct}%; background:${barColor}"></div>
-                </div>
-                <div class="alert-km-detail">${statusDetalhe}</div>
-                ` : ''}
+                ${!ignorado ? `<div class="alert-km-bar"><div class="alert-km-bar-fill" style="width:${pct}%;background:${barColor}"></div></div><div class="alert-km-detail">${statusDetalhe}</div>` : ''}
             </div>`;
     });
     document.getElementById('status_alertas').innerHTML = alertsHtml;
 
-    // Alertas personalizados
-    let alertasHtml = (v.alertas || []).map((a, i) => `
-        <div class="status-mini">
-            <span>
-                <strong>${a.texto}</strong>
-                <br><small style="color:var(--text-secondary)">${a.km ? '📍 KM: ' + formatKM(a.km) : ''} ${a.data ? '📅 ' + a.data : ''}</small>
-            </span>
-            <button class="icon-btn" style="color:var(--danger)" onclick="removerAlerta(${i})"><i class="fas fa-trash"></i></button>
-        </div>`).join('');
-    document.getElementById('alertas_lista').innerHTML = alertasHtml || '<div style="text-align:center;padding:10px;color:var(--text-secondary)">Nenhum alerta</div>';
+    // Alertas personalizados — com edição inline
+    renderAlertasList();
 
-    // Histórico de serviços
+    // Histórico
     let sorted = [...v.servicos].map((s,i) => ({...s, _origIdx: i})).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
-    let histHtml = sorted.map(s => `
+    document.getElementById('historico_lista').innerHTML = sorted.map(s => `
         <div class="servico-item">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
                 <div style="flex:1">
                     <strong>${s.tipo}</strong>
                     <div><small style="color:var(--text-secondary)">${s.forn} | ${s.data} | KM: ${formatKM(s.km)}</small></div>
                     <div style="color:var(--success)">💰 R$ ${formatMoney(s.val)}</div>
                     ${s.obs ? `<div><small><i class="fas fa-comment"></i> ${s.obs}</small></div>` : ''}
                 </div>
-                <div style="display:flex; gap:6px; align-items:center; flex-shrink:0">
+                <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
                     ${s.img ? `<img src="${s.img}" style="width:45px;height:45px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="showImage('${s.img}')">` : ''}
-                    <button class="icon-btn btn-info" style="color:#3b82f6" onclick="abrirModalEditar(${s._origIdx})" title="Editar serviço"><i class="fas fa-edit"></i></button>
-                    <button class="icon-btn" style="color:var(--danger)" onclick="excluirServico(${s._origIdx})" title="Excluir serviço"><i class="fas fa-trash"></i></button>
+                    <button class="icon-btn btn-info" style="color:#3b82f6" onclick="abrirModalEditar(${s._origIdx})"><i class="fas fa-edit"></i></button>
+                    <button class="icon-btn" style="color:var(--danger)" onclick="excluirServico(${s._origIdx})"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
-        </div>`).join('');
-    document.getElementById('historico_lista').innerHTML = histHtml || '<div style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço registrado</div>';
+        </div>`).join('') || '<div style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço registrado</div>';
 
     // Notas
-    let notasHtml = (v.notas || []).map((n, i) => `
+    document.getElementById('notas_lista').innerHTML = (v.notas || []).map((n, i) => `
         <div class="nota-item">
             <span class="nota-del" onclick="removerNota(${i})">×</span>
-            📝 ${n.texto}
-            <br><small>${new Date(n.data).toLocaleString('pt-BR')}</small>
-        </div>`).join('');
-    document.getElementById('notas_lista').innerHTML = notasHtml || '<div style="text-align:center;padding:10px;color:var(--text-secondary)">Nenhuma nota</div>';
+            📝 ${n.texto}<br><small>${new Date(n.data).toLocaleString('pt-BR')}</small>
+        </div>`).join('') || '<div style="text-align:center;padding:10px;color:var(--text-secondary)">Nenhuma nota</div>';
 
     // Fotos
-    let fotosHtml = (v.fotos || []).map((f, i) => `
-        <div class="photo-item">
-            <img src="${f}" onclick="showImage('${f}')" title="Clique para ampliar">
-            <button class="photo-del" onclick="removerFoto(${i})">×</button>
-        </div>`).join('');
-    document.getElementById('fotos_lista').innerHTML = fotosHtml;
+    document.getElementById('fotos_lista').innerHTML = (v.fotos || []).map((f, i) => `
+        <div class="photo-item"><img src="${f}" onclick="showImage('${f}')"><button class="photo-del" onclick="removerFoto(${i})">×</button></div>`).join('');
 
     document.getElementById('servico_forn').innerHTML = db.oficinas.map(f => `<option>${f}</option>`).join('');
     updateTipoSelect();
@@ -1242,22 +1084,81 @@ function renderizarVeiculo() {
 }
 
 // ============================================================
-// ===== MODAL EDITAR ALARMES DO VEÍCULO =====
+// ALERTAS PERSONALIZADOS — EDIÇÃO INLINE
+// ============================================================
+function renderAlertasList() {
+    const v = veiculoAtual;
+    const lista = v.alertas || [];
+    const container = document.getElementById('alertas_lista');
+    if (!lista.length) {
+        container.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text-secondary)">Nenhum alerta</div>';
+        return;
+    }
+    container.innerHTML = lista.map((a, i) => `
+        <div class="alerta-item-edit" id="alerta-item-${i}">
+            <div id="alerta-view-${i}" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                <div style="flex:1">
+                    <span style="font-weight:600;font-size:13px">📌 ${a.texto}</span>
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">
+                        ${a.km ? `<span style="margin-right:8px">📍 KM: ${formatKM(a.km)}</span>` : ''}
+                        ${a.data ? `<span>📅 ${a.data}</span>` : ''}
+                    </div>
+                </div>
+                <div style="display:flex;gap:4px">
+                    <button class="btn-edit-inline" onclick="iniciarEdicaoAlerta(${i})"><i class="fas fa-edit"></i> Editar</button>
+                    <button class="btn-del-inline" onclick="removerAlerta(${i})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div id="alerta-edit-${i}" style="display:none">
+                <div class="form-inline" style="margin-bottom:8px">
+                    <input class="fi-nome" id="ae-texto-${i}" value="${a.texto}" placeholder="Descrição">
+                    <input class="fi-km" id="ae-km-${i}" oninput="maskKM(this)" value="${a.km ? formatKM(a.km) : ''}" placeholder="KM (opcional)">
+                    <input class="fi-data" type="date" id="ae-data-${i}" value="${a.data || ''}">
+                </div>
+                <div style="display:flex;gap:6px">
+                    <button class="btn-save-inline" onclick="salvarEdicaoAlerta(${i})"><i class="fas fa-check"></i> Salvar</button>
+                    <button class="btn-cancel-inline" onclick="cancelarEdicaoAlerta(${i})">Cancelar</button>
+                </div>
+            </div>
+        </div>`).join('');
+}
+
+function iniciarEdicaoAlerta(i) {
+    document.getElementById('alerta-view-' + i).style.display = 'none';
+    document.getElementById('alerta-edit-' + i).style.display = 'block';
+    document.getElementById('alerta-item-' + i).classList.add('editando');
+}
+
+function cancelarEdicaoAlerta(i) {
+    document.getElementById('alerta-view-' + i).style.display = 'flex';
+    document.getElementById('alerta-edit-' + i).style.display = 'none';
+    document.getElementById('alerta-item-' + i).classList.remove('editando');
+}
+
+function salvarEdicaoAlerta(i) {
+    const texto = document.getElementById('ae-texto-' + i).value.trim();
+    const km    = parseKM(document.getElementById('ae-km-' + i).value);
+    const data  = document.getElementById('ae-data-' + i).value;
+    if (!texto) return alert('Informe uma descrição!');
+    if (!km && !data) return alert('Informe KM ou Data!');
+    const v = db.veiculos.find(x => x.id === veiculoAtual.id);
+    v.alertas[i] = { texto, km: km || null, data: data || null };
+    veiculoAtual = v;
+    salvar();
+}
+
+// ============================================================
+// MODAL ALARMES DO VEÍCULO
 // ============================================================
 function abrirModalAlarmes() {
     const v = veiculoAtual;
     if (!v) return;
     if (!v.regrasProprias) v.regrasProprias = {};
-
     const regrasBase = getRegrasVeiculo(v);
-
     const lista = Object.keys(regrasBase).map(nome => ({
-        nome,
-        intervalo: regrasBase[nome],
-        base: v.bases[nome] || 0,
+        nome, intervalo: regrasBase[nome], base: v.bases[nome] || 0,
         ignorado: (v.alertasIgnorados || []).includes(nome)
     }));
-
     renderAlarmesEditor(lista);
     document.getElementById('modal-alarmes-veiculo').classList.add('active');
 }
@@ -1271,49 +1172,32 @@ function renderAlarmesEditor(lista) {
                 <button class="btn-danger-small" onclick="removerAlarmeEditor(${i})"><i class="fas fa-trash"></i> Remover</button>
             </div>
             <div class="alarme-edit-grid">
-                <div>
-                    <div class="alarme-edit-label">Nome do alarme</div>
-                    <input id="ae-nome-${i}" value="${a.nome}" placeholder="Ex: Troca de óleo" style="margin-bottom:0">
-                </div>
-                <div>
-                    <div class="alarme-edit-label">Intervalo (km)</div>
-                    <input id="ae-intervalo-${i}" type="number" value="${a.intervalo}" placeholder="10000" style="margin-bottom:0">
-                </div>
-                <div>
-                    <div class="alarme-edit-label">KM da última troca</div>
-                    <input id="ae-base-${i}" type="number" value="${a.base}" placeholder="0" style="margin-bottom:0">
-                </div>
+                <div><div class="alarme-edit-label">Nome do alarme</div><input id="ae-nome-${i}" value="${a.nome}" placeholder="Ex: Troca de óleo" style="margin-bottom:0"></div>
+                <div><div class="alarme-edit-label">Intervalo (km)</div><input id="ae-intervalo-${i}" type="number" value="${a.intervalo}" placeholder="10000" style="margin-bottom:0"></div>
+                <div><div class="alarme-edit-label">KM da última troca</div><input id="ae-base-${i}" type="number" value="${a.base}" placeholder="0" style="margin-bottom:0"></div>
                 <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:4px">
                     <div class="alarme-edit-label">Ignorar</div>
-                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0">
-                        <input type="checkbox" id="ae-ignorado-${i}" ${a.ignorado ? 'checked' : ''} style="width:auto;margin:0">
-                        <span style="font-size:12px;color:var(--text-secondary)">Sim</span>
-                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0"><input type="checkbox" id="ae-ignorado-${i}" ${a.ignorado ? 'checked' : ''} style="width:auto;margin:0"><span style="font-size:12px;color:var(--text-secondary)">Sim</span></label>
                 </div>
             </div>
             <div style="margin-top:8px;font-size:11px;color:var(--text-secondary)">
-                Rodou: <strong style="color:var(--text)">${formatKM(Math.max(0,(veiculoAtual.km||0) - a.base))} km</strong> desde a última troca |
-                Próx. troca: <strong style="color:var(--text)">~${formatKM((a.base||0) + (a.intervalo||0))} km</strong>
+                Rodou: <strong style="color:var(--text)">${formatKM(Math.max(0,(veiculoAtual.km||0)-a.base))} km</strong> desde a última troca | Próx. troca: <strong style="color:var(--text)">~${formatKM((a.base||0)+(a.intervalo||0))} km</strong>
             </div>
-        </div>
-    `).join('');
-
+        </div>`).join('');
     container.dataset.count = lista.length;
     container.dataset.lista = JSON.stringify(lista);
 }
 
 function adicionarAlarmeVeiculo() {
     const container = document.getElementById('alarmes-editor-lista');
-    const lista = JSON.parse(container.dataset.lista || '[]');
-    const listaAtual = lerListaEditor(lista.length);
-    listaAtual.push({ nome: 'Novo Alarme', intervalo: 10000, base: veiculoAtual.km || 0, ignorado: false });
-    renderAlarmesEditor(listaAtual);
+    const lista = lerListaEditor(parseInt(container.dataset.count || 0));
+    lista.push({ nome: 'Novo Alarme', intervalo: 10000, base: veiculoAtual.km || 0, ignorado: false });
+    renderAlarmesEditor(lista);
 }
 
 function removerAlarmeEditor(idx) {
     const container = document.getElementById('alarmes-editor-lista');
-    const count = parseInt(container.dataset.count || 0);
-    const lista = lerListaEditor(count);
+    const lista = lerListaEditor(parseInt(container.dataset.count || 0));
     lista.splice(idx, 1);
     renderAlarmesEditor(lista);
 }
@@ -1321,16 +1205,13 @@ function removerAlarmeEditor(idx) {
 function lerListaEditor(count) {
     const lista = [];
     for (let i = 0; i < count; i++) {
-        const nomeEl     = document.getElementById(`ae-nome-${i}`);
-        const intervaloEl = document.getElementById(`ae-intervalo-${i}`);
-        const baseEl     = document.getElementById(`ae-base-${i}`);
-        const ignoradoEl = document.getElementById(`ae-ignorado-${i}`);
+        const nomeEl = document.getElementById(`ae-nome-${i}`);
         if (!nomeEl) continue;
         lista.push({
-            nome:      nomeEl.value.trim() || `Alarme ${i+1}`,
-            intervalo: parseInt(intervaloEl.value) || 0,
-            base:      parseInt(baseEl.value) || 0,
-            ignorado:  ignoradoEl ? ignoradoEl.checked : false
+            nome: nomeEl.value.trim() || `Alarme ${i+1}`,
+            intervalo: parseInt(document.getElementById(`ae-intervalo-${i}`).value) || 0,
+            base: parseInt(document.getElementById(`ae-base-${i}`).value) || 0,
+            ignorado: document.getElementById(`ae-ignorado-${i}`) ? document.getElementById(`ae-ignorado-${i}`).checked : false
         });
     }
     return lista;
@@ -1339,43 +1220,23 @@ function lerListaEditor(count) {
 function salvarAlarmesVeiculo() {
     const v = veiculoAtual;
     if (!v) return;
-
     const container = document.getElementById('alarmes-editor-lista');
-    const count = parseInt(container.dataset.count || 0);
-    const lista = lerListaEditor(count);
-
-    if (lista.length === 0) {
-        alert('Adicione pelo menos um alarme.');
-        return;
-    }
-
+    const lista = lerListaEditor(parseInt(container.dataset.count || 0));
+    if (!lista.length) return alert('Adicione pelo menos um alarme.');
     const nomes = lista.map(a => a.nome.toLowerCase());
-    const duplicados = nomes.filter((n, i) => nomes.indexOf(n) !== i);
-    if (duplicados.length > 0) {
-        alert(`Existem nomes duplicados: ${[...new Set(duplicados)].join(', ')}\nCorrija antes de salvar.`);
-        return;
-    }
-
+    const dup = nomes.filter((n,i) => nomes.indexOf(n) !== i);
+    if (dup.length) return alert(`Nomes duplicados: ${[...new Set(dup)].join(', ')}`);
     v.regrasProprias = {};
-    lista.forEach(a => { v.regrasProprias[a.nome] = a.intervalo; });
-
-    lista.forEach(a => { v.bases[a.nome] = a.base; });
-
+    lista.forEach(a => { v.regrasProprias[a.nome] = a.intervalo; v.bases[a.nome] = a.base; });
     const nomesNovos = lista.map(a => a.nome);
-    Object.keys(v.bases).forEach(k => {
-        if (!nomesNovos.includes(k)) delete v.bases[k];
-    });
-
+    Object.keys(v.bases).forEach(k => { if (!nomesNovos.includes(k)) delete v.bases[k]; });
     v.alertasIgnorados = lista.filter(a => a.ignorado).map(a => a.nome);
-
     veiculoAtual = v;
     salvar();
     fecharModalAlarmes();
 }
 
-function fecharModalAlarmes() {
-    document.getElementById('modal-alarmes-veiculo').classList.remove('active');
-}
+function fecharModalAlarmes() { document.getElementById('modal-alarmes-veiculo').classList.remove('active'); }
 
 // ============================================================
 // ABASTECIMENTO
@@ -1384,49 +1245,31 @@ function addAbastecimento() {
     const vid = veiculoAtual ? veiculoAtual.id : null;
     if (!vid) return alert('Nenhum veículo selecionado!');
     const v = db.veiculos.find(x => x.id === vid);
-    if (!v) return alert('Veículo não encontrado!');
-
     const data  = document.getElementById('abast_data').value;
     const km    = parseKM(document.getElementById('abast_km').value);
     const qtd   = parseFloat(document.getElementById('abast_qtd').value);
     const valor = parseVal(document.getElementById('abast_valor').value);
-
-    if (!data)            return alert('Informe a data!');
-    if (!km || km <= 0)   return alert('Informe o KM válido!');
+    if (!data) return alert('Informe a data!');
+    if (!km || km <= 0) return alert('Informe o KM válido!');
     if (!qtd || qtd <= 0) return alert('Informe a quantidade válida!');
     if (!valor || valor <= 0) return alert('Informe o valor válido!');
-
     if (!v.abastecimentos) v.abastecimentos = [];
-
-    const kmMaxRegistrado = v.abastecimentos.reduce((max, a) => Math.max(max, a.km || 0), 0);
-    if (km < kmMaxRegistrado) {
-        if (!confirm(`O KM informado (${formatKM(km)}) é menor que um abastecimento já registrado (${formatKM(kmMaxRegistrado)}). Deseja continuar?`)) return;
-    }
-
+    const kmMax = v.abastecimentos.reduce((max, a) => Math.max(max, a.km||0), 0);
+    if (km < kmMax && !confirm(`KM informado (${formatKM(km)}) é menor que um registro anterior (${formatKM(kmMax)}). Continuar?`)) return;
     v.abastecimentos.push({ data, km, qtd, valor });
-
-    if (km > v.km) {
-        v.km = km;
-        v.ultimaAtualizacao = data;
-    }
-
+    if (km > v.km) { v.km = km; v.ultimaAtualizacao = data; }
     veiculoAtual = v;
     salvar();
-
-    document.getElementById('abast_km').value    = '';
-    document.getElementById('abast_qtd').value   = '';
+    document.getElementById('abast_km').value = '';
+    document.getElementById('abast_qtd').value = '';
     document.getElementById('abast_valor').value = '';
     document.getElementById('abast_data').valueAsDate = new Date();
-
     renderizarVeiculo();
 }
 
 function excluirAbastecimento(idx) {
-    const vid = veiculoAtual ? veiculoAtual.id : null;
-    if (vid === null) return;
-    const v = db.veiculos.find(x => x.id === vid);
-    if (!v) return;
-    if (!confirm('Excluir este abastecimento?')) return;
+    const v = db.veiculos.find(x => x.id === veiculoAtual.id);
+    if (!v || !confirm('Excluir este abastecimento?')) return;
     v.abastecimentos.splice(idx, 1);
     veiculoAtual = v;
     salvar();
@@ -1436,33 +1279,23 @@ function excluirAbastecimento(idx) {
 function calcularMediaConsumo(v) {
     const abast = v.abastecimentos || [];
     if (abast.length < 2) return { media: 0, total: 0 };
-    const sorted = [...abast].sort((a, b) => (a.km || 0) - (b.km || 0));
+    const sorted = [...abast].sort((a,b) => (a.km||0)-(b.km||0));
     let totalKm = 0, totalLitros = 0;
     for (let i = 1; i < sorted.length; i++) {
         const kmRod = sorted[i].km - sorted[i-1].km;
-        if (kmRod > 0) {
-            totalKm += kmRod;
-            totalLitros += sorted[i].qtd;
-        }
+        if (kmRod > 0) { totalKm += kmRod; totalLitros += sorted[i].qtd; }
     }
-    return {
-        media: totalLitros > 0 ? totalKm / totalLitros : 0,
-        total: totalLitros
-    };
+    return { media: totalLitros > 0 ? totalKm/totalLitros : 0, total: totalLitros };
 }
 
 // ============================================================
 // KM MANUAL
 // ============================================================
 function atualizarKM() {
-    const vid = veiculoAtual ? veiculoAtual.id : null;
-    if (!vid) return;
-    const v = db.veiculos.find(x => x.id === vid);
+    const v = db.veiculos.find(x => x.id === veiculoAtual.id);
     let km = parseKM(document.getElementById('det_km').value);
     if (!km || km <= 0) return alert('Digite um KM válido!');
-    if (km < v.km) {
-        if (!confirm(`O KM informado (${formatKM(km)}) é menor que o atual (${formatKM(v.km)}). Deseja continuar?`)) return;
-    }
+    if (km < v.km && !confirm(`KM informado (${formatKM(km)}) é menor que o atual (${formatKM(v.km)}). Continuar?`)) return;
     v.km = km;
     v.ultimaAtualizacao = new Date().toISOString().split('T')[0];
     veiculoAtual = v;
@@ -1475,9 +1308,7 @@ function updateTipoSelect() {
     let forn = document.getElementById('servico_forn').value;
     let tipoSelect = document.getElementById('servico_tipo');
     if (forn === 'CHNET Estoque') {
-        tipoSelect.innerHTML = db.estoque.map(e =>
-            `<option value="${e.nome}" ${e.qtd <= 0 ? 'disabled' : ''}>${e.nome} (Estoque: ${e.qtd})</option>`
-        ).join('') || '<option disabled>Sem itens no estoque</option>';
+        tipoSelect.innerHTML = db.estoque.map(e => `<option value="${e.nome}" ${e.qtd<=0?'disabled':''}>${e.nome} (Estoque: ${e.qtd})</option>`).join('') || '<option disabled>Sem itens no estoque</option>';
     } else {
         const regras = veiculoAtual ? getRegrasVeiculo(veiculoAtual) : db.regras;
         tipoSelect.innerHTML = Object.keys(regras).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
@@ -1486,135 +1317,85 @@ function updateTipoSelect() {
 
 function editarVeiculo() {
     let v = veiculoAtual;
-    let m  = prompt('Motorista:', v.motorista);
-    let p  = prompt('Placa:', v.placa);
+    let m = prompt('Motorista:', v.motorista);
+    let p = prompt('Placa:', v.placa);
     let mo = prompt('Modelo:', v.modelo);
-    if (m)  v.motorista = m;
-    if (p)  v.placa = p;
-    if (mo) v.modelo = mo;
+    if (m) v.motorista = m; if (p) v.placa = p; if (mo) v.modelo = mo;
     salvar();
 }
 
 function excluirVeiculo() {
     if (confirm(`Excluir veículo de ${veiculoAtual.motorista} (${veiculoAtual.placa})?`)) {
         db.veiculos = db.veiculos.filter(v => v.id !== veiculoAtual.id);
-        veiculoAtual = null;
-        salvar();
-        tab('frota');
+        veiculoAtual = null; salvar(); tab('frota');
     }
 }
 
 // ============================================================
-// addServico
+// SERVIÇOS
 // ============================================================
 function addServico() {
     const vid = veiculoAtual ? veiculoAtual.id : null;
     if (!vid) return;
     const v = db.veiculos.find(x => x.id === vid);
-
-    let forn  = document.getElementById('servico_forn').value;
-    let tipo  = document.getElementById('servico_tipo').value;
+    let forn = document.getElementById('servico_forn').value;
+    let tipo = document.getElementById('servico_tipo').value;
     let valor = parseVal(document.getElementById('servico_val').value);
-    let km    = parseKM(document.getElementById('servico_km').value);
-    let data  = document.getElementById('servico_data').value;
-    let obs   = document.getElementById('servico_obs').value;
-    let file  = document.getElementById('servico_foto').files[0];
-
-    if (!forn)  return alert('Selecione a oficina!');
-    if (!tipo)  return alert('Selecione o tipo!');
-    if (!km)    return alert('KM do serviço é obrigatório!');
+    let km = parseKM(document.getElementById('servico_km').value);
+    let data = document.getElementById('servico_data').value;
+    let obs = document.getElementById('servico_obs').value;
+    let file = document.getElementById('servico_foto').files[0];
+    if (!forn) return alert('Selecione a oficina!');
+    if (!tipo) return alert('Selecione o tipo!');
+    if (!km)   return alert('KM do serviço é obrigatório!');
     if (!valor) return alert('Valor do serviço é obrigatório!');
     if (!data)  return alert('Data do serviço é obrigatória!');
-
     if (forn === 'CHNET Estoque') {
         let peca = db.estoque.find(e => e.nome === tipo);
-        if (!peca)         return alert('Peça não encontrada no estoque!');
+        if (!peca) return alert('Peça não encontrada!');
         if (peca.qtd <= 0) return alert(`Peça "${tipo}" sem estoque!`);
         peca.qtd--;
     }
-
     const processar = (img) => {
         let servico = { tipo, forn, val: valor, km, data, obs, img };
-
         if (servico.km > v.km) v.km = servico.km;
-
         const regras = getRegrasVeiculo(v);
-
         if (forn === 'CHNET Estoque') {
-            const normalizar = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const tipoN = normalizar(tipo);
-            Object.keys(regras).forEach(regra => {
-                const regraN = normalizar(regra);
-                if (tipoN.includes(regraN) || regraN.includes(tipoN)) {
-                    v.bases[regra] = servico.km;
-                    if (v.alertasIgnorados) {
-                        let idx = v.alertasIgnorados.indexOf(regra);
-                        if (idx > -1) v.alertasIgnorados.splice(idx, 1);
-                    }
-                }
-            });
+            const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const tipoN = norm(tipo);
+            Object.keys(regras).forEach(regra => { if (tipoN.includes(norm(regra)) || norm(regra).includes(tipoN)) { v.bases[regra] = servico.km; let idx = (v.alertasIgnorados||[]).indexOf(regra); if (idx > -1) v.alertasIgnorados.splice(idx,1); } });
         } else {
-            let regraBatida = null;
-
-            if (regras.hasOwnProperty(tipo)) {
-                regraBatida = tipo;
-            } else {
-                const matched = Object.keys(regras).find(r => tipoMatchRegra(tipo, r));
-                if (matched) regraBatida = matched;
-            }
-
-            if (regraBatida) {
-                v.bases[regraBatida] = servico.km;
-                if (v.alertasIgnorados) {
-                    let idx = v.alertasIgnorados.indexOf(regraBatida);
-                    if (idx > -1) v.alertasIgnorados.splice(idx, 1);
-                }
-            }
+            let regraBatida = regras.hasOwnProperty(tipo) ? tipo : Object.keys(regras).find(r => tipoMatchRegra(tipo, r));
+            if (regraBatida) { v.bases[regraBatida] = servico.km; let idx = (v.alertasIgnorados||[]).indexOf(regraBatida); if (idx > -1) v.alertasIgnorados.splice(idx,1); }
         }
-
         v.servicos.push(servico);
         v.ultimaAtualizacao = data;
         veiculoAtual = v;
         salvar();
-        document.getElementById('servico_val').value  = '';
-        document.getElementById('servico_km').value   = '';
-        document.getElementById('servico_obs').value  = '';
+        document.getElementById('servico_val').value = '';
+        document.getElementById('servico_km').value = '';
+        document.getElementById('servico_obs').value = '';
         document.getElementById('servico_foto').value = '';
         updateTipoSelect();
-        alert('✅ Serviço registrado com sucesso!');
+        alert('✅ Serviço registrado!');
     };
-
-    if (file) {
-        let r = new FileReader();
-        r.onload = e => processar(e.target.result);
-        r.readAsDataURL(file);
-    } else {
-        processar(null);
-    }
+    if (file) { let r = new FileReader(); r.onload = e => processar(e.target.result); r.readAsDataURL(file); }
+    else processar(null);
 }
 
 function excluirServico(idx) {
     if (!confirm('Excluir este serviço?')) return;
     const v = db.veiculos.find(x => x.id === veiculoAtual.id);
-    let servico = v.servicos[idx];
-    if (servico.forn === 'CHNET Estoque') {
-        let peca = db.estoque.find(e => e.nome === servico.tipo);
-        if (peca) peca.qtd++;
-    }
+    let s = v.servicos[idx];
+    if (s.forn === 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === s.tipo); if (peca) peca.qtd++; }
     v.servicos.splice(idx, 1);
-    veiculoAtual = v;
-    salvar();
+    veiculoAtual = v; salvar();
 }
 
-// ============================================================
-// EDITAR SERVIÇO
-// ============================================================
 function abrirModalEditar(idx) {
     let s = veiculoAtual.servicos[idx];
     _editandoIdx = idx;
-    document.getElementById('edit_forn').innerHTML = db.oficinas.map(f =>
-        `<option ${f === s.forn ? 'selected' : ''}>${f}</option>`
-    ).join('');
+    document.getElementById('edit_forn').innerHTML = db.oficinas.map(f => `<option ${f===s.forn?'selected':''}>${f}</option>`).join('');
     document.getElementById('edit_tipo').value = s.tipo || '';
     document.getElementById('edit_val').value  = s.val ? 'R$ ' + s.val.toFixed(2).replace('.', ',') : '';
     document.getElementById('edit_km').value   = s.km ? formatKM(s.km) : '';
@@ -1623,65 +1404,83 @@ function abrirModalEditar(idx) {
     document.getElementById('modal-edit-servico').classList.add('active');
 }
 
-function fecharModalEditar() {
-    _editandoIdx = null;
-    document.getElementById('modal-edit-servico').classList.remove('active');
-}
+function fecharModalEditar() { _editandoIdx = null; document.getElementById('modal-edit-servico').classList.remove('active'); }
 
 function salvarEdicaoServico() {
     if (_editandoIdx === null) return;
     const v = db.veiculos.find(x => x.id === veiculoAtual.id);
     let s = v.servicos[_editandoIdx];
-
     let novoForn = document.getElementById('edit_forn').value;
     let novoTipo = document.getElementById('edit_tipo').value.trim();
     let novoVal  = parseVal(document.getElementById('edit_val').value);
     let novoKm   = parseKM(document.getElementById('edit_km').value);
     let novaData = document.getElementById('edit_data').value;
     let novaObs  = document.getElementById('edit_obs').value;
-
-    if (!novoTipo) return alert('Informe o tipo de serviço!');
+    if (!novoTipo) return alert('Informe o tipo!');
     if (!novoKm)   return alert('Informe o KM!');
     if (!novaData) return alert('Informe a data!');
-
-    if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') {
-        let peca = db.estoque.find(e => e.nome === s.tipo);
-        if (peca) peca.qtd++;
-    }
-    if (s.forn !== 'CHNET Estoque' && novoForn === 'CHNET Estoque') {
-        let peca = db.estoque.find(e => e.nome === novoTipo);
-        if (!peca)         return alert('Peça não encontrada no estoque!');
-        if (peca.qtd <= 0) return alert(`Peça "${novoTipo}" sem estoque!`);
-        peca.qtd--;
-    }
-
-    s.forn = novoForn;
-    s.tipo = novoTipo;
-    s.val  = novoVal;
-    s.km   = novoKm;
-    s.data = novaData;
-    s.obs  = novaObs;
-
+    if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === s.tipo); if (peca) peca.qtd++; }
+    if (s.forn !== 'CHNET Estoque' && novoForn === 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === novoTipo); if (!peca) return alert('Peça não encontrada!'); if (peca.qtd <= 0) return alert(`Sem estoque!`); peca.qtd--; }
+    s.forn = novoForn; s.tipo = novoTipo; s.val = novoVal; s.km = novoKm; s.data = novaData; s.obs = novaObs;
     recalcularBases(v);
-    veiculoAtual = v;
-    salvar();
-    fecharModalEditar();
-    alert('✅ Serviço atualizado!');
+    veiculoAtual = v; salvar(); fecharModalEditar(); alert('✅ Serviço atualizado!');
 }
 
 function recalcularBases(v) {
     v.bases = {};
-    let sorted = [...v.servicos].sort((a, b) => (a.km || 0) - (b.km || 0));
     const regras = getRegrasVeiculo(v);
-    sorted.forEach(s => {
-        Object.keys(regras).forEach(regra => {
-            if (tipoMatchRegra(s.tipo, regra)) v.bases[regra] = s.km;
-        });
+    [...v.servicos].sort((a,b) => (a.km||0)-(b.km||0)).forEach(s => {
+        Object.keys(regras).forEach(regra => { if (tipoMatchRegra(s.tipo, regra)) v.bases[regra] = s.km; });
     });
 }
 
 // ============================================================
-// ALERTAS
+// ALERTAS PERSONALIZADOS
+// ============================================================
+function addAlerta() {
+    let texto = document.getElementById('alerta_texto').value.trim();
+    let km    = parseKM(document.getElementById('alerta_km').value);
+    let data  = document.getElementById('alerta_data').value;
+    if (!texto) return alert('Informe uma descrição!');
+    if (!km && !data) return alert('Informe KM ou Data!');
+    if (!veiculoAtual.alertas) veiculoAtual.alertas = [];
+    veiculoAtual.alertas.push({ texto, km: km || null, data: data || null });
+    salvar();
+    document.getElementById('alerta_texto').value = '';
+    document.getElementById('alerta_km').value    = '';
+    document.getElementById('alerta_data').value  = '';
+}
+
+function removerAlerta(idx) {
+    const v = db.veiculos.find(x => x.id === veiculoAtual.id);
+    v.alertas.splice(idx, 1);
+    veiculoAtual = v;
+    salvar();
+}
+
+// ============================================================
+// NOTAS E FOTOS
+// ============================================================
+function addNota() {
+    let texto = document.getElementById('nova_nota').value.trim();
+    if (!texto) return;
+    if (!veiculoAtual.notas) veiculoAtual.notas = [];
+    veiculoAtual.notas.unshift({ texto, data: new Date().toISOString() });
+    salvar(); document.getElementById('nova_nota').value = '';
+}
+
+function removerNota(idx) { veiculoAtual.notas.splice(idx, 1); salvar(); }
+
+function addFotos() {
+    let files = document.getElementById('fotos_carro').files;
+    if (!veiculoAtual.fotos) veiculoAtual.fotos = [];
+    for (let f of files) { let r = new FileReader(); r.onload = e => { veiculoAtual.fotos.push(e.target.result); salvar(); }; r.readAsDataURL(f); }
+}
+
+function removerFoto(idx) { veiculoAtual.fotos.splice(idx, 1); salvar(); }
+
+// ============================================================
+// ALERTAS DE MANUTENÇÃO
 // ============================================================
 function ignorarAlerta(veiculoId, regra) {
     let veiculo = db.veiculos.find(v => v.id === veiculoId);
@@ -1693,119 +1492,53 @@ function ignorarAlerta(veiculoId, regra) {
     salvar();
 }
 
-function addAlerta() {
-    let texto = document.getElementById('alerta_texto').value.trim();
-    let km    = parseKM(document.getElementById('alerta_km').value);
-    let data  = document.getElementById('alerta_data').value;
-    if (!texto)       return alert('Informe uma descrição!');
-    if (!km && !data) return alert('Informe KM ou Data!');
-    if (!veiculoAtual.alertas) veiculoAtual.alertas = [];
-    veiculoAtual.alertas.push({ texto, km: km || null, data: data || null });
-    salvar();
-    document.getElementById('alerta_texto').value = '';
-    document.getElementById('alerta_km').value    = '';
-    document.getElementById('alerta_data').value  = '';
-}
-
-function removerAlerta(idx) {
-    veiculoAtual.alertas.splice(idx, 1);
-    salvar();
-}
-
-function addNota() {
-    let texto = document.getElementById('nova_nota').value.trim();
-    if (!texto) return;
-    if (!veiculoAtual.notas) veiculoAtual.notas = [];
-    veiculoAtual.notas.unshift({ texto, data: new Date().toISOString() });
-    salvar();
-    document.getElementById('nova_nota').value = '';
-}
-
-function removerNota(idx) {
-    veiculoAtual.notas.splice(idx, 1);
-    salvar();
-}
-
-function addFotos() {
-    let files = document.getElementById('fotos_carro').files;
-    if (!veiculoAtual.fotos) veiculoAtual.fotos = [];
-    for (let f of files) {
-        let r = new FileReader();
-        r.onload = e => {
-            veiculoAtual.fotos.push(e.target.result);
-            salvar();
-        };
-        r.readAsDataURL(f);
-    }
-}
-
-function removerFoto(idx) {
-    veiculoAtual.fotos.splice(idx, 1);
-    salvar();
-}
-
 // ============================================================
 // ESTOQUE
 // ============================================================
 function renderEstoque() {
-    document.getElementById('select_peca').innerHTML =
-        '<option value="">-- Selecione a peça --</option>' +
-        db.estoque.map(e => `<option value="${e.id}">${e.nome} (Estoque: ${e.qtd})</option>`).join('');
-
-    let tbody = db.estoque.map(e => {
+    document.getElementById('select_peca').innerHTML = '<option value="">-- Selecione a peça --</option>' + db.estoque.map(e => `<option value="${e.id}">${e.nome} (Estoque: ${e.qtd})</option>`).join('');
+    document.getElementById('tbl_estoque').querySelector('tbody').innerHTML = db.estoque.map(e => {
         let baixo = e.qtd <= e.min;
         return `<tr>
             <td><strong>${e.nome}</strong></td>
-            <td style="color:${baixo ? 'var(--danger)' : 'inherit'}; font-weight:${baixo?'bold':'normal'}">${e.qtd} ${baixo ? '⚠️' : ''}</td>
-            <td>${e.min}</td>
-            <td>R$ ${formatMoney(e.val)}</td>
-            <td>R$ ${formatMoney(e.qtd * e.val)}</td>
-            <td>${baixo ? '<span class="badge badge-danger">Baixo</span>' : '<span class="badge badge-success">OK</span>'}</td>
+            <td style="color:${baixo?'var(--danger)':'inherit'};font-weight:${baixo?'bold':'normal'}">${e.qtd} ${baixo?'⚠️':''}</td>
+            <td>${e.min}</td><td>R$ ${formatMoney(e.val)}</td><td>R$ ${formatMoney(e.qtd*e.val)}</td>
+            <td>${baixo?'<span class="badge badge-danger">Baixo</span>':'<span class="badge badge-success">OK</span>'}</td>
             <td>
-                <button class="btn-small" onclick="editarEstoque(${e.id})" title="Editar peça"><i class="fas fa-edit"></i></button>
-                <button class="btn-small btn-danger" style="margin-left:4px" onclick="excluirEstoque(${e.id})" title="Excluir peça"><i class="fas fa-trash"></i></button>
+                <button class="btn-small" onclick="editarEstoque(${e.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn-small btn-danger" style="margin-left:4px" onclick="excluirEstoque(${e.id})"><i class="fas fa-trash"></i></button>
             </td>
         </tr>`;
-    }).join('');
-
-    document.getElementById('tbl_estoque').querySelector('tbody').innerHTML =
-        tbody || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhuma peça cadastrada</td></tr>';
+    }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhuma peça cadastrada</td></tr>';
 }
 
 function addCompra() {
-    let id  = document.getElementById('select_peca').value;
+    let id = document.getElementById('select_peca').value;
     if (!id) return alert('Selecione uma peça!');
     let peca = db.estoque.find(e => e.id == id);
     let qtd  = parseInt(document.getElementById('compra_qtd').value);
     let val  = parseVal(document.getElementById('compra_val').value);
-    let data = document.getElementById('compra_data').value || new Date().toISOString().split('T')[0];
-    let forn = document.getElementById('compra_forn').value || 'Não informado';
     if (!qtd || qtd <= 0) return alert('Informe a quantidade!');
     peca.qtd += qtd;
     if (val) peca.val = val;
     if (!peca.compras) peca.compras = [];
-    peca.compras.unshift({ data, qtd, valorUnit: val || peca.val, fornecedor: forn, total: qtd * (val || peca.val) });
-    salvar();
-    renderEstoque();
-    document.getElementById('compra_qtd').value  = '';
-    document.getElementById('compra_val').value  = '';
+    peca.compras.unshift({ data: document.getElementById('compra_data').value || new Date().toISOString().split('T')[0], qtd, valorUnit: val||peca.val, fornecedor: document.getElementById('compra_forn').value||'Não informado', total: qtd*(val||peca.val) });
+    salvar(); renderEstoque();
+    document.getElementById('compra_qtd').value = '';
+    document.getElementById('compra_val').value = '';
     document.getElementById('compra_forn').value = '';
-    alert(`✅ +${qtd} unidades adicionadas ao estoque de "${peca.nome}"!`);
+    alert(`✅ +${qtd} unidades adicionadas a "${peca.nome}"!`);
 }
 
 function addPeca() {
     let nome = document.getElementById('nova_peca').value.trim();
-    let qtd  = parseInt(document.getElementById('nova_qtd').value) || 0;
-    let min  = parseInt(document.getElementById('nova_min').value) || 5;
-    let val  = parseVal(document.getElementById('nova_val').value) || 0;
-    if (!nome) return alert('Informe o nome da peça!');
+    if (!nome) return alert('Informe o nome!');
     if (db.estoque.find(e => e.nome.toLowerCase() === nome.toLowerCase())) return alert('Peça já existe!');
-    db.estoque.push({ id: Date.now(), nome, qtd, min, val, compras: [] });
-    salvar();
-    renderEstoque();
+    db.estoque.push({ id: Date.now(), nome, qtd: parseInt(document.getElementById('nova_qtd').value)||0, min: parseInt(document.getElementById('nova_min').value)||5, val: parseVal(document.getElementById('nova_val').value)||0, compras: [] });
+    salvar(); renderEstoque();
     document.getElementById('nova_peca').value = '';
-    document.getElementById('nova_qtd').value  = '';
-    document.getElementById('nova_val').value  = '';
+    document.getElementById('nova_qtd').value = '';
+    document.getElementById('nova_val').value = '';
     alert('✅ Peça criada!');
 }
 
@@ -1816,56 +1549,89 @@ function editarEstoque(id) {
     document.getElementById('edit_nome_peca').value = p.nome;
     document.getElementById('edit_qtd_peca').value = p.qtd;
     document.getElementById('edit_min_peca').value = p.min;
-    document.getElementById('edit_val_peca').value = 'R$ ' + formatMoney(p.val || 0);
+    document.getElementById('edit_val_peca').value = 'R$ ' + formatMoney(p.val||0);
     document.getElementById('modal-edit-estoque').classList.add('active');
 }
 
-function fecharModalEditarEstoque() {
-    document.getElementById('modal-edit-estoque').classList.remove('active');
-}
+function fecharModalEditarEstoque() { document.getElementById('modal-edit-estoque').classList.remove('active'); }
 
 function salvarEdicaoEstoque() {
     let id = document.getElementById('edit_estoque_id').value;
     let p = db.estoque.find(e => e.id == id);
     if (!p) return;
     let nome = document.getElementById('edit_nome_peca').value.trim();
-    let qtd = parseInt(document.getElementById('edit_qtd_peca').value);
-    let min = parseInt(document.getElementById('edit_min_peca').value);
-    let val = parseVal(document.getElementById('edit_val_peca').value);
-    if (!nome) return alert('Informe o nome da peça!');
-    if (isNaN(qtd) || qtd < 0) return alert('Informe a quantidade válida!');
-    if (isNaN(min) || min < 0) return alert('Informe a quantidade mínima válida!');
-    if (isNaN(val) || val < 0) return alert('Informe o valor unitário válido!');
+    let qtd  = parseInt(document.getElementById('edit_qtd_peca').value);
+    let min  = parseInt(document.getElementById('edit_min_peca').value);
+    let val  = parseVal(document.getElementById('edit_val_peca').value);
+    if (!nome) return alert('Informe o nome!');
+    if (isNaN(qtd)||qtd<0) return alert('Quantidade inválida!');
+    if (isNaN(min)||min<0) return alert('Quantidade mínima inválida!');
+    if (isNaN(val)||val<0) return alert('Valor inválido!');
     p.nome = nome; p.qtd = qtd; p.min = min; p.val = val;
-    salvar();
-    renderEstoque();
-    fecharModalEditarEstoque();
+    salvar(); renderEstoque(); fecharModalEditarEstoque();
 }
 
 function excluirEstoque(id) {
     let p = db.estoque.find(e => e.id == id);
-    if (confirm(`Excluir "${p.nome}" do estoque?`)) {
-        db.estoque = db.estoque.filter(e => e.id != id);
-        salvar();
-        renderEstoque();
-    }
+    if (confirm(`Excluir "${p.nome}"?`)) { db.estoque = db.estoque.filter(e => e.id != id); salvar(); renderEstoque(); }
 }
 
 // ============================================================
-// SERVIÇOS / CONFIG
+// CONFIGURAÇÕES — OFICINAS E REGRAS COM EDIÇÃO INLINE
 // ============================================================
 function renderServicos() {
-    document.getElementById('lista_oficinas').innerHTML = db.oficinas.map((o, i) => `
-        <div class="status-mini">
-            <span>${o}</span>
-            <button class="icon-btn" style="color:var(--danger)" onclick="removerOficina(${i})" title="Remover"><i class="fas fa-trash"></i></button>
-        </div>`).join('');
+    renderListaOficinas();
+    renderListaRegras();
+}
 
-    document.getElementById('lista_regras').innerHTML = Object.entries(db.regras).map(([k, v]) => `
-        <div class="status-mini">
-            <span>${k} — <strong>${formatKM(v)} km</strong></span>
-            <button class="icon-btn" style="color:var(--danger)" onclick="removerRegra('${k}')" title="Remover"><i class="fas fa-trash"></i></button>
-        </div>`).join('');
+function renderListaOficinas() {
+    const container = document.getElementById('lista_oficinas');
+    container.innerHTML = db.oficinas.map((o, i) => `
+        <div class="item-editavel" id="oficina-item-${i}">
+            <div id="oficina-view-${i}" style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px">
+                <div class="item-info">
+                    <span class="item-nome">🏪 ${o}</span>
+                </div>
+                <div class="item-acoes">
+                    <button class="btn-edit-inline" onclick="iniciarEdicaoOficina(${i})"><i class="fas fa-edit"></i> Editar</button>
+                    <button class="btn-del-inline" onclick="removerOficina(${i})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div id="oficina-edit-${i}" style="display:none;width:100%">
+                <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+                    <input id="of-nome-${i}" value="${o}" placeholder="Nome da oficina" style="flex:1;margin-bottom:0;font-size:12px">
+                </div>
+                <div style="display:flex;gap:6px">
+                    <button class="btn-save-inline" onclick="salvarEdicaoOficina(${i})"><i class="fas fa-check"></i> Salvar</button>
+                    <button class="btn-cancel-inline" onclick="cancelarEdicaoOficina(${i})">Cancelar</button>
+                </div>
+            </div>
+        </div>`).join('') || '<div style="color:var(--text-secondary);font-size:12px;padding:8px">Nenhuma oficina cadastrada.</div>';
+}
+
+function iniciarEdicaoOficina(i) {
+    document.getElementById('oficina-view-' + i).style.display = 'none';
+    document.getElementById('oficina-edit-' + i).style.display = 'block';
+    document.getElementById('oficina-item-' + i).classList.add('editando');
+    document.getElementById('of-nome-' + i).focus();
+}
+
+function cancelarEdicaoOficina(i) {
+    document.getElementById('oficina-view-' + i).style.display = 'flex';
+    document.getElementById('oficina-edit-' + i).style.display = 'none';
+    document.getElementById('oficina-item-' + i).classList.remove('editando');
+}
+
+function salvarEdicaoOficina(i) {
+    const novoNome = document.getElementById('of-nome-' + i).value.trim();
+    if (!novoNome) return alert('Informe o nome!');
+    const nomeAntigo = db.oficinas[i];
+    if (novoNome !== nomeAntigo && db.oficinas.includes(novoNome)) return alert('Já existe uma oficina com esse nome!');
+    // Atualizar referências nos serviços
+    db.veiculos.forEach(v => v.servicos.forEach(s => { if (s.forn === nomeAntigo) s.forn = novoNome; }));
+    db.oficinas[i] = novoNome;
+    salvar();
+    renderListaOficinas();
 }
 
 function addOficina() {
@@ -1873,17 +1639,75 @@ function addOficina() {
     if (!n) return;
     if (db.oficinas.includes(n)) return alert('Oficina já existe!');
     db.oficinas.push(n);
-    salvar();
-    renderServicos();
+    salvar(); renderListaOficinas();
     document.getElementById('nova_oficina').value = '';
 }
 
 function removerOficina(i) {
     if (confirm(`Remover "${db.oficinas[i]}"?`)) {
         db.oficinas.splice(i, 1);
-        salvar();
-        renderServicos();
+        salvar(); renderListaOficinas();
     }
+}
+
+function renderListaRegras() {
+    const container = document.getElementById('lista_regras');
+    const entradas = Object.entries(db.regras);
+    container.innerHTML = entradas.map(([nome, km], i) => `
+        <div class="item-editavel" id="regra-item-${i}">
+            <div id="regra-view-${i}" style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px">
+                <div class="item-info">
+                    <span class="item-nome">🔧 ${nome}</span>
+                    <span class="item-km-badge">${formatKM(km)} km</span>
+                </div>
+                <div class="item-acoes">
+                    <button class="btn-edit-inline" onclick="iniciarEdicaoRegra(${i}, '${nome.replace(/'/g,"\\'")}')"><i class="fas fa-edit"></i> Editar</button>
+                    <button class="btn-del-inline" onclick="removerRegra('${nome.replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div id="regra-edit-${i}" style="display:none;width:100%">
+                <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+                    <input id="rg-nome-${i}" value="${nome}" placeholder="Nome da regra" style="flex:2;min-width:140px;margin-bottom:0;font-size:12px">
+                    <input id="rg-km-${i}" oninput="maskKM(this)" value="${formatKM(km)}" placeholder="Intervalo KM" style="flex:1;min-width:90px;margin-bottom:0;font-size:12px">
+                </div>
+                <div style="display:flex;gap:6px">
+                    <button class="btn-save-inline" onclick="salvarEdicaoRegra(${i}, '${nome.replace(/'/g,"\\'")}')"><i class="fas fa-check"></i> Salvar</button>
+                    <button class="btn-cancel-inline" onclick="cancelarEdicaoRegra(${i})">Cancelar</button>
+                </div>
+            </div>
+        </div>`).join('') || '<div style="color:var(--text-secondary);font-size:12px;padding:8px">Nenhuma regra cadastrada.</div>';
+}
+
+function iniciarEdicaoRegra(i, nome) {
+    document.getElementById('regra-view-' + i).style.display = 'none';
+    document.getElementById('regra-edit-' + i).style.display = 'block';
+    document.getElementById('regra-item-' + i).classList.add('editando');
+    document.getElementById('rg-nome-' + i).focus();
+}
+
+function cancelarEdicaoRegra(i) {
+    document.getElementById('regra-view-' + i).style.display = 'flex';
+    document.getElementById('regra-edit-' + i).style.display = 'none';
+    document.getElementById('regra-item-' + i).classList.remove('editando');
+}
+
+function salvarEdicaoRegra(i, nomeAntigo) {
+    const novoNome = document.getElementById('rg-nome-' + i).value.trim();
+    const novoKm   = parseKM(document.getElementById('rg-km-' + i).value);
+    if (!novoNome) return alert('Informe o nome!');
+    if (!novoKm || novoKm <= 0) return alert('Informe um intervalo válido!');
+    const entries = Object.entries(db.regras);
+    const existeOutro = entries.some(([n], idx) => idx !== i && n.toLowerCase() === novoNome.toLowerCase());
+    if (existeOutro) return alert('Já existe uma regra com esse nome!');
+    // Reconstruir o objeto db.regras para manter a ordem e trocar a chave
+    const novasRegras = {};
+    entries.forEach(([n, v], idx) => {
+        if (idx === i) novasRegras[novoNome] = novoKm;
+        else novasRegras[n] = v;
+    });
+    db.regras = novasRegras;
+    salvar();
+    renderListaRegras();
 }
 
 function addRegra() {
@@ -1891,19 +1715,15 @@ function addRegra() {
     let k = parseKM(document.getElementById('novo_km_regra').value);
     if (!n) return alert('Informe o nome do item!');
     if (!k) return alert('Informe o intervalo em KM!');
+    if (db.regras.hasOwnProperty(n)) return alert('Já existe uma regra com esse nome!');
     db.regras[n] = k;
-    salvar();
-    renderServicos();
+    salvar(); renderListaRegras();
     document.getElementById('novo_item').value     = '';
     document.getElementById('novo_km_regra').value = '';
 }
 
 function removerRegra(r) {
-    if (confirm(`Remover regra "${r}"?`)) {
-        delete db.regras[r];
-        salvar();
-        renderServicos();
-    }
+    if (confirm(`Remover regra "${r}"?`)) { delete db.regras[r]; salvar(); renderListaRegras(); }
 }
 
 // ============================================================
@@ -1914,8 +1734,7 @@ function preencherFiltroAnos() {
     db.veiculos.forEach(v => v.servicos.forEach(s => { if(s.data) anos.add(new Date(s.data+'T00:00:00').getFullYear()); }));
     let sel = document.getElementById('filter_year');
     let val = sel.value;
-    sel.innerHTML = '<option value="">Todos os anos</option>' +
-        [...anos].sort((a,b)=>b-a).map(y => `<option value="${y}" ${y==val?'selected':''}>${y}</option>`).join('');
+    sel.innerHTML = '<option value="">Todos os anos</option>' + [...anos].sort((a,b)=>b-a).map(y => `<option value="${y}" ${y==val?'selected':''}>${y}</option>`).join('');
 }
 
 function reRenderRelatorio() { showRelatorio(_relatorioAtual); }
@@ -1933,285 +1752,144 @@ function showRelatorio(tipo) {
     function filtrarServicos(servicos) {
         return servicos.filter(s => {
             if (!s.data) return true;
-            let d = new Date(s.data + 'T00:00:00');
+            let d = new Date(s.data+'T00:00:00');
             if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return false;
-            if (filterMonth && (d.getMonth() + 1) != parseInt(filterMonth)) return false;
+            if (filterMonth && (d.getMonth()+1)   != parseInt(filterMonth)) return false;
             return true;
         });
     }
 
     if (tipo === 'geral') {
         let todos = [];
-        db.veiculos.forEach(v => filtrarServicos(v.servicos).forEach(s => todos.push({ ...s, motorista: v.motorista, placa: v.placa })));
+        db.veiculos.forEach(v => filtrarServicos(v.servicos).forEach(s => todos.push({...s, motorista: v.motorista, placa: v.placa})));
         todos.sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
-        let total   = todos.reduce((s,sv) => s + sv.val, 0);
+        let total = todos.reduce((s,sv) => s+sv.val, 0);
         let mediaKM = db.veiculos.length ? Math.round(db.veiculos.reduce((s,v)=>s+v.km,0)/db.veiculos.length) : 0;
-
         container.innerHTML = `
-            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:15px">
-                <div class="card stat-box" style="background:rgba(245,87,108,0.08)">
-                    <div class="stat-num" style="color:var(--accent)">R$ ${formatMoney(total)}</div>
-                    <div style="color:var(--text-secondary); font-size:11px; margin-top:4px">Total Gasto</div>
-                </div>
-                <div class="card stat-box" style="background:rgba(16,185,129,0.08)">
-                    <div class="stat-num" style="color:var(--success)">${db.veiculos.length}</div>
-                    <div style="color:var(--text-secondary); font-size:11px; margin-top:4px">Veículos</div>
-                </div>
-                <div class="card stat-box" style="background:rgba(139,92,246,0.08)">
-                    <div class="stat-num" style="color:#8b5cf6">${todos.length}</div>
-                    <div style="color:var(--text-secondary); font-size:11px; margin-top:4px">Serviços</div>
-                </div>
-                <div class="card stat-box" style="background:rgba(245,158,11,0.08)">
-                    <div class="stat-num" style="color:var(--warn)">${formatKM(mediaKM)}</div>
-                    <div style="color:var(--text-secondary); font-size:11px; margin-top:4px">KM Médio</div>
-                </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:15px">
+                <div class="card stat-box" style="background:rgba(245,87,108,0.08)"><div class="stat-num" style="color:var(--accent)">R$ ${formatMoney(total)}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Total Gasto</div></div>
+                <div class="card stat-box" style="background:rgba(16,185,129,0.08)"><div class="stat-num" style="color:var(--success)">${db.veiculos.length}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Veículos</div></div>
+                <div class="card stat-box" style="background:rgba(139,92,246,0.08)"><div class="stat-num" style="color:#8b5cf6">${todos.length}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Serviços</div></div>
+                <div class="card stat-box" style="background:rgba(245,158,11,0.08)"><div class="stat-num" style="color:var(--warn)">${formatKM(mediaKM)}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">KM Médio</div></div>
             </div>
             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                     <h3 style="margin:0">Todos os Serviços</h3>
                     <button onclick="exportarCSV()" class="btn-small btn-success"><i class="fas fa-file-csv"></i> Exportar CSV</button>
                 </div>
-                <div style="overflow-x:auto">
-                    <table>
-                        <thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Oficina</th><th>KM</th><th>Valor</th><th>Obs</th></tr></thead>
-                        <tbody>
-                            ${todos.map(s => `<tr>
-                                <td>${s.data}</td>
-                                <td><strong>${s.motorista}</strong> <span style="color:var(--text-secondary)">(${s.placa})</span></td>
-                                <td>${s.tipo}</td><td>${s.forn}</td>
-                                <td>${formatKM(s.km)} km</td>
-                                <td><strong>R$ ${formatMoney(s.val)}</strong></td>
-                                <td style="color:var(--text-secondary); max-width:150px; overflow:hidden; text-overflow:ellipsis">${s.obs || '—'}</td>
-                            </tr>`).join('')}
-                            ${!todos.length ? '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>' : ''}
-                        </tbody>
-                    </table>
-                </div>
+                <div style="overflow-x:auto"><table>
+                    <thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Oficina</th><th>KM</th><th>Valor</th><th>Obs</th></tr></thead>
+                    <tbody>${todos.map(s => `<tr><td>${s.data}</td><td><strong>${s.motorista}</strong> <span style="color:var(--text-secondary)">(${s.placa})</span></td><td>${s.tipo}</td><td>${s.forn}</td><td>${formatKM(s.km)} km</td><td><strong>R$ ${formatMoney(s.val)}</strong></td><td style="color:var(--text-secondary)">${s.obs||'—'}</td></tr>`).join('')}
+                    ${!todos.length?'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>':''}</tbody>
+                </table></div>
             </div>`;
 
     } else if (tipo === 'veiculos') {
         const renderDetalhesVisiveis = (v) => {
             const sf = filtrarServicos(v.servicos).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
             if (!sf.length) return '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço registrado.</div>';
-            return `<div style="padding:8px 10px"><table style="width:100%; border-collapse:collapse;">
-                <thead><tr><th style="text-align:left;padding:6px">Data</th><th style="text-align:left;padding:6px">Tipo</th><th style="text-align:left;padding:6px">Oficina</th><th style="text-align:left;padding:6px">KM</th><th style="text-align:left;padding:6px">Valor</th><th style="text-align:left;padding:6px">Obs</th></tr></thead>
-                <tbody>${sf.map(s => `<tr><td style="padding:4px">${s.data||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${s.forn||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td><td style="padding:4px">${s.obs||'-'}</td></tr>`).join('')}</tbody>
-            </table></div>`;
+            return `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:6px">Data</th><th style="text-align:left;padding:6px">Tipo</th><th style="text-align:left;padding:6px">Oficina</th><th style="text-align:left;padding:6px">KM</th><th style="text-align:left;padding:6px">Valor</th><th style="text-align:left;padding:6px">Obs</th></tr></thead><tbody>${sf.map(s=>`<tr><td style="padding:4px">${s.data||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${s.forn||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td><td style="padding:4px">${s.obs||'-'}</td></tr>`).join('')}</tbody></table></div>`;
         };
-        container.innerHTML = `<div class="card">
-            <h3>Gastos por Veículo</h3>
-            <div style="overflow-x:auto"><table>
-                <thead><tr><th></th><th>Motorista</th><th>Placa</th><th>Modelo</th><th>KM Atual</th><th>Serviços</th><th>Total Gasto</th></tr></thead>
-                <tbody>
-                    ${db.veiculos.map(v => {
-                        let sf = filtrarServicos(v.servicos);
-                        let t  = sf.reduce((s,sv) => s + sv.val, 0);
-                        return `<tr class="veiculo-row" onclick="toggleRelatorioVeiculoDetalhes(${v.id})" style="cursor:pointer;">
-                            <td style="padding:6px">▸</td>
-                            <td><strong>${v.motorista}</strong></td><td>${v.placa}</td><td>${v.modelo}</td>
-                            <td>${formatKM(v.km)} km</td><td>${sf.length}</td>
-                            <td><strong style="color:var(--accent)">R$ ${formatMoney(t)}</strong></td>
-                        </tr>
-                        <tr id="detalhes-veiculo-${v.id}" class="hidden">
-                            <td colspan="7" style="border:none;padding:0;">${renderDetalhesVisiveis(v)}</td>
-                        </tr>`;
-                    }).join('')}
-                </tbody>
-            </table></div>
-        </div>`;
+        container.innerHTML = `<div class="card"><h3>Gastos por Veículo</h3><div style="overflow-x:auto"><table>
+            <thead><tr><th></th><th>Motorista</th><th>Placa</th><th>Modelo</th><th>KM Atual</th><th>Serviços</th><th>Total Gasto</th></tr></thead>
+            <tbody>${db.veiculos.map(v => {
+                let sf = filtrarServicos(v.servicos), t = sf.reduce((s,sv) => s+sv.val, 0);
+                return `<tr class="veiculo-row" onclick="toggleRelatorioVeiculoDetalhes(${v.id})" style="cursor:pointer"><td style="padding:6px">▸</td><td><strong>${v.motorista}</strong></td><td>${v.placa}</td><td>${v.modelo}</td><td>${formatKM(v.km)} km</td><td>${sf.length}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(t)}</strong></td></tr><tr id="detalhes-veiculo-${v.id}" class="hidden"><td colspan="7" style="border:none;padding:0">${renderDetalhesVisiveis(v)}</td></tr>`;
+            }).join('')}</tbody>
+        </table></div></div>`;
 
     } else if (tipo === 'mecanicas') {
         let porMec = {}, detalheMec = {};
         db.veiculos.forEach(v => filtrarServicos(v.servicos).forEach(s => {
-            let forn = (s.forn || 'Sem mecânica').trim() || 'Sem mecânica';
+            let forn = (s.forn||'Sem mecânica').trim()||'Sem mecânica';
             if (!porMec[forn]) porMec[forn] = { total: 0, qtd: 0 };
-            porMec[forn].total += s.val;
-            porMec[forn].qtd++;
+            porMec[forn].total += s.val; porMec[forn].qtd++;
             if (!detalheMec[forn]) detalheMec[forn] = [];
-            detalheMec[forn].push({ ...s, motorista: v.motorista, placa: v.placa });
+            detalheMec[forn].push({...s, motorista: v.motorista, placa: v.placa});
         }));
         let entries = Object.entries(porMec).sort((a,b) => b[1].total - a[1].total);
-        const sanitizeId = (str) => String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
-        container.innerHTML = `<div class="card">
-            <h3>Gastos por Mecânica / Fornecedor</h3>
-            <div style="overflow-x:auto"><table>
-                <thead><tr><th></th><th>Mecânica / Fornecedor</th><th>Atendimentos</th><th>Total Gasto</th><th>Ticket Médio</th></tr></thead>
-                <tbody>
-                    ${entries.map(([n,v]) => {
-                        let id = sanitizeId(n);
-                        let detalhes = (detalheMec[n]||[]).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
-                        let detalhesHTML = detalhes.length ? `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="padding:6px;text-align:left">Data</th><th style="padding:6px;text-align:left">Motorista</th><th style="padding:6px;text-align:left">Placa</th><th style="padding:6px;text-align:left">Tipo</th><th style="padding:6px;text-align:left">KM</th><th style="padding:6px;text-align:left">Valor</th></tr></thead><tbody>${detalhes.map(s=>`<tr><td style="padding:4px">${s.data||'-'}</td><td style="padding:4px">${s.motorista||'-'}</td><td style="padding:4px">${s.placa||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td></tr>`).join('')}</tbody></table></div>` : '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço no período.</div>';
-                        return `<tr onclick="toggleRelatorioMecanicaDetalhes('${id}')" style="cursor:pointer;"><td style="padding:6px">▸</td><td><strong>${n}</strong></td><td>${v.qtd}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(v.total)}</strong></td><td>R$ ${formatMoney(v.total/v.qtd)}</td></tr><tr id="detalhes-mecanica-${id}" class="hidden"><td colspan="5" style="border:none;padding:0;">${detalhesHTML}</td></tr>`;
-                    }).join('')}
-                </tbody>
-            </table></div>
-        </div>`;
+        const sid = str => String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
+        container.innerHTML = `<div class="card"><h3>Gastos por Mecânica / Fornecedor</h3><div style="overflow-x:auto"><table>
+            <thead><tr><th></th><th>Mecânica / Fornecedor</th><th>Atendimentos</th><th>Total Gasto</th><th>Ticket Médio</th></tr></thead>
+            <tbody>${entries.map(([n,v]) => {
+                let id = sid(n);
+                let det = (detalheMec[n]||[]).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
+                let dhtml = det.length ? `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="padding:6px;text-align:left">Data</th><th style="padding:6px;text-align:left">Motorista</th><th style="padding:6px;text-align:left">Placa</th><th style="padding:6px;text-align:left">Tipo</th><th style="padding:6px;text-align:left">KM</th><th style="padding:6px;text-align:left">Valor</th></tr></thead><tbody>${det.map(s=>`<tr><td style="padding:4px">${s.data||'-'}</td><td style="padding:4px">${s.motorista||'-'}</td><td style="padding:4px">${s.placa||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td></tr>`).join('')}</tbody></table></div>` : '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço no período.</div>';
+                return `<tr onclick="toggleRelatorioMecanicaDetalhes('${id}')" style="cursor:pointer"><td style="padding:6px">▸</td><td><strong>${n}</strong></td><td>${v.qtd}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(v.total)}</strong></td><td>R$ ${formatMoney(v.total/v.qtd)}</td></tr><tr id="detalhes-mecanica-${id}" class="hidden"><td colspan="5" style="border:none;padding:0">${dhtml}</td></tr>`;
+            }).join('')}</tbody>
+        </table></div></div>`;
 
     } else if (tipo === 'pneus') {
-        function diffDays(d1, d2) {
-            return Math.max(0, Math.round((new Date(d2+'T00:00:00') - new Date(d1+'T00:00:00')) / 86400000));
-        }
-        function ehPneuDianteiro(tipo) { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('diant')||t.includes('front')); }
-        function ehPneuTraseiro(tipo)  { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('tras')||t.includes('rear')); }
-        function ehPneu(tipo) { return (tipo||'').toLowerCase().includes('pneu'); }
+        function diffDays(d1, d2) { return Math.max(0, Math.round((new Date(d2+'T00:00:00') - new Date(d1+'T00:00:00')) / 86400000)); }
+        function ehPneuD(tipo) { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('diant')||t.includes('front')); }
+        function ehPneuT(tipo) { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('tras')||t.includes('rear')); }
+        function ehPneu(tipo)  { return (tipo||'').toLowerCase().includes('pneu'); }
         function calcCiclos(eventos, kmAtual, hoje) {
             if (!eventos.length) return null;
             let ciclos = [];
-            for (let i = 1; i < eventos.length; i++) {
-                let ini = eventos[i-1], fim = eventos[i];
-                let km  = (fim.km||0) - (ini.km||0);
-                let dias = diffDays(ini.data, fim.data);
-                ciclos.push({ ciclo: i, dataIni: ini.data, dataFim: fim.data, km: Math.max(0,km), dias, kmDia: dias ? Math.round(Math.max(0,km)/dias) : 0 });
-            }
-            let ultimo = eventos[eventos.length-1];
-            let kmAtualCiclo = kmAtual - (ultimo.km||0);
-            let diasAtual = diffDays(ultimo.data, hoje);
-            let mediaCiclo = ciclos.length ? Math.round(ciclos.reduce((s,c)=>s+c.km,0)/ciclos.length) : 0;
-            return { ciclos, kmAtualCiclo: Math.max(0,kmAtualCiclo), diasAtual, mediaCiclo, ultimo };
+            for (let i=1;i<eventos.length;i++) { let ini=eventos[i-1],fim=eventos[i],km=Math.max(0,(fim.km||0)-(ini.km||0)),dias=diffDays(ini.data,fim.data); ciclos.push({ciclo:i,dataIni:ini.data,dataFim:fim.data,km,dias,kmDia:dias?Math.round(km/dias):0}); }
+            let ultimo=eventos[eventos.length-1],kmAtualCiclo=Math.max(0,kmAtual-(ultimo.km||0)),diasAtual=diffDays(ultimo.data,hoje),mediaCiclo=ciclos.length?Math.round(ciclos.reduce((s,c)=>s+c.km,0)/ciclos.length):0;
+            return {ciclos,kmAtualCiclo,diasAtual,mediaCiclo,ultimo};
         }
-        let hoje = new Date().toISOString().split('T')[0];
-        let dadosPneu = db.veiculos.map(v => {
-            let servicosPneu = filtrarServicos(v.servicos).filter(s => ehPneu(s.tipo));
-            let dianteiros = servicosPneu.filter(s => ehPneuDianteiro(s.tipo) || (!ehPneuTraseiro(s.tipo) && !ehPneuDianteiro(s.tipo))).filter(s => s.data && (s.km||s.km===0));
-            let traseiros  = servicosPneu.filter(s => ehPneuTraseiro(s.tipo)).filter(s => s.data && (s.km||s.km===0));
-            dianteiros = dianteiros.sort((a,b)=>(a.km||0)-(b.km||0));
-            traseiros  = traseiros.sort((a,b)=>(a.km||0)-(b.km||0));
-            return { v, dianteiros, traseiros, calcD: calcCiclos(dianteiros, v.km, hoje), calcT: calcCiclos(traseiros, v.km, hoje) };
+        let hoje=new Date().toISOString().split('T')[0];
+        let dadosPneu=db.veiculos.map(v=>{
+            let sp=filtrarServicos(v.servicos).filter(s=>ehPneu(s.tipo));
+            let d=sp.filter(s=>ehPneuD(s.tipo)||(!ehPneuT(s.tipo)&&!ehPneuD(s.tipo))).filter(s=>s.data&&(s.km||s.km===0)).sort((a,b)=>(a.km||0)-(b.km||0));
+            let t=sp.filter(s=>ehPneuT(s.tipo)).filter(s=>s.data&&(s.km||s.km===0)).sort((a,b)=>(a.km||0)-(b.km||0));
+            return{v,dianteiros:d,traseiros:t,calcD:calcCiclos(d,v.km,hoje),calcT:calcCiclos(t,v.km,hoje)};
         });
-        let totalTrocasDiant = dadosPneu.reduce((s,d) => s + d.dianteiros.length, 0);
-        let totalTrocasTras  = dadosPneu.reduce((s,d) => s + d.traseiros.length, 0);
-        let mediaKmDiant = 0, mediaKmTras = 0, countD = 0, countT = 0;
-        dadosPneu.forEach(d => {
-            if (d.calcD && d.calcD.mediaCiclo > 0) { mediaKmDiant += d.calcD.mediaCiclo; countD++; }
-            if (d.calcT && d.calcT.mediaCiclo > 0) { mediaKmTras  += d.calcT.mediaCiclo; countT++; }
-        });
-        mediaKmDiant = countD ? Math.round(mediaKmDiant/countD) : 0;
-        mediaKmTras  = countT ? Math.round(mediaKmTras/countT)  : 0;
-
-        const renderCiclosTable = (calc, label) => {
-            if (!calc) return `<div style="color:var(--text-secondary);font-size:12px;padding:8px 0">Nenhuma troca de ${label} registrada.</div>`;
-            let html = '';
-            if (calc.ciclos.length > 0) {
-                html += `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px">
-                    <thead><tr style="background:rgba(255,255,255,0.04)">
-                        <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Ciclo</th>
-                        <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Início</th>
-                        <th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Fim</th>
-                        <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM Rodados</th>
-                        <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">Dias</th>
-                        <th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM/Dia</th>
-                    </tr></thead>
-                    <tbody>${calc.ciclos.map(c => `<tr>
-                        <td style="padding:5px 8px">#${c.ciclo}</td><td style="padding:5px 8px">${c.dataIni}</td>
-                        <td style="padding:5px 8px">${c.dataFim}</td>
-                        <td style="padding:5px 8px;text-align:right"><strong>${formatKM(c.km)}</strong></td>
-                        <td style="padding:5px 8px;text-align:right">${c.dias}d</td>
-                        <td style="padding:5px 8px;text-align:right">${c.kmDia} km/d</td>
-                    </tr>`).join('')}</tbody>
-                </table>`;
-            }
-            let pctAtual = calc.mediaCiclo > 0 ? Math.min(100, Math.round(calc.kmAtualCiclo / calc.mediaCiclo * 100)) : 0;
-            let barColor = pctAtual >= 90 ? 'var(--danger)' : pctAtual >= 70 ? 'var(--warn)' : 'var(--success)';
-            html += `<div style="display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start;margin-top:4px">
-                <div style="flex:1;min-width:180px">
-                    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">PNEU ATUAL (desde ${calc.ultimo?.data||'?'})</div>
-                    <div style="font-size:16px;font-weight:bold;color:${barColor}">${formatKM(calc.kmAtualCiclo)} km</div>
-                    <div style="font-size:11px;color:var(--text-secondary)">${calc.diasAtual} dias em uso</div>
-                    ${calc.mediaCiclo > 0 ? `
-                    <div class="alert-km-bar" style="margin-top:6px">
-                        <div class="alert-km-bar-fill" style="width:${pctAtual}%;background:${barColor}"></div>
-                    </div>
-                    <div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${pctAtual}% do ciclo médio (${formatKM(calc.mediaCiclo)} km)</div>` : ''}
-                </div>
-                ${calc.mediaCiclo > 0 ? `
-                <div style="text-align:right">
-                    <div style="font-size:11px;color:var(--text-secondary)">MÉDIA POR CICLO</div>
-                    <div style="font-size:18px;font-weight:bold;color:#8b5cf6">${formatKM(calc.mediaCiclo)} km</div>
-                    <div style="font-size:11px;color:var(--text-secondary)">${calc.ciclos.length} ciclo(s)</div>
-                </div>` : '<div style="font-size:11px;color:var(--text-secondary)">Apenas 1 troca — sem ciclo para média.</div>'}
-            </div>`;
+        let ttd=dadosPneu.reduce((s,d)=>s+d.dianteiros.length,0),ttt=dadosPneu.reduce((s,d)=>s+d.traseiros.length,0),mkd=0,mkt=0,cd=0,ct=0;
+        dadosPneu.forEach(d=>{if(d.calcD&&d.calcD.mediaCiclo>0){mkd+=d.calcD.mediaCiclo;cd++;}if(d.calcT&&d.calcT.mediaCiclo>0){mkt+=d.calcT.mediaCiclo;ct++;}});
+        mkd=cd?Math.round(mkd/cd):0; mkt=ct?Math.round(mkt/ct):0;
+        const rct=(calc,label)=>{
+            if(!calc)return`<div style="color:var(--text-secondary);font-size:12px;padding:8px 0">Nenhuma troca de ${label} registrada.</div>`;
+            let html='';
+            if(calc.ciclos.length>0){html+=`<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px"><thead><tr style="background:rgba(255,255,255,0.04)"><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Ciclo</th><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Início</th><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Fim</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM Rodados</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">Dias</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM/Dia</th></tr></thead><tbody>${calc.ciclos.map(c=>`<tr><td style="padding:5px 8px">#${c.ciclo}</td><td style="padding:5px 8px">${c.dataIni}</td><td style="padding:5px 8px">${c.dataFim}</td><td style="padding:5px 8px;text-align:right"><strong>${formatKM(c.km)}</strong></td><td style="padding:5px 8px;text-align:right">${c.dias}d</td><td style="padding:5px 8px;text-align:right">${c.kmDia} km/d</td></tr>`).join('')}</tbody></table>`;}
+            let pct=calc.mediaCiclo>0?Math.min(100,Math.round(calc.kmAtualCiclo/calc.mediaCiclo*100)):0,barColor=pct>=90?'var(--danger)':pct>=70?'var(--warn)':'var(--success)';
+            html+=`<div style="display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start;margin-top:4px"><div style="flex:1;min-width:180px"><div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">PNEU ATUAL (desde ${calc.ultimo?.data||'?'})</div><div style="font-size:16px;font-weight:bold;color:${barColor}">${formatKM(calc.kmAtualCiclo)} km</div><div style="font-size:11px;color:var(--text-secondary)">${calc.diasAtual} dias em uso</div>${calc.mediaCiclo>0?`<div class="alert-km-bar" style="margin-top:6px"><div class="alert-km-bar-fill" style="width:${pct}%;background:${barColor}"></div></div><div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${pct}% do ciclo médio (${formatKM(calc.mediaCiclo)} km)</div>`:''}</div>${calc.mediaCiclo>0?`<div style="text-align:right"><div style="font-size:11px;color:var(--text-secondary)">MÉDIA POR CICLO</div><div style="font-size:18px;font-weight:bold;color:#8b5cf6">${formatKM(calc.mediaCiclo)} km</div><div style="font-size:11px;color:var(--text-secondary)">${calc.ciclos.length} ciclo(s)</div></div>`:'<div style="font-size:11px;color:var(--text-secondary)">Apenas 1 troca — sem ciclo.</div>'}</div>`;
             return html;
         };
-
         container.innerHTML = `
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:15px">
-                <div class="card stat-box" style="background:rgba(59,130,246,0.08)"><div class="stat-num" style="color:#3b82f6">${totalTrocasDiant}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Dianteiro</div></div>
-                <div class="card stat-box" style="background:rgba(139,92,246,0.08)"><div class="stat-num" style="color:#8b5cf6">${totalTrocasTras}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Traseiro</div></div>
-                <div class="card stat-box" style="background:rgba(16,185,129,0.08)"><div class="stat-num" style="color:var(--success)">${mediaKmDiant > 0 ? formatKM(mediaKmDiant) : '—'}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Dianteiro</div></div>
-                <div class="card stat-box" style="background:rgba(245,158,11,0.08)"><div class="stat-num" style="color:var(--warn)">${mediaKmTras > 0 ? formatKM(mediaKmTras) : '—'}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Traseiro</div></div>
+                <div class="card stat-box" style="background:rgba(59,130,246,0.08)"><div class="stat-num" style="color:#3b82f6">${ttd}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Dianteiro</div></div>
+                <div class="card stat-box" style="background:rgba(139,92,246,0.08)"><div class="stat-num" style="color:#8b5cf6">${ttt}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Trocas Traseiro</div></div>
+                <div class="card stat-box" style="background:rgba(16,185,129,0.08)"><div class="stat-num" style="color:var(--success)">${mkd>0?formatKM(mkd):'—'}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Dianteiro</div></div>
+                <div class="card stat-box" style="background:rgba(245,158,11,0.08)"><div class="stat-num" style="color:var(--warn)">${mkt>0?formatKM(mkt):'—'}</div><div style="color:var(--text-secondary);font-size:11px;margin-top:4px">Média KM Traseiro</div></div>
             </div>
-            ${dadosPneu.map(({ v, dianteiros, traseiros, calcD, calcT }) => `
+            ${dadosPneu.map(({v,dianteiros,traseiros,calcD,calcT})=>`
                 <div class="card" style="margin-bottom:15px">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                         <div><h3 style="margin:0">${v.motorista}</h3><span style="font-size:11px;color:var(--text-secondary)">${v.placa} | ${v.modelo} | <span class="km-tag">${formatKM(v.km)} km</span></span></div>
-                        <div style="display:flex;gap:8px">
-                            <span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6">🔵 ${dianteiros.length} dianteiro</span>
-                            <span class="badge" style="background:rgba(139,92,246,0.15);color:#8b5cf6">🟣 ${traseiros.length} traseiro</span>
-                        </div>
+                        <div style="display:flex;gap:8px"><span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6">🔵 ${dianteiros.length} dianteiro</span><span class="badge" style="background:rgba(139,92,246,0.15);color:#8b5cf6">🟣 ${traseiros.length} traseiro</span></div>
                     </div>
-                    <div style="border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:12px;background:rgba(59,130,246,0.04)">
-                        <div style="font-size:12px;font-weight:bold;color:#3b82f6;margin-bottom:10px">● PNEU DIANTEIRO</div>
-                        ${renderCiclosTable(calcD, 'pneu dianteiro')}
-                    </div>
-                    <div style="border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:14px;background:rgba(139,92,246,0.04)">
-                        <div style="font-size:12px;font-weight:bold;color:#8b5cf6;margin-bottom:10px">● PNEU TRASEIRO</div>
-                        ${renderCiclosTable(calcT, 'pneu traseiro')}
-                    </div>
+                    <div style="border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:12px;background:rgba(59,130,246,0.04)"><div style="font-size:12px;font-weight:bold;color:#3b82f6;margin-bottom:10px">● PNEU DIANTEIRO</div>${rct(calcD,'pneu dianteiro')}</div>
+                    <div style="border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:14px;background:rgba(139,92,246,0.04)"><div style="font-size:12px;font-weight:bold;color:#8b5cf6;margin-bottom:10px">● PNEU TRASEIRO</div>${rct(calcT,'pneu traseiro')}</div>
                 </div>`).join('')}`;
 
     } else if (tipo === 'estoque') {
-        let totalEst = db.estoque.reduce((s,e) => s + (e.qtd * e.val), 0);
-        container.innerHTML = `<div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-                <h3 style="margin:0">Inventário do Estoque</h3>
-                <div class="stat-num" style="color:var(--success)">R$ ${formatMoney(totalEst)}</div>
-            </div>
-            <div style="overflow-x:auto"><table>
-                <thead><tr><th>Peça</th><th>Qtd</th><th>Mínimo</th><th>Valor Unit.</th><th>Valor Total</th><th>Status</th></tr></thead>
-                <tbody>
-                    ${db.estoque.map(e => `<tr>
-                        <td><strong>${e.nome}</strong></td><td>${e.qtd}</td><td>${e.min}</td>
-                        <td>R$ ${formatMoney(e.val)}</td><td>R$ ${formatMoney(e.qtd * e.val)}</td>
-                        <td>${e.qtd <= e.min ? '<span class="badge badge-danger">⚠️ Baixo</span>' : '<span class="badge badge-success">✅ OK</span>'}</td>
-                    </tr>`).join('')}
-                    ${!db.estoque.length ? '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary)">Estoque vazio</td></tr>' : ''}
-                </tbody>
-            </table></div>
-        </div>`;
+        let totalEst = db.estoque.reduce((s,e) => s+(e.qtd*e.val), 0);
+        container.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><h3 style="margin:0">Inventário do Estoque</h3><div class="stat-num" style="color:var(--success)">R$ ${formatMoney(totalEst)}</div></div>
+            <div style="overflow-x:auto"><table><thead><tr><th>Peça</th><th>Qtd</th><th>Mínimo</th><th>Valor Unit.</th><th>Valor Total</th><th>Status</th></tr></thead>
+            <tbody>${db.estoque.map(e=>`<tr><td><strong>${e.nome}</strong></td><td>${e.qtd}</td><td>${e.min}</td><td>R$ ${formatMoney(e.val)}</td><td>R$ ${formatMoney(e.qtd*e.val)}</td><td>${e.qtd<=e.min?'<span class="badge badge-danger">⚠️ Baixo</span>':'<span class="badge badge-success">✅ OK</span>'}</td></tr>`).join('')}
+            ${!db.estoque.length?'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary)">Estoque vazio</td></tr>':''}</tbody>
+        </table></div></div>`;
     }
 }
 
-function toggleRelatorioVeiculoDetalhes(id) {
-    const el = document.getElementById(`detalhes-veiculo-${id}`);
-    if (el) el.classList.toggle('hidden');
-}
-function toggleRelatorioMecanicaDetalhes(id) {
-    const el = document.getElementById(`detalhes-mecanica-${id}`);
-    if (el) el.classList.toggle('hidden');
-}
+function toggleRelatorioVeiculoDetalhes(id) { const el = document.getElementById(`detalhes-veiculo-${id}`); if (el) el.classList.toggle('hidden'); }
+function toggleRelatorioMecanicaDetalhes(id) { const el = document.getElementById(`detalhes-mecanica-${id}`); if (el) el.classList.toggle('hidden'); }
 
 function exportarCSV() {
     let filterYear  = document.getElementById('filter_year')?.value  || '';
     let filterMonth = document.getElementById('filter_month')?.value || '';
-    let rows = [['Data', 'Motorista', 'Placa', 'Modelo', 'Tipo', 'Oficina', 'KM', 'Valor (R$)', 'Observações']];
-    db.veiculos.forEach(v => {
-        v.servicos.forEach(s => {
-            if (s.data) {
-                let d = new Date(s.data + 'T00:00:00');
-                if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return;
-                if (filterMonth && (d.getMonth() + 1) != parseInt(filterMonth)) return;
-            }
-            rows.push([s.data||'', v.motorista, v.placa, v.modelo, s.tipo, s.forn, s.km, s.val, s.obs||'']);
-        });
-    });
+    let rows = [['Data','Motorista','Placa','Modelo','Tipo','Oficina','KM','Valor (R$)','Observações']];
+    db.veiculos.forEach(v => v.servicos.forEach(s => {
+        if (s.data) { let d = new Date(s.data+'T00:00:00'); if (filterYear && d.getFullYear() != parseInt(filterYear)) return; if (filterMonth && (d.getMonth()+1) != parseInt(filterMonth)) return; }
+        rows.push([s.data||'', v.motorista, v.placa, v.modelo, s.tipo, s.forn, s.km, s.val, s.obs||'']);
+    }));
     let csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
-    let blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    let url  = URL.createObjectURL(blob);
-    let a    = document.createElement('a');
-    a.href   = url;
-    a.download = `frota_relatorio_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    let blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
+    let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `frota_relatorio_${new Date().toISOString().split('T')[0]}.csv`; a.click();
 }
 
 // ============================================================
@@ -2243,7 +1921,11 @@ Object.assign(window, {
     addAbastecimento, excluirAbastecimento, switchOdoTab,
     loginApp, limparLogin, toggleSidebar,
     abrirModalAlarmes, fecharModalAlarmes, salvarAlarmesVeiculo,
-    adicionarAlarmeVeiculo, removerAlarmeEditor
+    adicionarAlarmeVeiculo, removerAlarmeEditor,
+    renderListaOficinas, renderListaRegras,
+    iniciarEdicaoOficina, cancelarEdicaoOficina, salvarEdicaoOficina,
+    iniciarEdicaoRegra, cancelarEdicaoRegra, salvarEdicaoRegra,
+    iniciarEdicaoAlerta, cancelarEdicaoAlerta, salvarEdicaoAlerta
 });
 
 // ============================================================
