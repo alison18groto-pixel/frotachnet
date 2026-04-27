@@ -613,31 +613,32 @@ let _fuelCharts = {}; // store chart instances for fuel report
 // HELPERS
 // ============================================================
 function tipoMatchRegra(tipo, regra) {
-    const normalizar = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const normalizar = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g, ' ');
     const tipoN = normalizar(tipo || '');
     const regraN = normalizar(regra || '');
+
+    // 1. Correspondência exata
     if (tipoN === regraN) return true;
+
+    // 2. O nome do serviço contém o nome completo da regra (ex: tipo="filtro de oleo tecfil", regra="filtro de oleo")
     if (tipoN.includes(regraN)) return true;
+
+    // 3. O nome da regra contém o nome completo do serviço (menos comum)
     if (regraN.includes(tipoN)) return true;
-    if (regraN.includes('oleo') || regraN.includes('oil')) {
-        if (tipoN.includes('oleo') || tipoN.includes('oil')) return true;
+
+    // 4. Verifica se TODAS as palavras importantes da regra estão no nome do serviço.
+    //    Esta é a correção principal. Ex: regra "filtro ar" não vai mais corresponder a "filtro combustivel".
+    const palavrasRegra = regraN.split(/\s+/).filter(p => p.length >= 2 && !['de','do','da'].includes(p));
+    if (palavrasRegra.length > 0 && palavrasRegra.every(palavra => tipoN.includes(palavra))) {
+        return true;
     }
-    if (regraN === 'pneu') {
-        if (tipoN.includes('pneu') || tipoN.includes('pneus')) return true;
+
+    // 5. Lógica para casos como "Troca de X" vs "X" (ex: regra "troca de oleo" vs serviço "oleo motor 5w30")
+    if (regraN.startsWith('troca de ')) {
+        const itemDaRegra = regraN.substring(9).trim(); // Pega "oleo"
+        if (itemDaRegra.length > 2 && tipoN.includes(itemDaRegra)) return true;
     }
-    if (regraN.includes('correia dentada')) {
-        if (tipoN.includes('correia dentada')) return true;
-    }
-    if (regraN.includes('pastilha')) {
-        if (tipoN.includes('pastilha')) return true;
-    }
-    if (regraN.includes('filtro')) {
-        if (tipoN.includes('filtro')) return true;
-    }
-    const palavrasRegra = regraN.split(/\s+/).filter(p => p.length > 3);
-    if (palavrasRegra.length > 0 && palavrasRegra.some(p => tipoN.includes(p))) return true;
-    const palavrasTipo = tipoN.split(/\s+/).filter(p => p.length > 3);
-    if (palavrasTipo.length > 0 && palavrasTipo.some(p => regraN.includes(p))) return true;
+
     return false;
 }
 
@@ -1428,7 +1429,12 @@ function excluirServico(idx) {
     let s = v.servicos[idx];
     if (s.forn === 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === s.tipo); if (peca) peca.qtd++; }
     v.servicos.splice(idx, 1);
-    veiculoAtual = v; salvar();
+
+    // Recalcula todas as bases de KM para garantir que o contador volte para o serviço anterior
+    recalcularBases(v);
+
+    veiculoAtual = v;
+    salvar();
 }
 
 function abrirModalEditar(idx) {
