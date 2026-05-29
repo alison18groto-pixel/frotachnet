@@ -442,18 +442,29 @@
             <button id="rbtn-km_history" onclick="showRelatorio('km_history')" class="btn-small relatorio-btn">Histórico KM</button>
             <button id="rbtn-estoque" onclick="showRelatorio('estoque')" class="btn-small relatorio-btn">Estoque</button>
             <div style="flex:1"></div>
-            <label>Ano:</label>
-            <select id="filter_year" onchange="reRenderRelatorio()" style="width:auto; margin-bottom:0; padding:5px 10px">
-                <option value="">Todos</option>
-            </select>
-            <label>Mês:</label>
-            <select id="filter_month" onchange="reRenderRelatorio()" style="width:auto; margin-bottom:0; padding:5px 10px">
-                <option value="">Todos</option>
-                <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
-                <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
-                <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
-                <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
-            </select>
+            <!-- These will be toggled -->
+            <div id="relatorio-default-filters" style="display: inline-flex; gap: 10px; align-items: center;">
+                <label>Ano:</label>
+                <select id="filter_year" onchange="reRenderRelatorio()" style="width:auto; margin-bottom:0; padding:5px 10px">
+                    <option value="">Todos</option>
+                </select>
+                <label>Mês:</label>
+                <select id="filter_month" onchange="reRenderRelatorio()" style="width:auto; margin-bottom:0; padding:5px 10px">
+                    <option value="">Todos</option>
+                    <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
+                    <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
+                    <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
+                    <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+                </select>
+            </div>
+            <!-- New filters for KM History report -->
+            <div id="relatorio-km-history-filters" class="hidden" style="display: inline-flex; gap: 10px; align-items: center;">
+                <label>Período:</label>
+                <button onclick="setKmHistoryPeriod(3)" class="btn-small km-period-btn">3 Meses</button>
+                <button onclick="setKmHistoryPeriod(6)" class="btn-small km-period-btn">6 Meses</button>
+                <button onclick="setKmHistoryPeriod(12)" class="btn-small km-period-btn">12 Meses</button>
+                <button onclick="setKmHistoryPeriod(0)" class="btn-small km-period-btn">Tudo</button>
+            </div>
         </div>
         <div id="relatorio-content"></div>
     </div>
@@ -610,6 +621,8 @@ let veiculoAtual = null;
 let chart = null;
 let _relatorioAtual = 'geral';
 let _editandoIdx = null;
+let _kmHistoryPeriod = 6; // default to 6 months
+let _kmHistoryCharts = {};
 let _fuelCharts = {}; // store chart instances for fuel report
 
 // ============================================================
@@ -764,26 +777,85 @@ function salvarDados() {
     localStorage.setItem('frota_pro_v47', JSON.stringify(db));
 }
 
+function popularHistoricoKmInicial() {
+    // Roda uma vez para popular o histórico de KM com dados já existentes de serviços e abastecimentos.
+    if (db.kmHistoryPopulated) return;
+
+    db.veiculos.forEach(v => {
+        if (!v.kmHistory) v.kmHistory = [];
+        
+        const allEntries = new Map();
+
+        // 1. Adiciona entradas do histórico existente para evitar duplicatas, mas mantê-las.
+        v.kmHistory.forEach(h => {
+            const key = `${h.date}_${h.km}`;
+            if (!allEntries.has(key)) {
+                allEntries.set(key, h);
+            }
+        });
+
+        // 2. Adiciona a partir de serviços
+        (v.servicos || []).forEach(s => {
+            if (s.km > 0 && s.data) {
+                const key = `${s.data}_${s.km}`;
+                if (!allEntries.has(key)) {
+                    allEntries.set(key, { km: s.km, date: s.data, source: 'servico' });
+                }
+            }
+        });
+
+        // 3. Adiciona a partir de abastecimentos
+        (v.abastecimentos || []).forEach(a => {
+            if (a.km > 0 && a.data) {
+                const key = `${a.data}_${a.km}`;
+                if (!allEntries.has(key)) {
+                    allEntries.set(key, { km: a.km, date: a.data, source: 'abastecimento' });
+                }
+            }
+        });
+
+        // 4. Substitui o histórico antigo pelo novo, completo e sem duplicatas
+        v.kmHistory = Array.from(allEntries.values());
+
+        // 5. Ordena o histórico final por data e depois por KM
+        v.kmHistory.sort((a, b) => {
+            const dateA = new Date(a.date + 'T00:00:00');
+            const dateB = new Date(b.date + 'T00:00:00');
+            if (dateA - dateB !== 0) return dateA - dateB;
+            return (a.km || 0) - (b.km || 0);
+        });
+    });
+
+    db.kmHistoryPopulated = true; // Define a flag para não rodar de novo
+    console.log('Histórico de KM populado com dados iniciais.');
+}
+
 function carregarDados() {
     database.ref('appData').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) { // Se existem dados na nuvem, usa eles
             db = data;
-            db.veiculos.forEach(v => {
-                if (!v.alertasIgnorados) v.alertasIgnorados = [];
-                if (!v.servicos) v.servicos = [];
-                if (!v.notas) v.notas = [];
-                if (!v.fotos) v.fotos = [];
-                if (!v.alertas) v.alertas = [];
-                if (!v.bases) v.bases = {};
-                if (!v.abastecimentos) v.abastecimentos = [];
-                if (!v.regrasProprias) v.regrasProprias = {};
-                if (!v.kmHistory) v.kmHistory = [];
-            });
-            renderizarTudo();
         }
-        // Se não houver dados (data is null), o app usará os dados locais 'db'
-        // e na primeira vez que salvar, irá criar o registro na nuvem.
+        
+        // Garante que as propriedades essenciais existam
+        if (!db.veiculos) db.veiculos = [];
+        db.veiculos.forEach(v => {
+            if (!v.alertasIgnorados) v.alertasIgnorados = [];
+            if (!v.servicos) v.servicos = [];
+            if (!v.notas) v.notas = [];
+            if (!v.fotos) v.fotos = [];
+            if (!v.alertas) v.alertas = [];
+            if (!v.bases) v.bases = {};
+            if (!v.abastecimentos) v.abastecimentos = [];
+            if (!v.regrasProprias) v.regrasProprias = {};
+            if (!v.kmHistory) v.kmHistory = [];
+        });
+
+        // Popula o histórico de KM com dados existentes, se ainda não foi feito.
+        popularHistoricoKmInicial();
+
+        renderizarTudo();
+
     }, (error) => {
         console.error("Erro de permissão ao carregar dados do Firebase:", error);
         alert("ERRO CRÍTICO: O acesso ao banco de dados foi negado. Verifique as Regras de Segurança no seu console do Firebase para garantir que usuários autenticados tenham permissão de leitura ('.read': 'auth != null').");
@@ -1841,11 +1913,26 @@ function showRelatorio(tipo) {
     const container = document.getElementById('relatorio-content');
     document.querySelectorAll('.relatorio-btn').forEach(b => b.classList.remove('ativo'));
     const btnEl = document.getElementById('rbtn-' + tipo);
-    if (btnEl) btnEl.classList.add('ativo');
+    if (btnEl) btnEl.classList.add('ativo');    
 
     // Destroy old fuel charts
     Object.values(_fuelCharts).forEach(c => { try { c.destroy(); } catch(e){} });
     _fuelCharts = {};
+
+    const defaultFilters = document.getElementById('relatorio-default-filters');
+    const kmHistoryFilters = document.getElementById('relatorio-km-history-filters');
+
+    if (tipo === 'km_history') {
+        defaultFilters.style.display = 'none';
+        kmHistoryFilters.style.display = 'inline-flex';
+        // Set active button
+        document.querySelectorAll('.km-period-btn').forEach(b => b.classList.remove('ativo'));
+        const activeBtn = Array.from(document.querySelectorAll('.km-period-btn')).find(b => b.getAttribute('onclick') === `setKmHistoryPeriod(${_kmHistoryPeriod})`);
+        if (activeBtn) activeBtn.classList.add('ativo');
+    } else {
+        defaultFilters.style.display = 'inline-flex';
+        kmHistoryFilters.style.display = 'none';
+    }
 
     let filterYear  = document.getElementById('filter_year')?.value  || '';
     let filterMonth = document.getElementById('filter_month')?.value || '';
@@ -1992,6 +2079,10 @@ function showRelatorio(tipo) {
 
     } else if (tipo === 'km_history') {
         let html = '';
+        Object.values(_kmHistoryCharts).forEach(c => c.destroy());
+        _kmHistoryCharts = {};
+        const chartRenderQueue = [];
+
         const sourceMap = {
             'manual': '📟 Manual',
             'abastecimento': '⛽ Abastecimento',
@@ -2005,8 +2096,25 @@ function showRelatorio(tipo) {
             'initial_data': 'var(--text-secondary)'
         };
 
+        let startDate = null;
+        if (_kmHistoryPeriod > 0) {
+            startDate = new Date();
+            startDate.setMonth(startDate.getMonth() - _kmHistoryPeriod);
+            startDate.setDate(1);
+            startDate.setHours(0,0,0,0);
+        }
+
         db.veiculos.forEach(v => {
             if (!v.kmHistory || v.kmHistory.length < 1) return;
+
+            const fuelByMonth = {};
+            (v.abastecimentos || []).forEach(a => {
+                if (a.data && a.qtd > 0) {
+                    const monthKey = a.data.substring(0, 7);
+                    if (!fuelByMonth[monthKey]) fuelByMonth[monthKey] = 0;
+                    fuelByMonth[monthKey] += a.qtd;
+                }
+            });
 
             const sortedHistory = [...v.kmHistory]
                 .sort((a, b) => {
@@ -2016,14 +2124,19 @@ function showRelatorio(tipo) {
                     return (a.km || 0) - (b.km || 0);
                 });
 
-            const filteredEntries = filtrarKmHistory(sortedHistory);
+            const filteredEntries = sortedHistory.filter(entry => {
+                if (!entry.date) return false;
+                if (!startDate) return true; // 'All' period
+                return new Date(entry.date + 'T00:00:00') >= startDate;
+            });
+
             if (filteredEntries.length === 0) return;
 
             let tableRows = '';
+            const monthlyData = {};
             const filteredIndices = new Set(filteredEntries.map(h => sortedHistory.indexOf(h)));
 
             for (let i = 0; i < sortedHistory.length; i++) {
-                if (!filteredIndices.has(i)) continue;
 
                 const entry = sortedHistory[i];
                 let kmRodado = 0, dias = 0, mediaKmDia = 0;
@@ -2039,27 +2152,51 @@ function showRelatorio(tipo) {
                     }
                 }
 
-                tableRows += `
-                    <tr>
-                        <td>${entry.date}</td>
-                        <td><strong>${formatKM(entry.km)} km</strong></td>
-                        <td><span style="color:${sourceColor[entry.source] || 'inherit'}">${sourceMap[entry.source] || entry.source || 'N/A'}</span></td>
-                        <td>${kmRodado > 0 ? `<span style="color:var(--success)">+${formatKM(kmRodado)} km</span>` : '—'}</td>
-                        <td>${dias > 0 ? `${dias}d` : '—'}</td>
-                        <td>${mediaKmDia > 0 ? `${mediaKmDia.toFixed(1)} km/dia` : '—'}</td>
-                    </tr>
-                `;
+                if (filteredIndices.has(i)) {
+                    tableRows += `
+                        <tr>
+                            <td>${entry.date}</td>
+                            <td><strong>${formatKM(entry.km)} km</strong></td>
+                            <td><span style="color:${sourceColor[entry.source] || 'inherit'}">${sourceMap[entry.source] || entry.source || 'N/A'}</span></td>
+                            <td>${kmRodado > 0 ? `<span style="color:var(--success)">+${formatKM(kmRodado)} km</span>` : '—'}</td>
+                            <td>${dias > 0 ? `${dias}d` : '—'}</td>
+                            <td>${mediaKmDia > 0 ? `${mediaKmDia.toFixed(1)} km/dia` : '—'}</td>
+                        </tr>
+                    `;
+
+                    if (kmRodado > 0) {
+                        const monthKey = entry.date.substring(0, 7); // YYYY-MM
+                        if (!monthlyData[monthKey]) monthlyData[monthKey] = { km: 0, liters: fuelByMonth[monthKey] || 0 };
+                        monthlyData[monthKey].km += kmRodado;
+                    }
+                }
+            }
+
+            if (Object.keys(monthlyData).length > 1) {
+                chartRenderQueue.push({ vehicleId: v.id, data: monthlyData });
             }
 
             if (tableRows) {
                 html += `
                     <div class="card">
                         <h3 style="margin:0 0 10px 0">${v.motorista} <span style="color:var(--text-secondary);font-weight:normal">(${v.placa})</span></h3>
-                        <div style="overflow-x:auto">
-                            <table>
-                                <thead><tr><th>Data</th><th>KM Registrado</th><th>Fonte</th><th>KM Rodado</th><th>Intervalo (dias)</th><th>Média KM/Dia</th></tr></thead>
-                                <tbody>${tableRows}</tbody>
-                            </table>
+                        ${Object.keys(monthlyData).length > 1 ? `
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="margin:0 0 10px 0; font-size:14px;">Evolução Mensal</h4>
+                            <div style="position:relative; height:150px"><canvas id="km-chart-${v.id}"></canvas></div>
+                        </div>
+                        ` : ''}
+                        <div class="fuel-vehicle-header" onclick="toggleKmDetail('km-detail-${v.id}')" style="padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.03); cursor: pointer;">
+                            <div style="font-weight:600; font-size:13px;">Ver Registros Detalhados</div>
+                            <span style="color:var(--text-secondary);font-size:18px" id="arrow-km-detail-${v.id}">▾</span>
+                        </div>
+                        <div class="fuel-vehicle-body" id="km-detail-${v.id}">
+                            <div style="overflow-x:auto; padding-top: 15px;">
+                                <table>
+                                    <thead><tr><th>Data</th><th>KM Registrado</th><th>Fonte</th><th>KM Rodado</th><th>Intervalo (dias)</th><th>Média KM/Dia</th></tr></thead>
+                                    <tbody>${tableRows}</tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>`;
             }
@@ -2069,6 +2206,53 @@ function showRelatorio(tipo) {
 
         container.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Relatório de Histórico de KM</h3><button onclick="exportarCSVKmHistory()" class="btn-small btn-success"><i class="fas fa-file-csv"></i> Exportar CSV</button></div><p style="font-size:12px;color:var(--text-secondary);margin:8px 0 0 0">Acompanhe a evolução da quilometragem de cada veículo, com detalhes sobre a distância percorrida entre cada registro.</p></div>${html}`;
 
+        setTimeout(() => {
+            chartRenderQueue.forEach(item => {
+                const { vehicleId, data } = item;
+                const ctx = document.getElementById(`km-chart-${vehicleId}`);
+                if (!ctx) return;
+
+                const sortedMonths = Object.keys(data).sort();
+                const labels = sortedMonths.map(key => {
+                    const [year, month] = key.split('-');
+                    return new Date(year, month-1).toLocaleString('default', { month: 'short', year: '2-digit' });
+                });
+                const kmData = sortedMonths.map(key => data[key].km);
+                const avgData = sortedMonths.map(key => {
+                    const month = data[key]; // data is monthlyData
+                    return month.liters > 0 ? (month.km / month.liters) : 0;
+                });
+
+                _kmHistoryCharts[vehicleId] = new Chart(ctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'KM Rodado', data: kmData,
+                                backgroundColor: 'rgba(139, 92, 246, 0.6)', borderColor: '#8b5cf6',
+                                borderWidth: 1, borderRadius: 4, yAxisID: 'y_km',
+                            },
+                            {
+                                label: 'Média Consumo (km/l)', data: avgData, type: 'line',
+                                borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                                tension: 0.3, yAxisID: 'y_avg', fill: false,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+                        scales: {
+                            y_km:  { position: 'left',  ticks: { color: '#a78bfa', font:{size:10}, callback: v => `${formatKM(v)} km` }, grid: { color: 'rgba(255,255,255,0.04)' } },
+                            y_avg: { position: 'right', ticks: { color: '#f59e0b', font:{size:10}, callback: v => `${v.toFixed(1)} km/l` }, grid: { drawOnChartArea: false } },
+                            x:  { ticks: { color: '#94a3b8', font:{size:10} } }
+                        }
+                    }
+                });
+            });
+        }, 50);
+
     } else if (tipo === 'estoque') {
         let totalEst = db.estoque.reduce((s,e) => s+(e.qtd*e.val), 0);
         container.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><h3 style="margin:0">Inventário do Estoque</h3><div class="stat-num" style="color:var(--success)">R$ ${formatMoney(totalEst)}</div></div>
@@ -2077,6 +2261,19 @@ function showRelatorio(tipo) {
             ${!db.estoque.length?'<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary)">Estoque vazio</td></tr>':''}</tbody>
         </table></div></div>`;
     }
+}
+
+function setKmHistoryPeriod(months) {
+    _kmHistoryPeriod = months;
+    reRenderRelatorio();
+}
+
+function toggleKmDetail(id) {
+    const body = document.getElementById(id);
+    const arrow = document.getElementById('arrow-' + id);
+    if (!body) return;
+    body.classList.toggle('open');
+    if (arrow) arrow.textContent = body.classList.contains('open') ? '▴' : '▾';
 }
 
 // ============================================================
@@ -2570,14 +2767,14 @@ Object.assign(window, {
     tab, addVeiculo, abrirVeiculo, editarVeiculo, excluirVeiculo,
     atualizarKM, addServico, excluirServico, updateTipoSelect,
     abrirModalEditar, fecharModalEditar, salvarEdicaoServico,
-    addAlerta, removerAlerta, addNota, removerNota, addFotos, removerFoto,
+    addAlerta, removerAlerta, addNota, removerNota, addFotos, removerFoto, popularHistoricoKmInicial,
     addOficina, removerOficina, addRegra, removerRegra,
     addCompra, addPeca, editarEstoque, excluirEstoque, salvarEdicaoEstoque, fecharModalEditarEstoque,
-    showRelatorio, reRenderRelatorio, preencherFiltroAnos,
+    showRelatorio, reRenderRelatorio, preencherFiltroAnos, setKmHistoryPeriod,
     salvarDados, maskKM, maskMoney, showImage, ignorarAlerta, exportarCSVKmHistory,
     exportarCSV, exportarCSVAbastecimento, exportarBackup, importarBackup,
     toggleRelatorioVeiculoDetalhes, toggleRelatorioMecanicaDetalhes,
-    toggleFuelCard,
+    toggleFuelCard, toggleKmDetail,
     addAbastecimento, excluirAbastecimento, switchOdoTab,
     loginApp, logoutApp, limparLogin, toggleSidebar, initAuth,
     abrirModalAlarmes, fecharModalAlarmes, salvarAlarmesVeiculo,
