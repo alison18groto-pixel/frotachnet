@@ -117,6 +117,13 @@
         .badge-danger { background: rgba(239,68,68,0.2); color: var(--danger); }
         .badge-success { background: rgba(16,185,129,0.2); color: var(--success); }
         .badge-warn { background: rgba(245,158,11,0.2); color: var(--warn); }
+        mark {
+            background: #f59e0b;
+            color: #0a0a0f;
+            padding: 1px 3px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
         h2 { margin: 0 0 15px 0; font-size: 16px; }
         h3 { margin: 0 0 12px 0; font-size: 15px; }
         h4 { margin: 0 0 10px 0; font-size: 13px; color: var(--text-secondary); }
@@ -924,6 +931,22 @@ function formatDate(dateStr) {
     const [year, month, day] = datePart.split('-');
     return `${day}/${month}/${year}`;
 }
+function highlightText(text, searchTerm) {
+    if (!searchTerm || !text) return text;
+    const searchTerms = String(searchTerm).toLowerCase().split(' ').filter(Boolean);
+    let highlightedText = String(text);
+    searchTerms.forEach(term => {
+        try {
+            const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            highlightedText = highlightedText.replace(regex, `<mark>$1</mark>`);
+        } catch (e) {
+            console.error("Highlighting error:", e);
+            return text;
+        }
+    });
+    return highlightedText;
+}
 function showImage(src) {
     let w = window.open('', '_blank');
     w.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:min-height:100vh"><img src="${src}" style="max-width:100%;max-height:100vh"></body></html>`);
@@ -1059,7 +1082,7 @@ function renderVeiculos() {
         let mediaTexto = media.media > 0 ? `⛽ ${media.media.toFixed(2)} km/l` : '⛽ Sem dados';
         return `<div class="card car-card" onclick="abrirVeiculo(${v.id})">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
-                <div><h3 style="margin:0 0 5px">${v.motorista}</h3><div style="color:var(--text-secondary)">${v.placa} | ${v.modelo}</div></div>
+                <div><h3 style="margin:0 0 5px">${highlightText(v.motorista, searchTerm)}</h3><div style="color:var(--text-secondary)">${highlightText(v.placa, searchTerm)} | ${highlightText(v.modelo, searchTerm)}</div></div>
                 ${alertasVenc > 0 ? `<span class="badge badge-danger">${alertasVenc} vencido${alertasVenc>1?'s':''}</span>` : '<span class="badge badge-success">Em dia</span>'}
             </div>
             <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
@@ -1198,10 +1221,10 @@ function renderHistoricoServicos() {
         <div class="servico-item">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
                 <div style="flex:1">
-                    <strong>${s.tipo}</strong>
-                    <div><small style="color:var(--text-secondary)">${s.forn} | ${formatDate(s.data)} | KM: ${formatKM(s.km)}</small></div>
+                    <strong>${highlightText(s.tipo, filtro)}</strong>
+                    <div><small style="color:var(--text-secondary)">${highlightText(s.forn, filtro)} | ${formatDate(s.data)} | KM: ${formatKM(s.km)}</small></div>
                     <div style="color:var(--success)">💰 R$ ${formatMoney(s.val)}</div>
-                    ${s.obs ? `<div><small><i class="fas fa-comment"></i> ${s.obs}</small></div>` : ''}
+                    ${s.obs ? `<div><small><i class="fas fa-comment"></i> ${highlightText(s.obs, filtro)}</small></div>` : ''}
                 </div>
                 <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
                     ${s.img ? `<img src="${s.img}" style="width:45px;height:45px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="showImage('${s.img}')">` : ''}
@@ -2065,7 +2088,7 @@ function showRelatorio(tipo) {
                 </div>
                 <div style="overflow-x:auto"><table>
                     <thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Oficina</th><th>KM</th><th>Valor</th><th>Obs</th></tr></thead>
-                    <tbody>${todos.map(s => `<tr><td>${formatDate(s.data)}</td><td><strong>${s.motorista}</strong> <span style="color:var(--text-secondary)">(${s.placa})</span></td><td>${s.tipo}</td><td>${s.forn}</td><td>${formatKM(s.km)} km</td><td><strong>R$ ${formatMoney(s.val)}</strong></td><td style="color:var(--text-secondary)">${s.obs||'—'}</td></tr>`).join('')}
+                    <tbody>${todos.map(s => `<tr><td>${highlightText(formatDate(s.data), filterSearch)}</td><td><strong>${highlightText(s.motorista, filterSearch)}</strong> <span style="color:var(--text-secondary)">(${highlightText(s.placa, filterSearch)})</span></td><td>${highlightText(s.tipo, filterSearch)}</td><td>${highlightText(s.forn, filterSearch)}</td><td>${formatKM(s.km)} km</td><td><strong>R$ ${formatMoney(s.val)}</strong></td><td style="color:var(--text-secondary)">${highlightText(s.obs||'—', filterSearch)}</td></tr>`).join('')}
                     ${!todos.length?'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>':''}</tbody>
                 </table></div>
             </div>`;
@@ -2074,13 +2097,13 @@ function showRelatorio(tipo) {
         const renderDetalhesVisiveis = (v) => {
             const sf = filtrarServicos(v.servicos, v).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
             if (!sf.length) return '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço registrado.</div>';
-            return `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:6px">Data</th><th style="text-align:left;padding:6px">Tipo</th><th style="text-align:left;padding:6px">Oficina</th><th style="text-align:left;padding:6px">KM</th><th style="text-align:left;padding:6px">Valor</th><th style="text-align:left;padding:6px">Obs</th></tr></thead><tbody>${sf.map(s=>`<tr><td style="padding:4px">${formatDate(s.data)}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${s.forn||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td><td style="padding:4px">${s.obs||'-'}</td></tr>`).join('')}</tbody></table></div>`;
+            return `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:6px">Data</th><th style="text-align:left;padding:6px">Tipo</th><th style="text-align:left;padding:6px">Oficina</th><th style="text-align:left;padding:6px">KM</th><th style="text-align:left;padding:6px">Valor</th><th style="text-align:left;padding:6px">Obs</th></tr></thead><tbody>${sf.map(s=>`<tr><td style="padding:4px">${highlightText(formatDate(s.data), filterSearch)}</td><td style="padding:4px">${highlightText(s.tipo||'-', filterSearch)}</td><td style="padding:4px">${highlightText(s.forn||'-', filterSearch)}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td><td style="padding:4px">${highlightText(s.obs||'-', filterSearch)}</td></tr>`).join('')}</tbody></table></div>`;
         };
         container.innerHTML = `<div class="card"><h3>Gastos por Veículo</h3><div style="overflow-x:auto"><table>
             <thead><tr><th></th><th>Motorista</th><th>Placa</th><th>Modelo</th><th>KM Atual</th><th>Serviços</th><th>Total Gasto</th></tr></thead>
             <tbody>${db.veiculos.filter(filtrarVeiculoPorPesquisa).map(v => {
                 let sf = filtrarServicos(v.servicos, v), t = sf.reduce((s,sv) => s+sv.val, 0);
-                return `<tr class="veiculo-row" onclick="toggleRelatorioVeiculoDetalhes(${v.id})" style="cursor:pointer"><td style="padding:6px">▸</td><td><strong>${v.motorista}</strong></td><td>${v.placa}</td><td>${v.modelo}</td><td>${formatKM(v.km)} km</td><td>${sf.length}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(t)}</strong></td></tr><tr id="detalhes-veiculo-${v.id}" class="hidden"><td colspan="7" style="border:none;padding:0">${renderDetalhesVisiveis(v)}</td></tr>`;
+                return `<tr class="veiculo-row" onclick="toggleRelatorioVeiculoDetalhes(${v.id})" style="cursor:pointer"><td style="padding:6px">▸</td><td><strong>${highlightText(v.motorista, filterSearch)}</strong></td><td>${highlightText(v.placa, filterSearch)}</td><td>${highlightText(v.modelo, filterSearch)}</td><td>${formatKM(v.km)} km</td><td>${sf.length}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(t)}</strong></td></tr><tr id="detalhes-veiculo-${v.id}" class="hidden"><td colspan="7" style="border:none;padding:0">${renderDetalhesVisiveis(v)}</td></tr>`;
             }).join('')}</tbody>
         </table></div></div>`;
 
@@ -2100,8 +2123,8 @@ function showRelatorio(tipo) {
             <tbody>${entries.map(([n,v]) => {
                 let id = sid(n);
                 let det = (detalheMec[n]||[]).sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
-                let dhtml = det.length ? `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="padding:6px;text-align:left">Data</th><th style="padding:6px;text-align:left">Motorista</th><th style="padding:6px;text-align:left">Placa</th><th style="padding:6px;text-align:left">Tipo</th><th style="padding:6px;text-align:left">KM</th><th style="padding:6px;text-align:left">Valor</th></tr></thead><tbody>${det.map(s=>`<tr><td style="padding:4px">${formatDate(s.data)}</td><td style="padding:4px">${s.motorista||'-'}</td><td style="padding:4px">${s.placa||'-'}</td><td style="padding:4px">${s.tipo||'-'}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td></tr>`).join('')}</tbody></table></div>` : '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço no período.</div>';
-                return `<tr onclick="toggleRelatorioMecanicaDetalhes('${id}')" style="cursor:pointer"><td style="padding:6px">▸</td><td><strong>${n}</strong></td><td>${v.qtd}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(v.total)}</strong></td><td>R$ ${formatMoney(v.total/v.qtd)}</td></tr><tr id="detalhes-mecanica-${id}" class="hidden"><td colspan="5" style="border:none;padding:0">${dhtml}</td></tr>`;
+                let dhtml = det.length ? `<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="padding:6px;text-align:left">Data</th><th style="padding:6px;text-align:left">Motorista</th><th style="padding:6px;text-align:left">Placa</th><th style="padding:6px;text-align:left">Tipo</th><th style="padding:6px;text-align:left">KM</th><th style="padding:6px;text-align:left">Valor</th></tr></thead><tbody>${det.map(s=>`<tr><td style="padding:4px">${highlightText(formatDate(s.data), filterSearch)}</td><td style="padding:4px">${highlightText(s.motorista||'-', filterSearch)}</td><td style="padding:4px">${highlightText(s.placa||'-', filterSearch)}</td><td style="padding:4px">${highlightText(s.tipo||'-', filterSearch)}</td><td style="padding:4px">${formatKM(s.km)} km</td><td style="padding:4px">R$ ${formatMoney(s.val)}</td></tr>`).join('')}</tbody></table></div>` : '<div style="padding:10px;color:var(--text-secondary)">Nenhum serviço no período.</div>';
+                return `<tr onclick="toggleRelatorioMecanicaDetalhes('${id}')" style="cursor:pointer"><td style="padding:6px">▸</td><td><strong>${highlightText(n, filterSearch)}</strong></td><td>${v.qtd}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(v.total)}</strong></td><td>R$ ${formatMoney(v.total/v.qtd)}</td></tr><tr id="detalhes-mecanica-${id}" class="hidden"><td colspan="5" style="border:none;padding:0">${dhtml}</td></tr>`;
             }).join('')}</tbody>
         </table></div></div>`;
 
@@ -2145,7 +2168,7 @@ function showRelatorio(tipo) {
             ${dadosPneu.map(({v,dianteiros,traseiros,calcD,calcT})=>`
                 <div class="card" style="margin-bottom:15px">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                        <div><h3 style="margin:0">${v.motorista}</h3><span style="font-size:11px;color:var(--text-secondary)">${v.placa} | ${v.modelo} | <span class="km-tag">${formatKM(v.km)} km</span></span></div>
+                        <div><h3 style="margin:0">${highlightText(v.motorista, filterSearch)}</h3><span style="font-size:11px;color:var(--text-secondary)">${highlightText(v.placa, filterSearch)} | ${highlightText(v.modelo, filterSearch)} | <span class="km-tag">${formatKM(v.km)} km</span></span></div>
                         <div style="display:flex;gap:8px"><span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6">🔵 ${dianteiros.length} dianteiro</span><span class="badge" style="background:rgba(139,92,246,0.15);color:#8b5cf6">🟣 ${traseiros.length} traseiro</span></div>
                     </div>
                     <div style="border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:12px;background:rgba(59,130,246,0.04)"><div style="font-size:12px;font-weight:bold;color:#3b82f6;margin-bottom:10px">● PNEU DIANTEIRO</div>${rct(calcD,'pneu dianteiro')}</div>
@@ -2153,7 +2176,7 @@ function showRelatorio(tipo) {
                 </div>`).join('')}`;
 
     } else if (tipo === 'abastecimento') {
-        renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, filtrarVeiculoPorPesquisa);
+        renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, filtrarVeiculoPorPesquisa, filterSearch);
 
     } else if (tipo === 'km_history') {
         let html = '';
@@ -2257,7 +2280,7 @@ function showRelatorio(tipo) {
             if (tableRows) {
                 html += `
                     <div class="card">
-                        <h3 style="margin:0 0 10px 0">${v.motorista} <span style="color:var(--text-secondary);font-weight:normal">(${v.placa})</span></h3>
+                        <h3 style="margin:0 0 10px 0">${highlightText(v.motorista, filterSearch)} <span style="color:var(--text-secondary);font-weight:normal">(${highlightText(v.placa, filterSearch)})</span></h3>
                         ${Object.keys(monthlyData).length > 1 ? `
                         <div style="margin-bottom: 15px;">
                             <h4 style="margin:0 0 10px 0; font-size:14px;">Evolução Mensal</h4>
@@ -2357,7 +2380,7 @@ function toggleKmDetail(id) {
 // ============================================================
 // RELATÓRIO DE ABASTECIMENTO — COMPLETO
 // ============================================================
-function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, filtrarVeiculoPorPesquisa) {
+function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, filtrarVeiculoPorPesquisa, filterSearch) {
     const container = document.getElementById('relatorio-content');
 
     // Collect all abastecimentos across all vehicles with context
@@ -2460,8 +2483,8 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
         <div class="fuel-vehicle-card">
             <div class="fuel-vehicle-header" onclick="toggleFuelCard('fvc-${vi}')">
                 <div>
-                    <div style="font-weight:700;font-size:14px">${d.v.motorista}</div>
-                    <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${d.v.placa} | ${d.v.modelo} | <span class="km-tag" style="font-size:10px">${formatKM(d.v.km)} km</span></div>
+                    <div style="font-weight:700;font-size:14px">${highlightText(d.v.motorista, filterSearch)}</div>
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${highlightText(d.v.placa, filterSearch)} | ${highlightText(d.v.modelo, filterSearch)} | <span class="km-tag" style="font-size:10px">${formatKM(d.v.km)} km</span></div>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px">
                     ${d.mediaConsumo>0 ? `<span class="efficiency-tag ${eficClass}">${d.mediaConsumo.toFixed(2)} km/l · ${eficLabel}</span>` : ''}
