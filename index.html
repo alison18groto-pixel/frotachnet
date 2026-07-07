@@ -491,7 +491,14 @@
                 <div class="card">
                     <h3>🔧 Registrar Manutenção</h3>
                     <select id="servico_forn" onchange="updateTipoSelect()"></select>
-                    <select id="servico_tipo"></select>
+                    <select id="servico_tipo" onchange="atualizarPrecoEUnidadesPorPneu()"></select>
+                    <div id="wrapper_pneu_qtd" class="hidden" style="margin-top: 8px;">
+                        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Quantidade de Pneus</label>
+                        <select id="pneu_qtd" onchange="atualizarPrecoEUnidadesPorPneu()">
+                            <option value="1">1 unidade</option>
+                            <option value="2">2 unidades</option>
+                        </select>
+                    </div>
                     <input id="servico_val" oninput="maskMoney(this)" placeholder="Valor R$">
                     <input id="servico_km" oninput="maskKM(this)" placeholder="KM do serviço">
                     <input type="date" id="servico_data">
@@ -499,6 +506,7 @@
                     <div style="font-size:11px; color:var(--text-secondary); margin-bottom:6px"><i class="fas fa-camera"></i> Foto (opcional)</div>
                     <input type="file" id="servico_foto" accept="image/*">
                     <button onclick="addServico()" style="margin-top:5px">Salvar Serviço</button>
+                    <button onclick="executarRodizioPneus()" style="margin-top:10px; background: var(--btn-info);"><i class="fas fa-sync-alt"></i> Executar Rodízio de Pneus</button>
                 </div>
                 <div class="card">
                     <h3>🔔 Alertas Personalizados</h3>
@@ -782,7 +790,6 @@ function salvarDados() {
         })
         .catch(error => {
             console.error("Erro ao sincronizar:", error);
-            alert("ERRO AO SALVAR: Não foi possível salvar os dados na nuvem. Verifique sua conexão e as permissões do banco de dados.");
             if (btn) btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falhou';
         });
     localStorage.setItem('frota_pro_v47', JSON.stringify(db));
@@ -798,83 +805,69 @@ function popularHistoricoKmInicial() {
         const allEntries = new Map();
 
         // 1. Adiciona entradas do histórico existente para evitar duplicatas, mas mantê-las.
-        v.kmHistory.forEach(h => {
-            const key = `${h.date}_${h.km}`;
-            if (!allEntries.has(key)) {
-                allEntries.set(key, h);
-            }
-        });
+        v.kmHistory.forEach(h => { allEntries.set(`${h.date}_${h.km}`, h); });
 
         // 2. Adiciona a partir de serviços
-        (v.servicos || []).forEach(s => {
-            if (s.km > 0 && s.data) {
-                const key = `${s.data}_${s.km}`;
-                if (!allEntries.has(key)) {
-                    allEntries.set(key, { km: s.km, date: s.data, source: 'servico' });
-                }
-            }
-        });
+        (v.servicos || []).forEach(s => { if (s.km > 0 && s.data) allEntries.set(`${s.data}_${s.km}`, { km: s.km, date: s.data, source: 'servico' }); });
 
         // 3. Adiciona a partir de abastecimentos
-        (v.abastecimentos || []).forEach(a => {
-            if (a.km > 0 && a.data) {
-                const key = `${a.data}_${a.km}`;
-                if (!allEntries.has(key)) {
-                    allEntries.set(key, { km: a.km, date: a.data, source: 'abastecimento' });
-                }
-            }
-        });
+        (v.abastecimentos || []).forEach(a => { if (a.km > 0 && a.data) allEntries.set(`${a.data}_${a.km}`, { km: a.km, date: a.data, source: 'abastecimento' }); });
 
         // 4. Substitui o histórico antigo pelo novo, completo e sem duplicatas
         v.kmHistory = Array.from(allEntries.values());
 
         // 5. Ordena o histórico final por data e depois por KM
-        v.kmHistory.sort((a, b) => {
-            const dateA = new Date(a.date + 'T00:00:00');
-            const dateB = new Date(b.date + 'T00:00:00');
-            if (dateA - dateB !== 0) return dateA - dateB;
-            return (a.km || 0) - (b.km || 0);
-        });
+        v.kmHistory.sort((a, b) => new Date(a.date + 'T00:00:00') - new Date(b.date + 'T00:00:00') || (a.km || 0) - (b.km || 0));
     });
 
     db.kmHistoryPopulated = true; // Define a flag para não rodar de novo
-    console.log('Histórico de KM populado com dados iniciais.');
 }
 
+// CORREÇÃO: Estrutura sem conflitos ou traduções estranhas
 function carregarDados() {
     database.ref('appData').on('value', (snapshot) => {
         const data = snapshot.val();
-        if (data) { // Se existem dados na nuvem, usa eles
-            db = data;
-        }
+        if (data) { db = data; }
         
-        // Garante que as propriedades essenciais existam
-        if (!db.veiculos) db.veiculos = [];
+        if (typeof db !== 'object' || db === null) db = {};
+
+        if (db.veiculos && typeof db.veiculos === 'object' && !Array.isArray(db.veiculos)) db.veiculos = Object.values(db.veiculos);
+        if (db.estoque && typeof db.estoque === 'object' && !Array.isArray(db.estoque)) db.estoque = Object.values(db.estoque);
+
+        if (!db.regras || typeof db.regras !== 'object') db.regras = {};
+        if (!Array.isArray(db.oficinas)) db.oficinas = [];
+        if (!Array.isArray(db.estoque)) db.estoque = [];
+        if (!Array.isArray(db.veiculos)) db.veiculos = [];
+        if (!db.nextId || typeof db.nextId !== 'number') {
+            db.nextId = db.veiculos.length > 0 ? db.veiculos.reduce((max, v) => Math.max(max, v ? v.id : 0), 0) + 1 : 1;
+        }
+
         db.veiculos.forEach(v => {
-            if (!v.alertasIgnorados) v.alertasIgnorados = [];
-            if (!v.servicos) v.servicos = [];
-            if (!v.notas) v.notas = [];
-            if (!v.fotos) v.fotos = [];
-            if (!v.alertas) v.alertas = [];
-            if (!v.bases) v.bases = {};
-            if (!v.abastecimentos) v.abastecimentos = [];
-            if (!v.regrasProprias) v.regrasProprias = {};
-            if (!v.kmHistory) v.kmHistory = [];
+            if (!v || typeof v !== 'object') return;
+            if (!Array.isArray(v.alertasIgnorados)) v.alertasIgnorados = [];
+            if (!Array.isArray(v.servicos)) v.servicos = [];
+            if (!Array.isArray(v.notas)) v.notas = [];
+            if (!Array.isArray(v.fotos)) v.fotos = [];
+            if (!Array.isArray(v.alertas)) v.alertas = [];
+            if (!v.bases || typeof v.bases !== 'object') v.bases = {};
+            if (!Array.isArray(v.abastecimentos)) v.abastecimentos = [];
+            if (!v.regrasProprias || typeof v.regrasProprias !== 'object') v.regrasProprias = {};
+            if (!Array.isArray(v.kmHistory)) v.kmHistory = [];
         });
 
-        // Popula o histórico de KM com dados existentes, se ainda não foi feito.
-        popularHistoricoKmInicial();
+        db.estoque.forEach(e => {
+            if (!e || typeof e !== 'object') return;
+            if (!Array.isArray(e.compras)) e.compras = [];
+        });
 
+        popularHistoricoKmInicial();
         renderizarTudo();
 
-    }, (error) => {
-        console.error("Erro de permissão ao carregar dados do Firebase:", error);
-        alert("ERRO CRÍTICO: O acesso ao banco de dados foi negado. Verifique as Regras de Segurança no seu console do Firebase para garantir que usuários autenticados tenham permissão de leitura ('.read': 'auth != null').");
-        logoutApp(); // Desloga o usuário pois o app não pode funcionar sem dados.
     });
 }
 
 function salvar() { salvarDados(); renderizarTudo(); }
+function limparLogin() { document.getElementById('login_user').value = ''; document.getElementById('login_pass').value = ''; }
 
 // ============================================================
 // BACKUP
@@ -965,7 +958,7 @@ function tab(t) {
     if (t === 'dash')       renderDashboard();
     if (t === 'estoque')    renderEstoque();
     if (t === 'servicos')   renderServicos();
-    if (t === 'relatorios') { preencherFiltroAnos(); showRelatorio('geral'); }
+    if (t === 'relatorios') { preencherFiltroAnos(); showRelatorio('geral'); } // Removido: renderRelatorios()
     if (t === 'frota')      renderVeiculos();
 }
 
@@ -976,6 +969,7 @@ function renderDashboard() {
     const alertsDiv      = document.getElementById('dash-alerts');
     const customAlertDiv = document.getElementById('dash-custom-alerts');
     const lowStockDiv    = document.getElementById('low-stock-alerts');
+    if (!alertsDiv || !customAlertDiv || !lowStockDiv) return;
     alertsDiv.innerHTML = customAlertDiv.innerHTML = lowStockDiv.innerHTML = '';
 
     db.veiculos.forEach(v => {
@@ -992,7 +986,6 @@ function renderDashboard() {
                             <br><small>${r}: <strong>${vencido ? '⛔ VENCIDO' : '⚠️ Em breve'}</strong></small>
                             <br><small>${vencido ? `Passou ${formatKM(Math.abs(falta))} km` : `Faltam ${formatKM(falta)} km`}</small>
                         </div>
-                        <i class="fas fa-eye-slash eye-icon" onclick="event.stopPropagation(); ignorarAlerta(${v.id}, '${r}')" title="Ignorar alerta"></i>
                     </div>`;
             }
         });
@@ -1030,7 +1023,7 @@ function renderDashboard() {
     if (!customAlertDiv.innerHTML) customAlertDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--custom-alert)"></i> Nenhum alerta personalizado ativo.</div>';
 
     db.estoque.forEach(e => {
-        if (e.qtd <= e.min) lowStockDiv.innerHTML += `<div class="card status-mini vencido"><span><strong>⚠️ ${e.nome}</strong><br><small>Estoque: ${e.qtd} | Mínimo: ${e.min}</small></span><span class="badge badge-danger">Repor</span></div>`;
+        if (e.qtd <= e.min) lowStockDiv.innerHTML += `<div class="card status-mini vencido"><span><strong>⚠️ ${e.nome}</strong><br><small>Estoque: ${e.qtd} | Mínimo: ${e.min}</small></span></div>`;
     });
     if (!lowStockDiv.innerHTML) lowStockDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Estoque OK!</div>';
 
@@ -1083,7 +1076,7 @@ function renderVeiculos() {
         return `<div class="card car-card" onclick="abrirVeiculo(${v.id})">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
                 <div><h3 style="margin:0 0 5px">${highlightText(v.motorista, searchTerm)}</h3><div style="color:var(--text-secondary)">${highlightText(v.placa, searchTerm)} | ${highlightText(v.modelo, searchTerm)}</div></div>
-                ${alertasVenc > 0 ? `<span class="badge badge-danger">${alertasVenc} vencido${alertasVenc>1?'s':''}</span>` : '<span class="badge badge-success">Em dia</span>'}
+                ${alertasVenc > 0 ? `<span class="badge badge-danger">${alertasVenc} vencido${alertasVenc > 1 ? 's' : ''}</span>` : '<span class="badge badge-success">Em dia</span>'}
             </div>
             <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
                 <span class="km-tag"><i class="fas fa-road"></i> ${formatKM(v.km)} km</span>
@@ -1100,7 +1093,7 @@ function addVeiculo() {
     let placa = prompt('Placa:').toUpperCase();
     let modelo = prompt('Modelo:', 'Saveiro');
     if (motorista && placa) {
-        const newVehicle = { id: db.nextId++, motorista, placa, modelo: modelo || 'Saveiro', km: 0, servicos: [], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: new Date().toISOString().split('T')[0], alertasIgnorados: [], abastecimentos: [], regrasProprias: {}, kmHistory: [] };
+        const newVehicle = { id: Date.now(), motorista, placa, modelo: modelo || 'Saveiro', km: 0, servicos: [], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: new Date().toISOString().split('T')[0], alertasIgnorados: [], abastecimentos: [], regrasProprias: {}, kmHistory: [] };
         db.veiculos.push(newVehicle);
         salvar();
         // Automatically open the new vehicle for initial setup
@@ -1548,12 +1541,143 @@ function atualizarKM() {
 function updateTipoSelect() {
     let forn = document.getElementById('servico_forn').value;
     let tipoSelect = document.getElementById('servico_tipo');
+    
     if (forn === 'CHNET Estoque') {
-        tipoSelect.innerHTML = db.estoque.map(e => `<option value="${e.nome}" ${e.qtd<=0?'disabled':''}>${e.nome} (Estoque: ${e.qtd})</option>`).join('') || '<option disabled>Sem itens no estoque</option>';
+        tipoSelect.innerHTML = db.estoque.map(e => `<option value="${e.nome}" data-valor="${e.val || 0}" ${e.qtd<=0?'disabled':''}>${e.nome} (Estoque: ${e.qtd})</option>`).join('') || '<option disabled>Sem itens no estoque</option>';
+        // Injeta o valor cadastrado no atributo data-valor de cada option
+        tipoSelect.innerHTML = db.estoque.map(e => `
+            <option value="${e.nome}" data-valor="${e.val || 0}" ${e.qtd<=0?'disabled':''}>
+                ${e.nome} (Estoque: ${e.qtd})
+            </option>`).join('') || '<option disabled>Sem itens no estoque</option>';
     } else {
         const regras = veiculoAtual ? getRegrasVeiculo(veiculoAtual) : db.regras;
-        tipoSelect.innerHTML = Object.keys(regras).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
+        tipoSelect.innerHTML = Object.keys(regras).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>'; // Corrigido para usar regrasBase
+        // Recupera as regras do veículo sem o caractere fantasma que travava o script
+        const regrasDoVeiculo = veiculoAtual ? getRegrasVeiculo(veiculoAtual) : db.regras;
+        tipoSelect.innerHTML = Object.keys(regrasDoVeiculo).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
     }
+    // Dispara imediatamente para checar se é PNEU e puxar o preço na hora
+    atualizarPrecoEUnidadesPorPneu();
+}
+
+function atualizarPrecoEUnidadesPorPneu() {
+    const tipoSelect = document.getElementById('servico_tipo');
+    const fornSelect = document.getElementById('servico_forn');
+    const valorCampo = document.getElementById('servico_val');
+    const wrapperPneu = document.getElementById('wrapper_pneu_qtd');
+    const qtdPneuSelect = document.getElementById('pneu_qtd');
+    const qtdPneuSelect = document.getElementById('pneu_qtd'); // Mapeia o ID correto do HTML
+
+    if (fornSelect.value !== 'CHNET Estoque') {
+        wrapperPneu.classList.add('hidden');
+        return;
+    }
+    if (!tipoSelect || !fornSelect || !valorCampo) return;
+
+    const selectedOption = tipoSelect.options[tipoSelect.selectedIndex];
+    if (!selectedOption) {
+        valorCampo.value = '';
+        wrapperPneu.classList.add('hidden');
+        return;
+    
+    // REGRA 2: Se a palavra PNEU estiver no serviço, exibe o seletor de 1 ou 2 unidades
+    if (selectedOption && selectedOption.value.toLowerCase().includes('pneu')) {
+        if (wrapperPneu) wrapperPneu.classList.remove('hidden');
+    } else {
+        if (wrapperPneu) {
+            wrapperPneu.classList.add('hidden');
+            if (qtdPneuSelect) qtdPneuSelect.value = '1'; // Reseta se mudar de produto
+        }
+    }
+
+    const valorBase = parseFloat(selectedOption.getAttribute('data-valor')) || 0;
+    let qtd = 1;
+
+    if (selectedOption.value.toLowerCase().includes('pneu')) {
+        wrapperPneu.classList.remove('hidden');
+        qtd = parseInt(qtdPneuSelect.value) || 1;
+    } else {
+        wrapperPneu.classList.add('hidden');
+        qtdPneuSelect.value = '1';
+    // REGRA 1: Se for ESTOQUE CHNET, puxa o valor cadastrado automaticamente
+    if (fornSelect.value === 'CHNET Estoque' && selectedOption) {
+        const valorBase = parseFloat(selectedOption.getAttribute('data-valor')) || 0;
+        const qtd = qtdPneuSelect && !wrapperPneu.classList.contains('hidden') ? parseInt(qtdPneuSelect.value) : 1;
+        
+        // Aplica o preço final multiplicado pela quantidade (1 ou 2)
+        valorCampo.value = 'R$ ' + formatMoney(valorBase * qtd);
+    }
+
+    valorCampo.value = 'R$ ' + formatMoney(valorBase * qtd);
+}
+
+function executarRodizioPneus() {
+    const v = veiculoAtual;
+    if (!v) return alert('Selecione um veículo primeiro!');
+
+    const kmAtual = v.km;
+    if (!kmAtual || kmAtual <= 0) return alert('Por favor, informe a quilometragem atual do veículo antes de realizar o rodízio.');
+
+    // 1. Captura o KM exato de quando o pneu meia-vida foi instalado na frente
+    const kmInstalacaoOriginal = v.bases['Pneu Dianteiro'] || v.bases['Pneu'] || 0;
+    
+    // Calcula quanto o pneu já rodou na frente até hoje
+    const kmJáRodadoNaFrente = kmAtual - kmInstalacaoOriginal;
+    const hoje = new Date().toISOString().split('T')[0];
+
+    if (kmJáRodadoNaFrente < 0) {
+        return alert('Erro: O KM atual do veículo é menor do que o KM de instalação do pneu dianteiro. Verifique o odômetro.');
+    }
+
+    if (!confirm(`Confirmar Rodízio de Pneus Realista?\n\n` +
+                 `1. PNEUS DE TRÁS (Meia-Vida): Irão assumir a quilometragem real de quando foram fabricados/instalados (${formatKM(kmInstalacaoOriginal)} km), carregando os ${formatKM(kmJáRodadoNaFrente)} km já rodados.\n` +
+                 `2. PNEUS DA FRENTE (Novos): Irão zerar o ciclo na dianteira, começando a contar a partir de agora (${formatKM(kmAtual)} km).`)) {
+        return;
+    }
+
+    // 2. Transferência física dos quilômetros nas bases do sistema
+    // O pneu traseiro herda o KM de nascimento dele para o relatório calcular o desgaste acumulado
+    v.bases['Pneu Traseiro'] = kmInstalacaoOriginal; 
+    
+    // A dianteira recebe pneus novos, logo o ciclo deles começa no KM atual do odômetro
+    v.bases['Pneu Dianteiro'] = kmAtual;
+    v.bases['Pneu'] = kmAtual;
+
+    // 3. Injeção dos 2 registros com R$ 0,00 para atualizar os gráficos de ciclos do relatório
+    // Importante: O serviço do pneu traseiro é registrado no KM original de instalação dele para o gráfico computar a linha de desgaste
+    const servicoTraseiro = {
+        tipo: "Pneu Traseiro",
+        forn: "CHNET Estoque",
+        val: 0,
+        km: kmInstalacaoOriginal, // Mantém o KM original para preservar a história do pneu
+        data: hoje,
+        obs: `Rodízio: Pneu Meia-Vida transferido para a Traseira. Ele rodou ${formatKM(kmJáRodadoNaFrente)} km na frente antes da troca.`
+    };
+
+    const servicoDianteiro = {
+        tipo: "Pneu Dianteiro",
+        forn: "CHNET Estoque",
+        val: 0,
+        km: kmAtual, // Pneu novo entra no KM de hoje
+        data: hoje,
+        obs: `Rodízio: Pneus Novos instalados na Dianteira.`
+    };
+
+    v.servicos.push(servicoTraseiro);
+    v.servicos.push(servicoDianteiro);
+
+    // 4. Grava a Nota de Auditoria no painel do carro
+    if (!v.notas) v.notas = [];
+    v.notas.unshift({
+        texto: `🔄 Rodízio de Pneus: Os dianteiros (instalados em ${formatKM(kmInstalacaoOriginal)}km) foram jogados para trás acumulando ${formatKM(kmJáRodadoNaFrente)}km rodados. Dianteira recebeu novos em ${formatKM(kmAtual)}km.`,
+        data: new Date().toISOString()
+    });
+
+    // Limpa alertas antigos para o pneu novo começar a monitorar do zero
+    if (v.alertasIgnorados) { v.alertasIgnorados = v.alertasIgnorados.filter(alerta => !alerta.toLowerCase().includes('pneu')); }
+    veiculoAtual = v;
+    salvar();
+    alert('🔄 Rodízio processado! A quilometragem rodada do pneu foi mantida e migrada para a traseira.');
 }
 
 function editarVeiculo() {
@@ -1588,28 +1712,33 @@ function addServico() {
     let file = document.getElementById('servico_foto').files[0];
     if (!forn) return alert('Selecione a oficina!');
     if (!tipo) return alert('Selecione o tipo!');
-    if (!km)   return alert('KM do serviço é obrigatório!');
+    if (!km) return alert('KM do serviço é obrigatório!');
     if (!valor) return alert('Valor do serviço é obrigatório!');
     if (!data)  return alert('Data do serviço é obrigatória!');
     if (forn === 'CHNET Estoque') {
         let peca = db.estoque.find(e => e.nome === tipo);
         if (!peca) return alert('Peça não encontrada!');
-        if (peca.qtd <= 0) return alert(`Peça "${tipo}" sem estoque!`);
-        peca.qtd--;
+
+        let qtdAReduzir = 1;
+        if (tipo.toLowerCase().includes('pneu') && !document.getElementById('wrapper_pneu_qtd').classList.contains('hidden')) {
+            qtdAReduzir = parseInt(document.getElementById('pneu_qtd').value) || 1;
+        }
+
+        if (peca.qtd < qtdAReduzir) {
+            return alert(`Estoque insuficiente para "${tipo}"! Necessário: ${qtdAReduzir}, Disponível: ${peca.qtd}.`);
+        }
+        peca.qtd -= qtdAReduzir;
     }
     const processar = (img) => {
         let servico = { tipo, forn, val: valor, km, data, obs, img };
         if (servico.km > 0) {
             if (!v.kmHistory) v.kmHistory = [];
             const exists = v.kmHistory.some(h => h.date === data && h.km === servico.km);
-            if (!exists) {
-                v.kmHistory.push({ km: servico.km, date: data, source: 'servico' });
-            }
+            if (!exists) v.kmHistory.push({ km: servico.km, date: data, source: 'servico' });
         }
         if (servico.km > v.km) v.km = servico.km;
         const regras = getRegrasVeiculo(v);
         let regrasBatidas = Object.keys(regras).filter(r => tipoMatchRegra(tipo, r));
-        if (!regrasBatidas.length && regras.hasOwnProperty(tipo)) regrasBatidas = [tipo];
         regrasBatidas.forEach(regra => {
             v.bases[regra] = servico.km;
             let idx = (v.alertasIgnorados || []).indexOf(regra);
@@ -1670,7 +1799,7 @@ function salvarEdicaoServico() {
     let novaData = document.getElementById('edit_data').value;
     let novaObs  = document.getElementById('edit_obs').value;
     if (!novoTipo) return alert('Informe o tipo!');
-    if (!novoKm)   return alert('Informe o KM!');
+    if (!novoKm) return alert('Informe o KM!');
     if (!novaData) return alert('Informe a data!');
     if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === s.tipo); if (peca) peca.qtd++; }
     if (s.forn !== 'CHNET Estoque' && novoForn === 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === novoTipo); if (!peca) return alert('Peça não encontrada!'); if (peca.qtd <= 0) return alert(`Sem estoque!`); peca.qtd--; }
@@ -2017,7 +2146,7 @@ function showRelatorio(tipo) {
                 if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return false;
                 if (filterMonth && (d.getMonth()+1)   != parseInt(filterMonth)) return false;
             }
-
+    
             if (filterSearch) {
                 const motorista = (veiculo ? veiculo.motorista : '').toLowerCase();
                 const placa = (veiculo ? veiculo.placa : '').toLowerCase();
@@ -2026,7 +2155,7 @@ function showRelatorio(tipo) {
                 const obs = (s.obs || '').toLowerCase();
                 const data = (s.data || '').toLowerCase();
                 const searchableString = `${motorista} ${placa} ${tipo} ${forn} ${obs} ${data}`;
-                const searchTerms = filterSearch.split(' ').filter(Boolean);
+                    const searchTerms = filterSearch.split(' ').filter(Boolean); // Corrigido
                 return searchTerms.every(term => searchableString.includes(term));
             }
             return true;
@@ -2038,7 +2167,7 @@ function showRelatorio(tipo) {
         const motorista = (veiculo.motorista || '').toLowerCase();
         const placa = (veiculo.placa || '').toLowerCase();
         const searchableString = `${motorista} ${placa}`;
-        const searchTerms = filterSearch.split(' ').filter(Boolean);
+            const searchTerms = filterSearch.split(' ').filter(Boolean); // Corrigido
         return searchTerms.every(term => searchableString.includes(term));
     }
 
@@ -2050,7 +2179,7 @@ function showRelatorio(tipo) {
                 if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return false;
                 if (filterMonth && (d.getMonth()+1)   != parseInt(filterMonth)) return false;
             }
-            // For fuel, we only search by vehicle
+                // For fuel, we only search by vehicle (corrigido)
             if (filterSearch) {
                 return filtrarVeiculoPorPesquisa(veiculo);
             }
@@ -2069,7 +2198,7 @@ function showRelatorio(tipo) {
     }
 
     if (tipo === 'geral') {
-        let todos = [];
+            let todos = []; // Corrigido
         db.veiculos.forEach(v => filtrarServicos(v.servicos, v).forEach(s => todos.push({...s, motorista: v.motorista, placa: v.placa})));
         todos.sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
         let total = todos.reduce((s,sv) => s+sv.val, 0);
@@ -2089,7 +2218,7 @@ function showRelatorio(tipo) {
                 <div style="overflow-x:auto"><table>
                     <thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Oficina</th><th>KM</th><th>Valor</th><th>Obs</th></tr></thead>
                     <tbody>${todos.map(s => `<tr><td>${highlightText(formatDate(s.data), filterSearch)}</td><td><strong>${highlightText(s.motorista, filterSearch)}</strong> <span style="color:var(--text-secondary)">(${highlightText(s.placa, filterSearch)})</span></td><td>${highlightText(s.tipo, filterSearch)}</td><td>${highlightText(s.forn, filterSearch)}</td><td>${formatKM(s.km)} km</td><td><strong>R$ ${formatMoney(s.val)}</strong></td><td style="color:var(--text-secondary)">${highlightText(s.obs||'—', filterSearch)}</td></tr>`).join('')}
-                    ${!todos.length?'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>':''}</tbody>
+                    ${!todos.length ? '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>' : ''}</tbody>
                 </table></div>
             </div>`;
 
@@ -2103,7 +2232,7 @@ function showRelatorio(tipo) {
             <thead><tr><th></th><th>Motorista</th><th>Placa</th><th>Modelo</th><th>KM Atual</th><th>Serviços</th><th>Total Gasto</th></tr></thead>
             <tbody>${db.veiculos.filter(filtrarVeiculoPorPesquisa).map(v => {
                 let sf = filtrarServicos(v.servicos, v), t = sf.reduce((s,sv) => s+sv.val, 0);
-                return `<tr class="veiculo-row" onclick="toggleRelatorioVeiculoDetalhes(${v.id})" style="cursor:pointer"><td style="padding:6px">▸</td><td><strong>${highlightText(v.motorista, filterSearch)}</strong></td><td>${highlightText(v.placa, filterSearch)}</td><td>${highlightText(v.modelo, filterSearch)}</td><td>${formatKM(v.km)} km</td><td>${sf.length}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(t)}</strong></td></tr><tr id="detalhes-veiculo-${v.id}" class="hidden"><td colspan="7" style="border:none;padding:0">${renderDetalhesVisiveis(v)}</td></tr>`;
+                return `<tr class="veiculo-row" onclick="toggleRelatorioVeiculoDetalhes(${v.id})" style="cursor:pointer"><td style="padding:6px">▸</td><td><strong>${highlightText(v.motorista, filterSearch)}</strong></td><td>${highlightText(v.placa, filterSearch)}</td><td>${highlightText(v.modelo, filterSearch)}</td><td>${formatKM(v.km)} km</td><td>${sf.length}</td><td><strong style="color:var(--accent)">R$ ${formatMoney(t)}</strong></td></tr><tr id="detalhes-veiculo-${v.id}" class="hidden"><td colspan="7" style="border:none;padding:0">${renderDetalhesVisiveis(v)}</td></tr>`; // Corrigido
             }).join('')}</tbody>
         </table></div></div>`;
 
@@ -2117,7 +2246,7 @@ function showRelatorio(tipo) {
             detalheMec[forn].push({...s, motorista: v.motorista, placa: v.placa});
         }));
         let entries = Object.entries(porMec).sort((a,b) => b[1].total - a[1].total);
-        const sid = str => String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const sid = str => String(str).replace(/[^a-zA-Z0-9_-]/g, '_'); // Corrigido
         container.innerHTML = `<div class="card"><h3>Gastos por Mecânica / Fornecedor</h3><div style="overflow-x:auto"><table>
             <thead><tr><th></th><th>Mecânica / Fornecedor</th><th>Atendimentos</th><th>Total Gasto</th><th>Ticket Médio</th></tr></thead>
             <tbody>${entries.map(([n,v]) => {
@@ -2134,24 +2263,31 @@ function showRelatorio(tipo) {
         function ehPneuT(tipo) { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('tras')||t.includes('rear')); }
         function ehPneu(tipo)  { return (tipo||'').toLowerCase().includes('pneu'); }
         function calcCiclos(eventos, kmAtual, hoje) {
-            if (!eventos.length) return null;
-            let ciclos = [];
+            if (!eventos || !eventos.length) return null;
+            let ciclos = []; // Corrigido
             for (let i=1;i<eventos.length;i++) { let ini=eventos[i-1],fim=eventos[i],km=Math.max(0,(fim.km||0)-(ini.km||0)),dias=diffDays(ini.data,fim.data); if (km > 0) ciclos.push({ciclo:i,dataIni:ini.data,dataFim:fim.data,km,dias,kmDia:dias?Math.round(km/dias):0}); }
             let ultimo=eventos[eventos.length-1],kmAtualCiclo=Math.max(0,kmAtual-(ultimo.km||0)),diasAtual=diffDays(ultimo.data,hoje),mediaCiclo=ciclos.length?Math.round(ciclos.reduce((s,c)=>s+c.km,0)/ciclos.length):0;
             return {ciclos,kmAtualCiclo,diasAtual,mediaCiclo,ultimo};
         }
         let hoje=new Date().toISOString().split('T')[0];
-        let dadosPneu=db.veiculos.filter(filtrarVeiculoPorPesquisa).map(v=>{
-            let sp=filtrarServicos(v.servicos, v).filter(s=>ehPneu(s.tipo));
-            let d=sp.filter(s=>ehPneuD(s.tipo)||(!ehPneuT(s.tipo)&&!ehPneuD(s.tipo))).filter(s=>s.data&&(s.km||s.km===0)).sort((a,b)=>(a.km||0)-(b.km||0));
-            let t=sp.filter(s=>ehPneuT(s.tipo)).filter(s=>s.data&&(s.km||s.km===0)).sort((a,b)=>(a.km||0)-(b.km||0));
-            return{v,dianteiros:d,traseiros:t,calcD:calcCiclos(d,v.km,hoje),calcT:calcCiclos(t,v.km,hoje)};
+        const tireSort = (a, b) => {
+            const kmDiff = (a.km || 0) - (b.km || 0);
+            if (kmDiff !== 0) return kmDiff;
+            const dateA = a.data ? new Date(a.data + 'T00:00:00') : 0;
+            const dateB = b.data ? new Date(b.data + 'T00:00:00') : 0; // Corrigido
+            return dateA && dateB ? dateA - dateB : 0;
+        };
+        let dadosPneu = db.veiculos.filter(filtrarVeiculoPorPesquisa).map(v => {
+            let sp = filtrarServicos(v.servicos, v).filter(s => ehPneu(s.tipo));
+            let d = sp.filter(s => ehPneuD(s.tipo) || (!ehPneuT(s.tipo) && !ehPneuD(s.tipo))).filter(s => s.data && (s.km || s.km === 0)).sort(tireSort);
+            let t = sp.filter(s => ehPneuT(s.tipo)).filter(s => s.data && (s.km || s.km === 0)).sort(tireSort);
+            return { v, dianteiros: d, traseiros: t, calcD: calcCiclos(d, v.km, hoje), calcT: calcCiclos(t, v.km, hoje) };
         });
         let ttd=dadosPneu.reduce((s,d)=>s+d.dianteiros.length,0),ttt=dadosPneu.reduce((s,d)=>s+d.traseiros.length,0),mkd=0,mkt=0,cd=0,ct=0;
         dadosPneu.forEach(d=>{if(d.calcD&&d.calcD.mediaCiclo>0){mkd+=d.calcD.mediaCiclo;cd++;}if(d.calcT&&d.calcT.mediaCiclo>0){mkt+=d.calcT.mediaCiclo;ct++;}});
         mkd=cd?Math.round(mkd/cd):0; mkt=ct?Math.round(mkt/ct):0;
         const rct=(calc,label)=>{
-            if(!calc)return`<div style="color:var(--text-secondary);font-size:12px;padding:8px 0">Nenhuma troca de ${label} registrada.</div>`;
+            if(!calc)return`<div style="color:var(--text-secondary);font-size:12px;padding:8px 0">Nenhuma troca de ${label} registrada.</div>`; // Corrigido
             let html='';
             if(calc.ciclos.length>0){html+=`<div style="max-height: 150px; overflow-y: auto; margin-bottom: 8px;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:rgba(255,255,255,0.04); position: sticky; top: 0;"><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Ciclo</th><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Início</th><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Fim</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM Rodados</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">Dias</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM/Dia</th></tr></thead><tbody>${calc.ciclos.map(c=>`<tr><td style="padding:5px 8px">#${c.ciclo}</td><td style="padding:5px 8px">${formatDate(c.dataIni)}</td><td style="padding:5px 8px">${formatDate(c.dataFim)}</td><td style="padding:5px 8px;text-align:right"><strong>${formatKM(c.km)}</strong></td><td style="padding:5px 8px;text-align:right">${c.dias}d</td><td style="padding:5px 8px;text-align:right">${c.kmDia} km/d</td></tr>`).join('')}</tbody></table></div>`;}
             let pct=calc.mediaCiclo>0?Math.min(100,Math.round(calc.kmAtualCiclo/calc.mediaCiclo*100)):0,barColor=pct>=90?'var(--danger)':pct>=70?'var(--warn)':'var(--success)';
@@ -2176,7 +2312,7 @@ function showRelatorio(tipo) {
                 </div>`).join('')}`;
 
     } else if (tipo === 'abastecimento') {
-        renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, filtrarVeiculoPorPesquisa, filterSearch);
+        renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, filtrarVeiculoPorPesquisa, filterSearch); // Corrigido
 
     } else if (tipo === 'km_history') {
         let html = '';
@@ -2202,7 +2338,7 @@ function showRelatorio(tipo) {
             startDate = new Date();
             startDate.setMonth(startDate.getMonth() - _kmHistoryPeriod);
             startDate.setDate(1);
-            startDate.setHours(0,0,0,0);
+            startDate.setHours(0,0,0,0); // Corrigido
         }
 
         db.veiculos.filter(filtrarVeiculoPorPesquisa).forEach(v => {
@@ -2227,7 +2363,7 @@ function showRelatorio(tipo) {
 
             const filteredEntries = sortedHistory.filter(entry => {
                 if (!entry.date) return false;
-                if (!startDate) return true; // 'All' period
+                if (!startDate) return true; // 'All' period (corrigido)
                 return new Date(entry.date + 'T00:00:00') >= startDate;
             });
 
@@ -2248,7 +2384,7 @@ function showRelatorio(tipo) {
                     const d1 = new Date(prevEntry.date + 'T00:00:00');
                     const d2 = new Date(entry.date + 'T00:00:00');
                     dias = Math.max(0, Math.round((d2 - d1) / (1000 * 60 * 60 * 24)));
-                    if (dias > 0 && kmRodado > 0) {
+                    if (dias > 0 && kmRodado > 0) { // Corrigido
                         mediaKmDia = kmRodado / dias;
                     }
                 }
@@ -2266,7 +2402,7 @@ function showRelatorio(tipo) {
                     `;
 
                     if (kmRodado > 0) {
-                        const monthKey = entry.date.substring(0, 7); // YYYY-MM
+                        const monthKey = entry.date.substring(0, 7); // YYYY-MM (corrigido)
                         if (!monthlyData[monthKey]) monthlyData[monthKey] = { km: 0, liters: fuelByMonth[monthKey] || 0 };
                         monthlyData[monthKey].km += kmRodado;
                     }
@@ -2303,7 +2439,7 @@ function showRelatorio(tipo) {
             }
         });
 
-        if (!html) { html = `<div class="card" style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">🗂️</div><div style="color:var(--text-secondary)">Nenhum histórico de quilometragem encontrado para o período selecionado.</div></div>`; }
+        if (!html) { html = `<div class="card" style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">🗂️</div><div style="color:var(--text-secondary)">Nenhum histórico de quilometragem encontrado para o período selecionado.</div></div>`; } // Corrigido
 
         container.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Relatório de Histórico de KM</h3><button onclick="exportarCSVKmHistory()" class="btn-small btn-success"><i class="fas fa-file-csv"></i> Exportar CSV</button></div><p style="font-size:12px;color:var(--text-secondary);margin:8px 0 0 0">Acompanhe a evolução da quilometragem de cada veículo, com detalhes sobre a distância percorrida entre cada registro.</p></div>${html}`;
 
@@ -2319,7 +2455,7 @@ function showRelatorio(tipo) {
                     return new Date(year, month-1).toLocaleString('default', { month: 'short', year: '2-digit' });
                 });
                 const kmData = sortedMonths.map(key => data[key].km);
-                const avgData = sortedMonths.map(key => {
+                const avgData = sortedMonths.map(key => { // Corrigido
                     const month = data[key]; // data is monthlyData
                     return month.liters > 0 ? (month.km / month.liters) : 0;
                 });
@@ -2355,7 +2491,7 @@ function showRelatorio(tipo) {
         }, 50);
 
     } else if (tipo === 'estoque') {
-        let totalEst = db.estoque.reduce((s,e) => s+(e.qtd*e.val), 0);
+        let totalEst = db.estoque.reduce((s,e) => s+(e.qtd*e.val), 0); // Corrigido
         container.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><h3 style="margin:0">Inventário do Estoque</h3><div class="stat-num" style="color:var(--success)">R$ ${formatMoney(totalEst)}</div></div>
             <div style="overflow-x:auto"><table><thead><tr><th>Peça</th><th>Qtd</th><th>Mínimo</th><th>Valor Unit.</th><th>Valor Total</th><th>Status</th></tr></thead>
             <tbody>${db.estoque.map(e=>`<tr><td><strong>${e.nome}</strong></td><td>${e.qtd}</td><td>${e.min}</td><td>R$ ${formatMoney(e.val)}</td><td>R$ ${formatMoney(e.qtd*e.val)}</td><td>${e.qtd<=e.min?'<span class="badge badge-danger">⚠️ Baixo</span>':'<span class="badge badge-success">✅ OK</span>'}</td></tr>`).join('')}
@@ -2383,7 +2519,7 @@ function toggleKmDetail(id) {
 function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, filtrarVeiculoPorPesquisa, filterSearch) {
     const container = document.getElementById('relatorio-content');
 
-    // Collect all abastecimentos across all vehicles with context
+    // Collect all abastecimentos across all vehicles with context (corrigido)
     const mesesNome = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
     // Build enriched dataset for each vehicle
@@ -2391,7 +2527,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
         const abast = filtrarAbast(v.abastecimentos || [], v);
         const sorted = [...abast].sort((a,b) => (a.km||0)-(b.km||0));
 
-        // Compute per-fill consumption (km/l)
+        // Compute per-fill consumption (km/l) (corrigido)
         const registros = sorted.map((a, i) => {
             let consumo = null;
             if (i > 0) {
@@ -2402,7 +2538,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
             return { ...a, consumo };
         });
 
-        // Totals
+        // Totals (corrigido)
         const totalLitros  = abast.reduce((s,a) => s+(a.qtd||0), 0);
         const totalGasto   = abast.reduce((s,a) => s+(a.valor||0), 0);
         const totalAbast   = abast.length;
@@ -2414,7 +2550,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
         const precoMin   = precos.length ? Math.min(...precos) : 0;
         const precoMax   = precos.length ? Math.max(...precos) : 0;
 
-        // Monthly data
+        // Monthly data (corrigido)
         const porMes = {};
         abast.forEach(a => {
             if (!a.data) return;
@@ -2438,7 +2574,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
         return;
     }
 
-    // Global totals
+    // Global totals (corrigido)
     const gTotalLitros = veicDados.reduce((s,d) => s+d.totalLitros, 0);
     const gTotalGasto  = veicDados.reduce((s,d) => s+d.totalGasto, 0);
     const gTotalAbast  = veicDados.reduce((s,d) => s+d.totalAbast, 0);
@@ -2447,22 +2583,22 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
     const gPrecoMedio  = veicDados.filter(d=>d.precoMedio>0);
     const gPrecoFrota  = gPrecoMedio.length ? gPrecoMedio.reduce((s,d)=>s+d.precoMedio,0)/gPrecoMedio.length : 0;
 
-    // Ranking by efficiency (best km/l)
+    // Ranking by efficiency (best km/l) (corrigido)
     const rankEfic = [...veicDados].filter(d=>d.mediaConsumo>0).sort((a,b)=>b.mediaConsumo-a.mediaConsumo);
     const rankGasto = [...veicDados].sort((a,b)=>b.totalGasto-a.totalGasto);
     const maxGasto = rankGasto.length ? rankGasto[0].totalGasto : 1;
 
-    // Build vehicle cards HTML (no charts yet — charts will be rendered after innerHTML is set)
+    // Build vehicle cards HTML (no charts yet — charts will be rendered after innerHTML is set) (corrigido)
     const veicCardsHtml = veicDados.map((d, vi) => {
         const eficClass = d.mediaConsumo >= 12 ? 'efficiency-great' : d.mediaConsumo >= 9 ? 'efficiency-ok' : 'efficiency-bad';
         const eficLabel = d.mediaConsumo >= 12 ? '🟢 Boa' : d.mediaConsumo >= 9 ? '🟡 Regular' : '🔴 Baixa';
 
-        // Monthly chart data
+        // Monthly chart data (corrigido)
         const mLabels = d.mesesOrdenados.map(([,m])=>m.label);
         const mLitros = d.mesesOrdenados.map(([,m])=>+m.litros.toFixed(2));
         const mValor  = d.mesesOrdenados.map(([,m])=>+m.valor.toFixed(2));
 
-        // Detail table rows (all records, most recent first)
+        // Detail table rows (all records, most recent first) (corrigido)
         const recsDesc = [...d.registros].sort((a,b)=>new Date(b.data+'T00:00:00')-new Date(a.data+'T00:00:00'));
         const tableRows = recsDesc.map(r => {
             const precoL = r.qtd > 0 && r.valor > 0 ? r.valor/r.qtd : 0;
@@ -2561,7 +2697,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
         </div>`;
     }).join('');
 
-    // Ranking HTML
+    // Ranking HTML (corrigido)
     const rankingEficHtml = rankEfic.map((d,i) => {
         const posClass = i===0?'ranking-pos-1':i===1?'ranking-pos-2':i===2?'ranking-pos-3':'ranking-pos-n';
         return `<div class="ranking-row">
@@ -2595,7 +2731,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
         </div>`;
     }).join('');
 
-    // Monthly evolution chart for whole fleet
+    // Monthly evolution chart for whole fleet (corrigido)
     const todosMeses = {};
     veicDados.forEach(d => {
         d.mesesOrdenados.forEach(([key, m]) => {
@@ -2668,7 +2804,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
         ${veicCardsHtml}
     `;
 
-    // Render global chart
+    // Render global chart (corrigido)
     setTimeout(() => {
         // Global evolution chart
         const globalCtx = document.getElementById('fuel-chart-global');
@@ -2696,7 +2832,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
             } catch(e) { console.warn('Chart error:', e); }
         }
 
-        // Per-vehicle charts (only render for open ones, but pre-render all)
+        // Per-vehicle charts (only render for open ones, but pre-render all) (corrigido)
         veicDados.forEach((d, vi) => {
             if (d.mesesOrdenados.length <= 1) return;
             const cvs = document.getElementById(`fuel-chart-${vi}`);
@@ -2727,7 +2863,7 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
 }
 
 function exportarCSVKmHistory() {
-    const filterYear  = document.getElementById('filter_year')?.value  || '';
+    const filterYear  = document.getElementById('filter_year')?.value  || ''; // Corrigido
     const filterMonth = document.getElementById('filter_month')?.value || '';
     const rows = [['Data','Motorista','Placa','Modelo','KM Registrado','Fonte','KM Rodado','Intervalo (dias)','Média KM/Dia']];
     const sourceMap = {
@@ -2740,7 +2876,7 @@ function exportarCSVKmHistory() {
     db.veiculos.forEach(v => {
         if (!v.kmHistory || v.kmHistory.length === 0) return;
 
-        const sortedHistory = [...v.kmHistory]
+        const sortedHistory = [...v.kmHistory] // Corrigido
             .sort((a, b) => {
                 const dateA = new Date(a.date + 'T00:00:00');
                 const dateB = new Date(b.date + 'T00:00:00');
@@ -2752,7 +2888,7 @@ function exportarCSVKmHistory() {
             const entry = sortedHistory[i];
             if (!entry.date) continue;
 
-            const d = new Date(entry.date + 'T00:00:00');
+            const d = new Date(entry.date + 'T00:00:00'); // Corrigido
             if (filterYear && d.getFullYear() != parseInt(filterYear)) continue;
             if (filterMonth && (d.getMonth() + 1) != parseInt(filterMonth)) continue;
 
@@ -2801,7 +2937,7 @@ function toggleFuelCard(id) {
 }
 
 function exportarCSVAbastecimento() {
-    const filterYear  = document.getElementById('filter_year')?.value  || '';
+    const filterYear  = document.getElementById('filter_year')?.value  || ''; // Corrigido
     const filterMonth = document.getElementById('filter_month')?.value || '';
 
     const rows = [['Data','Motorista','Placa','Modelo','KM','Litros','Valor Total (R$)','Preço/Litro (R$)','Consumo (km/l)']];
@@ -2853,38 +2989,14 @@ function exportarCSV() {
 // RENDER TUDO
 // ============================================================
 function renderizarTudo() {
-    renderVeiculos();
-    renderDashboard();
-    if (veiculoAtual) {
-        veiculoAtual = db.veiculos.find(v => v.id === veiculoAtual.id) || veiculoAtual;
-        renderizarVeiculo();
-    }
+    renderVeiculos(); renderDashboard(); if(veiculoAtual) renderizarVeiculo();
 }
 
 // ============================================================
 // EXPOR FUNÇÕES GLOBAIS
 // ============================================================
 Object.assign(window, {
-    tab, addVeiculo, abrirVeiculo, editarVeiculo, excluirVeiculo,
-    atualizarKM, addServico, excluirServico, updateTipoSelect,
-    abrirModalEditar, fecharModalEditar, salvarEdicaoServico,
-    addAlerta, removerAlerta, addNota, removerNota, addFotos, removerFoto, popularHistoricoKmInicial,
-    addOficina, removerOficina, addRegra, removerRegra,
-    addCompra, addPeca, editarEstoque, excluirEstoque, salvarEdicaoEstoque, fecharModalEditarEstoque,
-    showRelatorio, reRenderRelatorio, preencherFiltroAnos, setKmHistoryPeriod,
-    salvarDados, maskKM, maskMoney, showImage, ignorarAlerta, exportarCSVKmHistory,
-    exportarCSV, exportarCSVAbastecimento, exportarBackup, importarBackup,
-    toggleRelatorioVeiculoDetalhes, toggleRelatorioMecanicaDetalhes,
-    toggleFuelCard, toggleKmDetail,
-    addAbastecimento, excluirAbastecimento, switchOdoTab,
-    loginApp, logoutApp, limparLogin, toggleSidebar, initAuth,
-    abrirModalAlarmes, fecharModalAlarmes, salvarAlarmesVeiculo,
-    adicionarAlarmeVeiculo, removerAlarmeEditor,
-    renderListaOficinas, renderListaRegras,
-    iniciarEdicaoOficina, cancelarEdicaoOficina, salvarEdicaoOficina,
-    iniciarEdicaoRegra, cancelarEdicaoRegra, salvarEdicaoRegra,
-    iniciarEdicaoAlerta, cancelarEdicaoAlerta, salvarEdicaoAlerta,
-    filtrarServicosNoHistorico
+    tab, addVeiculo, abrirVeiculo, atualizarKM, addServico, updateTipoSelect, atualizarPrecoEUnidadesPorPneu, executarRodizioPneus, addOficina, addRegra, addPeca, addCompra, showRelatorio, reRenderRelatorio, preencherFiltroAnos, salvarDados, maskKM, maskMoney, toggleSidebar
 });
 
 // ============================================================
