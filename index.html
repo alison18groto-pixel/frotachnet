@@ -1696,8 +1696,9 @@ function excluirVeiculo() {
 // ============================================================
 function addServico() {
     const vid = veiculoAtual ? veiculoAtual.id : null;
-    if (!vid) return;
+    if (!vid) return alert('Selecione um veículo primeiro!');
     const v = db.veiculos.find(x => x.id === vid);
+    
     let forn = document.getElementById('servico_forn').value;
     let tipo = document.getElementById('servico_tipo').value;
     let valor = parseVal(document.getElementById('servico_val').value);
@@ -1705,25 +1706,24 @@ function addServico() {
     let data = document.getElementById('servico_data').value;
     let obs = document.getElementById('servico_obs').value;
     let file = document.getElementById('servico_foto').files[0];
-    if (!forn) return alert('Selecione a oficina!');
-    if (!tipo) return alert('Selecione o tipo!');
-    if (!km) return alert('KM do serviço é obrigatório!');
-    if (!valor) return alert('Valor do serviço é obrigatório!');
-    if (!data)  return alert('Data do serviço é obrigatória!');
+    
+    if (!forn || !tipo || !km || !valor || !data) return alert('Preencha os campos obrigatórios!');
+    
+    // Controle de baixa de estoque
     if (forn === 'CHNET Estoque') {
         let peca = db.estoque.find(e => e.nome === tipo);
-        if (!peca) return alert('Peça não encontrada!');
+        if (!peca) return alert('Peça não encontrada no inventário.');
 
         let qtdAReduzir = 1;
-        if (tipo.toLowerCase().includes('pneu') && !document.getElementById('wrapper_pneu_qtd').classList.contains('hidden')) {
-            qtdAReduzir = parseInt(document.getElementById('pneu_qtd').value) || 1;
+        if (tipo.toLowerCase().includes('pneu')) {
+            const qtdPneuSelect = document.getElementById('pneu_qtd');
+            if (qtdPneuSelect) qtdAReduzir = parseInt(qtdPneuSelect.value) || 1;
         }
 
-        if (peca.qtd < qtdAReduzir) {
-            return alert(`Estoque insuficiente para "${tipo}"! Necessário: ${qtdAReduzir}, Disponível: ${peca.qtd}.`);
-        }
+        if (peca.qtd < qtdAReduzir) return alert(`Estoque insuficiente para "${tipo}"!`);
         peca.qtd -= qtdAReduzir;
     }
+
     const processar = (img) => {
         let servico = { tipo, forn, val: valor, km, data, obs, img };
         if (servico.km > 0) {
@@ -1732,27 +1732,63 @@ function addServico() {
             if (!exists) v.kmHistory.push({ km: servico.km, date: data, source: 'servico' });
         }
         if (servico.km > v.km) v.km = servico.km;
-        const regras = getRegrasVeiculo(v);
-        let regrasBatidas = Object.keys(regras).filter(r => tipoMatchRegra(tipo, r));
-        regrasBatidas.forEach(regra => {
-            v.bases[regra] = servico.km;
-            let idx = (v.alertasIgnorados || []).indexOf(regra);
-            if (idx > -1) v.alertasIgnorados.splice(idx, 1);
-            if (!v.kmHistory) v.kmHistory = []; // Ensure kmHistory exists
+        
+        // RESTRITORES DE REGRAS CRÍTICOS: Garante isolamento total baseado no nome do produto
+        const nomeLimpo = tipo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const ehCabine = nomeLimpo.includes('cabine') || nomeLimpo.includes('condicionado');
+        const ehArMotor = nomeLimpo.includes('motor') && (nomeLimpo.includes('filtro de ar') || nomeLimpo.includes('filtro do ar') || nomeLimpo.includes('filtro de ar motor'));
+
+        const regrasConfig = getRegrasVeiculo(v);
+        
+        // Filtra as regras estritamente pela função tipoMatchRegra
+        let regrasBatidas = Object.keys(regrasConfig).filter(r => tipoMatchRegra(tipo, r));
+        
+        // Se a IA tentou forçar o fallback automático, aplicamos a trava manual aqui também
+        if (ehCabine) {
+            // Se for cabine/ar condicionado, remove qualquer match com o motor
+            regrasBatidas = regrasBatidas.filter(r => !r.toLowerCase().includes('filtro de ar') && r !== 'Filtro de AR');
+            // Garante o vínculo com a regra de cabine do seu banco
+            if (!regrasBatidas.includes('Filtro Cabine') && regrasConfig.hasOwnProperty('Filtro Cabine')) {
+                regrasBatidas.push('Filtro Cabine');
+            }
+        } else if (ehArMotor) {
+            // Se for explicitamente do motor, remove o vínculo com a cabine
+            regrasBatidas = regrasBatidas.filter(r => !r.toLowerCase().includes('cabine') && !r.toLowerCase().includes('condicionado'));
+            if (!regrasBatidas.includes('Filtro de AR') && regrasConfig.hasOwnProperty('Filtro de AR')) {
+                regrasBatidas.push('Filtro de AR');
+            }
+        }
+
+        // Aplica a quilometragem apenas nas regras validadas e limpa os alertas ignorados
+        regrasBatidas.forEach(regra => { 
+            v.bases[regra] = km; 
+            if (v.alertasIgnorados) {
+                v.alertasIgnorados = v.alertasIgnorados.filter(alerta => alerta !== regra);
+            }
         });
+
         v.servicos.push(servico);
         v.ultimaAtualizacao = data;
         veiculoAtual = v;
         salvar();
+        
+        // Limpa os campos do formulário
         document.getElementById('servico_val').value = '';
         document.getElementById('servico_km').value = '';
         document.getElementById('servico_obs').value = '';
-        document.getElementById('servico_foto').value = '';
+        if(document.getElementById('servico_foto')) document.getElementById('servico_foto').value = '';
+        
         updateTipoSelect();
-        alert('✅ Serviço registrado!');
+        alert('✅ Manutenção registrada com sucesso!');
     };
-    if (file) { let r = new FileReader(); r.onload = e => processar(e.target.result); r.readAsDataURL(file); }
-    else processar(null);
+
+    if (file) { 
+        let r = new FileReader(); 
+        r.onload = e => processar(e.target.result); 
+        r.readAsDataURL(file); 
+    } else {
+        processar(null);
+    }
 }
 
 function excluirServico(idx) {
