@@ -705,17 +705,30 @@ function loginApp() {
     const error = document.getElementById('login_error');
     error.textContent = ''; // Limpa erros anteriores
 
-    // Se o usuário digitou "chnet", o código transforma internamente no e-mail correto
-    const emailCompleto = (usuarioDigitado === "chnet")
-        ? "chnettelecomunicacoes@gmail.com"
-        : usuarioDigitado;
+    let emailCompleto = usuarioDigitado;
+    if (usuarioDigitado.toLowerCase() === "chnet") {
+        emailCompleto = "chnettelecomunicacoes@gmail.com";
+    } else if (!usuarioDigitado.includes('@')) {
+        emailCompleto = usuarioDigitado.toLowerCase() + "@chnettelecomunicacoes.com";
+    }
 
     // Envia para o Firebase Authentication validar
     firebase.auth().signInWithEmailAndPassword(emailCompleto, senhaDigitada)
         .catch((err) => {
-            // Se o login falhar, exibe uma mensagem de erro.
-            console.error("Erro de login:", err);
-            error.textContent = 'Usuário ou senha incorretos.';
+            console.error("Erro de login:", err.code, err.message);
+            switch (err.code) {
+                case 'auth/invalid-email':
+                    error.textContent = 'O formato do nome de usuário é inválido.';
+                    break;
+                case 'auth/user-not-found':
+                    error.textContent = 'Usuário não encontrado.';
+                    break;
+                case 'auth/wrong-password':
+                    error.textContent = 'Senha incorreta.';
+                    break;
+                default:
+                    error.textContent = 'Erro ao fazer login. Verifique os dados.';
+            }
         });
 }
 
@@ -863,6 +876,11 @@ function carregarDados() {
         popularHistoricoKmInicial();
         renderizarTudo();
 
+    }, (error) => {
+        console.error("Erro ao carregar dados do Firebase:", error);
+        alert("Ocorreu um erro crítico ao carregar os dados do sistema. Pode ser um problema de permissão ou conexão. O aplicativo será desconectado para segurança.");
+        // Força o logout se o usuário autenticado não consegue ler os dados.
+        logoutApp();
     });
 }
 
@@ -1543,20 +1561,17 @@ function updateTipoSelect() {
     let tipoSelect = document.getElementById('servico_tipo');
     
     if (forn === 'CHNET Estoque') {
-        tipoSelect.innerHTML = db.estoque.map(e => `<option value="${e.nome}" data-valor="${e.val || 0}" ${e.qtd<=0?'disabled':''}>${e.nome} (Estoque: ${e.qtd})</option>`).join('') || '<option disabled>Sem itens no estoque</option>';
         // Injeta o valor cadastrado no atributo data-valor de cada option
         tipoSelect.innerHTML = db.estoque.map(e => `
             <option value="${e.nome}" data-valor="${e.val || 0}" ${e.qtd<=0?'disabled':''}>
                 ${e.nome} (Estoque: ${e.qtd})
             </option>`).join('') || '<option disabled>Sem itens no estoque</option>';
     } else {
-        const regras = veiculoAtual ? getRegrasVeiculo(veiculoAtual) : db.regras;
-        tipoSelect.innerHTML = Object.keys(regras).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>'; // Corrigido para usar regrasBase
         // Recupera as regras do veículo sem o caractere fantasma que travava o script
-        const regrasDoVeiculo = veiculoAtual ? getRegrasVeiculo(veiculoAtual) : db.regras;
-        tipoSelect.innerHTML = Object.keys(regrasDoVeiculo).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
+        const regrasDoVeiculoAtual = veiculoAtual ? getRegrasVeiculo(veiculoAtual) : db.regras;
+        tipoSelect.innerHTML = Object.keys(regrasDoVeiculoAtual).map(r => `<option>${r}</option>`).join('') + '<option>Outros</option>';
     }
-    // Dispara imediatamente para checar se é PNEU e puxar o preço na hora
+    // Dispara a atualização automática de valores e validação se é PNEU
     atualizarPrecoEUnidadesPorPneu();
 }
 
@@ -1566,49 +1581,29 @@ function atualizarPrecoEUnidadesPorPneu() {
     const valorCampo = document.getElementById('servico_val');
     const wrapperPneu = document.getElementById('wrapper_pneu_qtd');
     const qtdPneuSelect = document.getElementById('pneu_qtd');
-    const qtdPneuSelect = document.getElementById('pneu_qtd'); // Mapeia o ID correto do HTML
 
-    if (fornSelect.value !== 'CHNET Estoque') {
-        wrapperPneu.classList.add('hidden');
-        return;
-    }
     if (!tipoSelect || !fornSelect || !valorCampo) return;
 
     const selectedOption = tipoSelect.options[tipoSelect.selectedIndex];
-    if (!selectedOption) {
-        valorCampo.value = '';
-        wrapperPneu.classList.add('hidden');
-        return;
     
-    // REGRA 2: Se a palavra PNEU estiver no serviço, exibe o seletor de 1 ou 2 unidades
+    // REGRA: Se a palavra PNEU estiver no serviço, exibe o seletor de quantidade
     if (selectedOption && selectedOption.value.toLowerCase().includes('pneu')) {
         if (wrapperPneu) wrapperPneu.classList.remove('hidden');
     } else {
         if (wrapperPneu) {
             wrapperPneu.classList.add('hidden');
-            if (qtdPneuSelect) qtdPneuSelect.value = '1'; // Reseta se mudar de produto
+            if (qtdPneuSelect) qtdPneuSelect.value = '1'; // Reseta se mudar para outro produto
         }
     }
 
-    const valorBase = parseFloat(selectedOption.getAttribute('data-valor')) || 0;
-    let qtd = 1;
-
-    if (selectedOption.value.toLowerCase().includes('pneu')) {
-        wrapperPneu.classList.remove('hidden');
-        qtd = parseInt(qtdPneuSelect.value) || 1;
-    } else {
-        wrapperPneu.classList.add('hidden');
-        qtdPneuSelect.value = '1';
-    // REGRA 1: Se for ESTOQUE CHNET, puxa o valor cadastrado automaticamente
+    // REGRA: Se for ESTOQUE CHNET, puxa o valor automático e multiplica pelas unidades
     if (fornSelect.value === 'CHNET Estoque' && selectedOption) {
         const valorBase = parseFloat(selectedOption.getAttribute('data-valor')) || 0;
-        const qtd = qtdPneuSelect && !wrapperPneu.classList.contains('hidden') ? parseInt(qtdPneuSelect.value) : 1;
+        const qtd = (qtdPneuSelect && wrapperPneu && !wrapperPneu.classList.contains('hidden')) ? parseInt(qtdPneuSelect.value) : 1;
         
-        // Aplica o preço final multiplicado pela quantidade (1 ou 2)
+        // Insere o preço final multiplicado e formatado no campo
         valorCampo.value = 'R$ ' + formatMoney(valorBase * qtd);
     }
-
-    valorCampo.value = 'R$ ' + formatMoney(valorBase * qtd);
 }
 
 function executarRodizioPneus() {
