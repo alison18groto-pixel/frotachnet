@@ -492,6 +492,13 @@
                     <h3>🔧 Registrar Manutenção</h3>
                     <select id="servico_forn" onchange="updateTipoSelect()"></select>
                     <select id="servico_tipo" onchange="atualizarPrecoEUnidadesPorPneu()"></select>
+                    <div id="wrapper_pneu_eixo" class="hidden" style="margin-top: 8px;">
+                        <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Eixo do Pneu</label>
+                        <select id="pneu_eixo">
+                            <option value="Dianteiro">Dianteiro</option>
+                            <option value="Traseiro">Traseiro</option>
+                        </select>
+                    </div>
                     <div id="wrapper_pneu_qtd" class="hidden" style="margin-top: 8px;">
                         <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Quantidade de Pneus</label>
                         <select id="pneu_qtd" onchange="atualizarPrecoEUnidadesPorPneu()">
@@ -506,7 +513,19 @@
                     <div style="font-size:11px; color:var(--text-secondary); margin-bottom:6px"><i class="fas fa-camera"></i> Foto (opcional)</div>
                     <input type="file" id="servico_foto" accept="image/*">
                     <button onclick="addServico()" style="margin-top:5px">Salvar Serviço</button>
-                    <button onclick="executarRodizioPneus()" style="margin-top:10px; background: var(--btn-info);"><i class="fas fa-sync-alt"></i> Executar Rodízio de Pneus</button>
+                </div>
+                <!-- CARD ATUALIZADO: Assistente de Rodízio de Pneus com Direção -->
+                <div class="card" style="border-left: 3px solid var(--fuel);">
+                    <h3>🔄 Rodízio de Pneus Inteligente</h3>
+                    <p style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Selecione o movimento dos pneus meia-vida que irão permanecer no veículo:</p>
+                    
+                    <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Direção do Rodízio</label>
+                    <select id="rodizio_direcao" style="margin-bottom:12px">
+                        <option value="frente_para_tras" selected>Frente Meia-Vida vai p/ Trás (Novos na Frente)</option>
+                        <option value="tras_para_frente">Trás Meia-Vida vai p/ Frente (Novos atrás)</option>
+                    </select>
+                
+                    <button onclick="executarRodizioPneus()" style="background:var(--fuel-dark); color:white;"><i class="fas fa-sync-alt"></i> Aplicar Rodízio e Salvar Bases</button>
                 </div>
                 <div class="card">
                     <h3>🔔 Alertas Personalizados</h3>
@@ -561,6 +580,7 @@ let db = {
     veiculos: [
         { id: 1, motorista: "Paulo", placa: "RAJ5D16", modelo: "Saveiro", km: 149588, servicos: [
             { data: "2025-10-06", km: 136047, tipo: "Troca de óleo", forn: "Posto Central", val: 350, obs: "Trocado filtro" },
+            { data: "2025-11-01", km: 138000, tipo: "Pneu Dianteiro", forn: "Mecânica Zimmer", val: 440, obs: "2 pneus novos" },
             { data: "2025-08-31", km: 111111, tipo: "Pneu Traseiro", forn: "Mecânica Zimmer", val: 220, obs: "Pneu traseiro" },
             { data: "2025-12-17", km: 139962, tipo: "Troca Cavalete água", forn: "Grotto Usinagens", val: 140, obs: "2 mangueiras" }
         ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-05", alertasIgnorados: [], kmHistory: [{ km: 149588, date: "2026-02-05", source: "initial_data" }],
@@ -588,42 +608,12 @@ let db = {
             { data: "2026-02-05", km: 75000, qtd: 48.0, valor: 302.40 },
             { data: "2026-02-25", km: 77500, qtd: 46.5, valor: 293.10 },
             { data: "2026-03-20", km: 78004, qtd: 45.2, valor: 285.26 }
-        ]},
-        { id: 4, motorista: "Jian Gubert", placa: "RAJ7B96", modelo: "Saveiro", km: 128929, servicos: [
-            { data: "2026-02-10", km: 70095, tipo: "Troca de óleo", forn: "Posto Central", val: 88, obs: "" },
-            { data: "2025-09-05", km: 100145, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 280, obs: "" },
-            { data: "2025-06-25", km: 96113, tipo: "Correia alternador", forn: "Mecânica Zimmer", val: 100, obs: "" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-24", alertasIgnorados: [], kmHistory: [{ km: 128929, date: "2026-02-24", source: "initial_data" }],
-        abastecimentos: [
-            { data: "2026-01-08", km: 124000, qtd: 51.5, valor: 325.00 },
-            { data: "2026-01-26", km: 127500, qtd: 50.0, valor: 315.00 },
-            { data: "2026-02-20", km: 128929, qtd: 49.5, valor: 312.15 }
-        ]},
-        { id: 5, motorista: "Anderson da Silva Maria", placa: "RXS5F06", modelo: "Saveiro", km: 73407, servicos: [
-            { data: "2026-02-10", km: 70095, tipo: "Troca de óleo", forn: "Posto Central", val: 88, obs: "" },
-            { data: "2024-11-08", km: 51000, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 220, obs: "" },
-            { data: "2025-07-19", km: 63000, tipo: "Pneu Dianteiro", forn: "CHNET Estoque", val: 0, obs: "" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2026-02-10", alertasIgnorados: [], kmHistory: [{ km: 73407, date: "2026-02-10", source: "initial_data" }],
-        abastecimentos: [
-            { data: "2026-02-08", km: 70800, qtd: 46.0, valor: 290.40 },
-            { data: "2026-02-28", km: 72500, qtd: 44.5, valor: 280.75 },
-            { data: "2026-03-22", km: 73407, qtd: 43.8, valor: 276.36 }
-        ]},
-        { id: 6, motorista: "Escritório", placa: "ESCRT1", modelo: "Saveiro", km: 10273, servicos: [
-            { data: "2024-07-24", km: 10273, tipo: "Troca de óleo", forn: "Posto Central", val: 350, obs: "" },
-            { data: "2024-07-24", km: 10273, tipo: "Troca de filtro de ar", forn: "Posto Central", val: 18, obs: "" },
-            { data: "2022-11-04", km: 0, tipo: "Correia Dentada", forn: "Mecânica Zimmer", val: 0, obs: "" },
-            { data: "2025-04-23", km: 7000, tipo: "Pneu Traseiro", forn: "Grotto Usinagens", val: 220, obs: "" }
-        ], bases: {}, alertas: [], fotos: [], notas: [], ultimaAtualizacao: "2025-07-24", alertasIgnorados: [], kmHistory: [{ km: 10273, date: "2025-07-24", source: "initial_data" }],
-        abastecimentos: [
-            { data: "2025-08-15", km: 8000, qtd: 38.5, valor: 242.95 },
-            { data: "2025-10-10", km: 9200, qtd: 36.0, valor: 227.20 },
-            { data: "2026-01-05", km: 10273, qtd: 40.5, valor: 255.15 }
         ]}
     ],
     regras: {
         "Troca de óleo": 10000,
-        "Pneu": 40000,
+        "Pneu Dianteiro": 40000,
+        "Pneu Traseiro": 50000,
         "Correia Dentada": 80000,
         "Pastilha de freio": 20000
     },
@@ -840,8 +830,14 @@ function popularHistoricoKmInicial() {
 function carregarDados() {
     database.ref('appData').on('value', (snapshot) => {
         const data = snapshot.val();
-        if (data) { db = data; }
-        
+        if (data) {
+            const currentVehicleId = veiculoAtual ? veiculoAtual.id : null;
+            db = data;
+            if (currentVehicleId) {
+                // Re-find the current vehicle in the new db object to avoid stale references
+                veiculoAtual = db.veiculos.find(v => v.id === currentVehicleId);
+            }
+        }
         if (typeof db !== 'object' || db === null) db = {};
 
         if (db.veiculos && typeof db.veiculos === 'object' && !Array.isArray(db.veiculos)) db.veiculos = Object.values(db.veiculos);
@@ -1581,19 +1577,23 @@ function atualizarPrecoEUnidadesPorPneu() {
     const valorCampo = document.getElementById('servico_val');
     const wrapperPneu = document.getElementById('wrapper_pneu_qtd');
     const qtdPneuSelect = document.getElementById('pneu_qtd');
+    const wrapperEixo = document.getElementById('wrapper_pneu_eixo');
 
     if (!tipoSelect || !fornSelect || !valorCampo) return;
 
     const selectedOption = tipoSelect.options[tipoSelect.selectedIndex];
     
     // REGRA: Se a palavra PNEU estiver no serviço, exibe o seletor de quantidade
+    // REGRA: Se a palavra PNEU estiver no serviço, exibe os seletores de quantidade e eixo
     if (selectedOption && selectedOption.value.toLowerCase().includes('pneu')) {
         if (wrapperPneu) wrapperPneu.classList.remove('hidden');
+        if (wrapperEixo) wrapperEixo.classList.remove('hidden');
     } else {
         if (wrapperPneu) {
             wrapperPneu.classList.add('hidden');
             if (qtdPneuSelect) qtdPneuSelect.value = '1'; // Reseta se mudar para outro produto
         }
+        if (wrapperEixo) wrapperEixo.classList.add('hidden');
     }
 
     // REGRA: Se for ESTOQUE CHNET, puxa o valor automático e multiplica pelas unidades
@@ -1613,66 +1613,96 @@ function executarRodizioPneus() {
     const kmAtual = v.km;
     if (!kmAtual || kmAtual <= 0) return alert('Por favor, informe a quilometragem atual do veículo antes de realizar o rodízio.');
 
-    // 1. Captura o KM exato de quando o pneu meia-vida foi instalado na frente
-    const kmInstalacaoOriginal = v.bases['Pneu Dianteiro'] || v.bases['Pneu'] || 0;
-    
-    // Calcula quanto o pneu já rodou na frente até hoje
-    const kmJáRodadoNaFrente = kmAtual - kmInstalacaoOriginal;
+    const direcao = document.getElementById('rodizio_direcao').value;
     const hoje = new Date().toISOString().split('T')[0];
 
-    if (kmJáRodadoNaFrente < 0) {
-        return alert('Erro: O KM atual do veículo é menor do que o KM de instalação do pneu dianteiro. Verifique o odômetro.');
+    // Captura as bases de instalação originais dos eixos.
+    const baseDianteiraOriginal = v.bases['Pneu Dianteiro'] || 0;
+    const baseTraseiraOriginal = v.bases['Pneu Traseiro'] || 0;
+
+    let servicoTraseiro = null;
+    let servicoDianteiro = null;
+    let notaTexto = "";
+
+    if (direcao === 'frente_para_tras') {
+        // Pneus da FRENTE (usados) vão para TRÁS. Pneus NOVOS entram na FRENTE.
+        const kmRodadoNoPneu = kmAtual - baseDianteiraOriginal;
+        if (kmRodadoNoPneu < 0) return alert('Erro: O KM atual do veículo é menor do que o KM de instalação anterior.');
+
+        if (!confirm(`Confirmar Rodízio (Frente para Trás)?\n\n• TRASEIRA: Receberá os pneus da frente, mantendo seus ${formatKM(kmRodadoNoPneu)} km de uso.\n• DIANTEIRA: Receberá pneus NOVOS (base de KM atual).`)) {
+            return;
+        }
+
+        // A base da TRASEIRA herda a base original da DIANTEIRA (Preserva a quilometragem que ele já rodou)
+        v.bases['Pneu Traseiro'] = baseDianteiraOriginal; 
+        // A base da DIANTEIRA é renovada com o KM atual (pneus novos)
+        v.bases['Pneu Dianteiro'] = kmAtual; 
+
+        // Cria serviços para o histórico. O pneu movido tem seu KM de serviço registrado
+        // com sua base original, para manter a integridade do histórico para relatórios.
+        servicoTraseiro = {
+            tipo: "Pneu Traseiro", forn: "CHNET Estoque", val: 0, km: baseDianteiraOriginal, data: hoje,
+            obs: `🔄 Rodízio: Pneu usado vindo da Dianteira. Instalado originalmente no KM ${formatKM(baseDianteiraOriginal)} (Já rodou ${formatKM(kmRodadoNoPneu)} km).`
+        };
+        servicoDianteiro = {
+            tipo: "Pneu Dianteiro", forn: "CHNET Estoque", val: 0, km: kmAtual, data: hoje,
+            obs: "🔄 Rodízio: Instalação de pneus NOVOS na Dianteira."
+        };
+        notaTexto = `🔄 Rodízio (Frente→Trás): Pneus dianteiros movidos para a traseira (mantendo base de ${formatKM(baseDianteiraOriginal)} km). Dianteira com pneus novos (base ${formatKM(kmAtual)} km).`;
+
+    } else {
+        // Pneus de TRÁS (usados) vão para FRENTE. Pneus NOVOS entram na TRÁS.
+        const kmRodadoNoPneu = kmAtual - baseTraseiraOriginal;
+        if (kmRodadoNoPneu < 0) return alert('Erro: O KM atual do veículo é menor do que o KM de instalação anterior.');
+
+        if (!confirm(`Confirmar Rodízio (Trás para Frente)?\n\n• DIANTEIRA: Receberá os pneus de trás, mantendo seus ${formatKM(kmRodadoNoPneu)} km de uso.\n• TRASEIRA: Receberá pneus NOVOS (base de KM atual).`)) {
+            return;
+        }
+
+        // A base da DIANTEIRA herda a base original da TRASEIRA (Preserva a quilometragem que ele já rodou)
+        v.bases['Pneu Dianteiro'] = baseTraseiraOriginal;
+        // A base da TRASEIRA é renovada com o KM atual (pneus novos)
+        v.bases['Pneu Traseiro'] = kmAtual;
+
+        // Cria serviços para o histórico. O pneu movido tem seu KM de serviço registrado
+        // com sua base original, para manter a integridade do histórico para relatórios.
+        servicoDianteiro = {
+            tipo: "Pneu Dianteiro", forn: "CHNET Estoque", val: 0, km: baseTraseiraOriginal, data: hoje,
+            obs: `🔄 Rodízio: Pneu usado vindo da Traseira. Instalado originalmente no KM ${formatKM(baseTraseiraOriginal)} (Já rodou ${formatKM(kmRodadoNoPneu)} km).`
+        };
+        servicoTraseiro = {
+            tipo: "Pneu Traseiro", forn: "CHNET Estoque", val: 0, km: kmAtual, data: hoje,
+            obs: "🔄 Rodízio: Instalação de pneus NOVOS na Traseira."
+        };
+        notaTexto = `🔄 Rodízio (Trás→Frente): Pneus traseiros movidos para a dianteira (mantendo base de ${formatKM(baseTraseiraOriginal)} km). Traseira com pneus novos (base ${formatKM(kmAtual)} km).`;
     }
 
-    if (!confirm(`Confirmar Rodízio de Pneus Realista?\n\n` +
-                 `1. PNEUS DE TRÁS (Meia-Vida): Irão assumir a quilometragem real de quando foram fabricados/instalados (${formatKM(kmInstalacaoOriginal)} km), carregando os ${formatKM(kmJáRodadoNaFrente)} km já rodados.\n` +
-                 `2. PNEUS DA FRENTE (Novos): Irão zerar o ciclo na dianteira, começando a contar a partir de agora (${formatKM(kmAtual)} km).`)) {
-        return;
+    // Remove a base genérica 'Pneu' se existir para evitar conflitos de contagem
+    if (v.bases['Pneu']) {
+        delete v.bases['Pneu'];
     }
 
-    // 2. Transferência física dos quilômetros nas bases do sistema
-    // O pneu traseiro herda o KM de nascimento dele para o relatório calcular o desgaste acumulado
-    v.bases['Pneu Traseiro'] = kmInstalacaoOriginal; 
-    
-    // A dianteira recebe pneus novos, logo o ciclo deles começa no KM atual do odômetro
-    v.bases['Pneu Dianteiro'] = kmAtual;
-    v.bases['Pneu'] = kmAtual;
-
-    // 3. Injeção dos 2 registros com R$ 0,00 para atualizar os gráficos de ciclos do relatório
-    // Importante: O serviço do pneu traseiro é registrado no KM original de instalação dele para o gráfico computar a linha de desgaste
-    const servicoTraseiro = {
-        tipo: "Pneu Traseiro",
-        forn: "CHNET Estoque",
-        val: 0,
-        km: kmInstalacaoOriginal, // Mantém o KM original para preservar a história do pneu
-        data: hoje,
-        obs: `Rodízio: Pneu Meia-Vida transferido para a Traseira. Ele rodou ${formatKM(kmJáRodadoNaFrente)} km na frente antes da troca.`
-    };
-
-    const servicoDianteiro = {
-        tipo: "Pneu Dianteiro",
-        forn: "CHNET Estoque",
-        val: 0,
-        km: kmAtual, // Pneu novo entra no KM de hoje
-        data: hoje,
-        obs: `Rodízio: Pneus Novos instalados na Dianteira.`
-    };
-
+    // Salva os logs no histórico do veículo
     v.servicos.push(servicoTraseiro);
     v.servicos.push(servicoDianteiro);
 
-    // 4. Grava a Nota de Auditoria no painel do carro
+    // Adiciona ao topo das notas contextuais do veículo
     if (!v.notas) v.notas = [];
-    v.notas.unshift({
-        texto: `🔄 Rodízio de Pneus: Os dianteiros (instalados em ${formatKM(kmInstalacaoOriginal)}km) foram jogados para trás acumulando ${formatKM(kmJáRodadoNaFrente)}km rodados. Dianteira recebeu novos em ${formatKM(kmAtual)}km.`,
-        data: new Date().toISOString()
-    });
+    v.notas.unshift({ texto: notaTexto, data: new Date().toISOString() });
 
-    // Limpa alertas antigos para o pneu novo começar a monitorar do zero
-    if (v.alertasIgnorados) { v.alertasIgnorados = v.alertasIgnorados.filter(alerta => !alerta.toLowerCase().includes('pneu')); }
+    // Remove das regras ignoradas para que o painel volte a alertar corretamente a vida útil
+    if (v.alertasIgnorados) {
+        v.alertasIgnorados = v.alertasIgnorados.filter(alerta => !alerta.toLowerCase().includes('pneu'));
+    }
+
     veiculoAtual = v;
     salvar();
-    alert('🔄 Rodízio processado! A quilometragem rodada do pneu foi mantida e migrada para a traseira.');
+    
+    // Recarrega os componentes da tela na mesma hora
+    renderizarVeiculo();
+    renderDashboard();
+    
+    alert('🔄 Rodízio inteligente aplicado! As bases de quilometragem rodada foram movidas com sucesso e preservadas.');
 }
 
 function editarVeiculo() {
@@ -1708,6 +1738,14 @@ function addServico() {
     let file = document.getElementById('servico_foto').files[0];
     
     if (!forn || !tipo || !km || !valor || !data) return alert('Preencha os campos obrigatórios!');
+    let tipoFinalParaServico = tipo;
+    const wrapperEixo = document.getElementById('wrapper_pneu_eixo');
+    if (wrapperEixo && !wrapperEixo.classList.contains('hidden')) {
+        const eixo = document.getElementById('pneu_eixo').value;
+        tipoFinalParaServico = `Pneu ${eixo}`;
+    }
+    
+    if (!forn || !tipoFinalParaServico || !km || !valor || !data) return alert('Preencha os campos obrigatórios!');
     
     // Controle de baixa de estoque
     if (forn === 'CHNET Estoque') {
@@ -1725,7 +1763,7 @@ function addServico() {
     }
 
     const processar = (img) => {
-        let servico = { tipo, forn, val: valor, km, data, obs, img };
+        let servico = { tipo: tipoFinalParaServico, forn, val: valor, km, data, obs, img };
         if (servico.km > 0) {
             if (!v.kmHistory) v.kmHistory = [];
             const exists = v.kmHistory.some(h => h.date === data && h.km === servico.km);
@@ -1734,14 +1772,14 @@ function addServico() {
         if (servico.km > v.km) v.km = servico.km;
         
         // RESTRITORES DE REGRAS CRÍTICOS: Garante isolamento total baseado no nome do produto
-        const nomeLimpo = tipo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const nomeLimpo = tipoFinalParaServico.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const ehCabine = nomeLimpo.includes('cabine') || nomeLimpo.includes('condicionado');
         const ehArMotor = nomeLimpo.includes('motor') && (nomeLimpo.includes('filtro de ar') || nomeLimpo.includes('filtro do ar') || nomeLimpo.includes('filtro de ar motor'));
 
         const regrasConfig = getRegrasVeiculo(v);
         
         // Filtra as regras estritamente pela função tipoMatchRegra
-        let regrasBatidas = Object.keys(regrasConfig).filter(r => tipoMatchRegra(tipo, r));
+        let regrasBatidas = Object.keys(regrasConfig).filter(r => tipoMatchRegra(tipoFinalParaServico, r));
         
         // Se a IA tentou forçar o fallback automático, aplicamos a trava manual aqui também
         if (ehCabine) {
@@ -1759,13 +1797,17 @@ function addServico() {
             }
         }
 
+        const isRodizio = tipoFinalParaServico.toLowerCase().includes('rodízio');
+
         // Aplica a quilometragem apenas nas regras validadas e limpa os alertas ignorados
-        regrasBatidas.forEach(regra => { 
-            v.bases[regra] = km; 
-            if (v.alertasIgnorados) {
-                v.alertasIgnorados = v.alertasIgnorados.filter(alerta => alerta !== regra);
-            }
-        });
+        if (!isRodizio) {
+            regrasBatidas.forEach(regra => { 
+                v.bases[regra] = km; 
+                if (v.alertasIgnorados) {
+                    v.alertasIgnorados = v.alertasIgnorados.filter(alerta => alerta !== regra);
+                }
+            });
+        }
 
         v.servicos.push(servico);
         v.ultimaAtualizacao = data;
@@ -2126,6 +2168,40 @@ function removerRegra(r) {
 // ============================================================
 // RELATÓRIOS
 // ============================================================
+function editarKmCiclo(veiculoId, tireType, kmAtualCiclo, kmVeiculo) {
+    const v = db.veiculos.find(v => v.id === veiculoId);
+    if (!v) return;
+
+    const novoKmCicloStr = prompt(`Editar KM rodado para o ${tireType} de ${v.motorista}.\n\nValor atual: ${formatKM(kmAtualCiclo)} km\n\nDigite o novo valor de KM rodado para este ciclo de pneu:`, formatKM(kmAtualCiclo));
+
+    if (novoKmCicloStr === null) return; // User cancelled
+
+    const novoKmCiclo = parseKM(novoKmCicloStr);
+    if (isNaN(novoKmCiclo) || novoKmCiclo < 0) {
+        alert('Valor de KM inválido.');
+        return;
+    }
+
+    // Recalcular a base
+    // kmAtualCiclo = kmVeiculo - baseKm  =>  baseKm = kmVeiculo - kmAtualCiclo
+    const novaBaseKm = kmVeiculo - novoKmCiclo;
+
+    if (novaBaseKm < 0) {
+        alert('Erro: O KM rodado não pode ser maior que a quilometragem atual do veículo.');
+        return;
+    }
+
+    if (confirm(`Isso ajustará a base de instalação do ${tireType} para ${formatKM(novaBaseKm)} km para refletir o novo KM rodado de ${formatKM(novoKmCiclo)} km.\n\nContinuar?`)) {
+        v.bases[tireType] = novaBaseKm;
+        if (!v.notas) v.notas = [];
+        v.notas.unshift({ texto: `📝 Ajuste manual na base do ${tireType}. Nova base: ${formatKM(novaBaseKm)} km (refletindo ${formatKM(novoKmCiclo)} km rodados).`, data: new Date().toISOString() });
+        salvar();
+        setTimeout(() => {
+            alert('✅ Base de KM do ciclo de pneu atualizada com sucesso!');
+        }, 100); // Atraso para permitir que a UI seja atualizada antes de mostrar o alerta.
+    }
+}
+
 function preencherFiltroAnos() {
     let anos = new Set([new Date().getFullYear()]);
     db.veiculos.forEach(v => {
@@ -2289,16 +2365,32 @@ function showRelatorio(tipo) {
         </table></div></div>`;
 
     } else if (tipo === 'pneus') {
-        function diffDays(d1, d2) { return Math.max(0, Math.round((new Date(d2+'T00:00:00') - new Date(d1+'T00:00:00')) / 86400000)); }
+        function diffDays(d1, d2) { return Math.max(0, Math.round((new Date(d2 + 'T00:00:00') - new Date(d1 + 'T00:00:00')) / 86400000)); }
         function ehPneuD(tipo) { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('diant')||t.includes('front')); }
         function ehPneuT(tipo) { let t=(tipo||'').toLowerCase(); return t.includes('pneu')&&(t.includes('tras')||t.includes('rear')); }
         function ehPneu(tipo)  { return (tipo||'').toLowerCase().includes('pneu'); }
-        function calcCiclos(eventos, kmAtual, hoje) {
+        function calcCiclos(eventos, kmAtual, hoje, baseKm) {
             if (!eventos || !eventos.length) return null;
-            let ciclos = []; // Corrigido
-            for (let i=1;i<eventos.length;i++) { let ini=eventos[i-1],fim=eventos[i],km=Math.max(0,(fim.km||0)-(ini.km||0)),dias=diffDays(ini.data,fim.data); if (km > 0) ciclos.push({ciclo:i,dataIni:ini.data,dataFim:fim.data,km,dias,kmDia:dias?Math.round(km/dias):0}); }
-            let ultimo=eventos[eventos.length-1],kmAtualCiclo=Math.max(0,kmAtual-(ultimo.km||0)),diasAtual=diffDays(ultimo.data,hoje),mediaCiclo=ciclos.length?Math.round(ciclos.reduce((s,c)=>s+c.km,0)/ciclos.length):0;
-            return {ciclos,kmAtualCiclo,diasAtual,mediaCiclo,ultimo};
+            let ciclos = [];
+            for (let i = 1; i < eventos.length; i++) {
+                let ini = eventos[i - 1], fim = eventos[i];
+                let km = Math.max(0, (fim.km || 0) - (ini.km || 0));
+                let dias = diffDays(ini.data, fim.data);
+                if (km > 0) {
+                    ciclos.push({
+                        ciclo: i, dataIni: ini.data, dataFim: fim.data, km, dias,
+                        kmDia: dias ? Math.round(km / dias) : 0,
+                        obs: fim.obs || ''
+                    });
+                }
+            }
+            let ultimo = eventos[eventos.length - 1];
+            const kmInstalacao = baseKm !== undefined ? baseKm : (ultimo.km || 0);
+            const eventoInstalacao = [...eventos].reverse().find(e => e.km <= kmInstalacao) || ultimo;
+            let kmAtualCiclo = Math.max(0, kmAtual - kmInstalacao);
+            let diasAtual = diffDays(eventoInstalacao.data, hoje);
+            let mediaCiclo = ciclos.length ? Math.round(ciclos.reduce((s, c) => s + c.km, 0) / ciclos.length) : 0;
+            return { ciclos, kmAtualCiclo, diasAtual, mediaCiclo, ultimo: eventoInstalacao };
         }
         let hoje=new Date().toISOString().split('T')[0];
         const tireSort = (a, b) => {
@@ -2312,17 +2404,18 @@ function showRelatorio(tipo) {
             let sp = filtrarServicos(v.servicos, v).filter(s => ehPneu(s.tipo));
             let d = sp.filter(s => ehPneuD(s.tipo) || (!ehPneuT(s.tipo) && !ehPneuD(s.tipo))).filter(s => s.data && (s.km || s.km === 0)).sort(tireSort);
             let t = sp.filter(s => ehPneuT(s.tipo)).filter(s => s.data && (s.km || s.km === 0)).sort(tireSort);
-            return { v, dianteiros: d, traseiros: t, calcD: calcCiclos(d, v.km, hoje), calcT: calcCiclos(t, v.km, hoje) };
+            return { v, dianteiros: d, traseiros: t, calcD: calcCiclos(d, v.km, hoje, v.bases['Pneu Dianteiro']), calcT: calcCiclos(t, v.km, hoje, v.bases['Pneu Traseiro']) };
         });
         let ttd=dadosPneu.reduce((s,d)=>s+d.dianteiros.length,0),ttt=dadosPneu.reduce((s,d)=>s+d.traseiros.length,0),mkd=0,mkt=0,cd=0,ct=0;
         dadosPneu.forEach(d=>{if(d.calcD&&d.calcD.mediaCiclo>0){mkd+=d.calcD.mediaCiclo;cd++;}if(d.calcT&&d.calcT.mediaCiclo>0){mkt+=d.calcT.mediaCiclo;ct++;}});
         mkd=cd?Math.round(mkd/cd):0; mkt=ct?Math.round(mkt/ct):0;
-        const rct=(calc,label)=>{
+        const rct=(calc,label,v)=>{
             if(!calc)return`<div style="color:var(--text-secondary);font-size:12px;padding:8px 0">Nenhuma troca de ${label} registrada.</div>`; // Corrigido
             let html='';
-            if(calc.ciclos.length>0){html+=`<div style="max-height: 150px; overflow-y: auto; margin-bottom: 8px;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:rgba(255,255,255,0.04); position: sticky; top: 0;"><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Ciclo</th><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Início</th><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Fim</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM Rodados</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">Dias</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM/Dia</th></tr></thead><tbody>${calc.ciclos.map(c=>`<tr><td style="padding:5px 8px">#${c.ciclo}</td><td style="padding:5px 8px">${formatDate(c.dataIni)}</td><td style="padding:5px 8px">${formatDate(c.dataFim)}</td><td style="padding:5px 8px;text-align:right"><strong>${formatKM(c.km)}</strong></td><td style="padding:5px 8px;text-align:right">${c.dias}d</td><td style="padding:5px 8px;text-align:right">${c.kmDia} km/d</td></tr>`).join('')}</tbody></table></div>`;}
+            if(calc.ciclos.length>0){html+=`<div style="max-height: 150px; overflow-y: auto; margin-bottom: 8px;"><table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:rgba(255,255,255,0.04); position: sticky; top: 0;"><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Ciclo</th><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Início</th><th style="padding:5px 8px;text-align:left;color:var(--text-secondary)">Fim</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM Rodados</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">Dias</th><th style="padding:5px 8px;text-align:right;color:var(--text-secondary)">KM/Dia</th><th style="padding:5px 8px;text-align:center;color:var(--text-secondary)">Obs</th></tr></thead><tbody>${calc.ciclos.map(c=>`<tr><td style="padding:5px 8px">#${c.ciclo}</td><td style="padding:5px 8px">${formatDate(c.dataIni)}</td><td style="padding:5px 8px">${formatDate(c.dataFim)}</td><td style="padding:5px 8px;text-align:right"><strong>${formatKM(c.km)}</strong></td><td style="padding:5px 8px;text-align:right">${c.dias}d</td><td style="padding:5px 8px;text-align:right">${c.kmDia} km/d</td><td style="padding:5px 8px;text-align:center" title="${c.obs}">${c.obs.includes('🔄') ? '🔄' : ''}</td></tr>`).join('')}</tbody></table></div>`;}
             let pct=calc.mediaCiclo>0?Math.min(100,Math.round(calc.kmAtualCiclo/calc.mediaCiclo*100)):0,barColor=pct>=90?'var(--danger)':pct>=70?'var(--warn)':'var(--success)';
-            html+=`<div style="display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start;margin-top:4px"><div style="flex:1;min-width:180px"><div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">PNEU ATUAL (desde ${formatDate(calc.ultimo?.data) || '?'})</div><div style="font-size:16px;font-weight:bold;color:${barColor}">${formatKM(calc.kmAtualCiclo)} km</div><div style="font-size:11px;color:var(--text-secondary)">${calc.diasAtual} dias em uso</div>${calc.mediaCiclo>0?`<div class="alert-km-bar" style="margin-top:6px"><div class="alert-km-bar-fill" style="width:${pct}%;background:${barColor}"></div></div><div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${pct}% do ciclo médio (${formatKM(calc.mediaCiclo)} km)</div>`:''}</div>${calc.mediaCiclo>0?`<div style="text-align:right"><div style="font-size:11px;color:var(--text-secondary)">MÉDIA POR CICLO</div><div style="font-size:18px;font-weight:bold;color:#8b5cf6">${formatKM(calc.mediaCiclo)} km</div><div style="font-size:11px;color:var(--text-secondary)">${calc.ciclos.length} ciclo(s)</div></div>`:'<div style="font-size:11px;color:var(--text-secondary)">Apenas 1 troca — sem ciclo.</div>'}</div>`;
+            const tireType = label.toLowerCase().includes('diant') ? 'Pneu Dianteiro' : 'Pneu Traseiro';
+            html+=`<div style="display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start;margin-top:4px"><div style="flex:1;min-width:180px"><div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">PNEU ATUAL (desde ${formatDate(calc.ultimo?.data) || '?'})</div><div style="font-size:16px;font-weight:bold;color:${barColor};cursor:pointer;display:inline-block" onclick="editarKmCiclo(${v.id}, '${tireType}', ${calc.kmAtualCiclo}, ${v.km})">${formatKM(calc.kmAtualCiclo)} km <i class="fas fa-pencil-alt" style="font-size:10px;opacity:0.5;margin-left:4px"></i></div><div style="font-size:11px;color:var(--text-secondary)">${calc.diasAtual} dias em uso</div>${calc.mediaCiclo>0?`<div class="alert-km-bar" style="margin-top:6px"><div class="alert-km-bar-fill" style="width:${pct}%;background:${barColor}"></div></div><div style="font-size:11px;color:var(--text-secondary);margin-top:3px">${pct}% do ciclo médio (${formatKM(calc.mediaCiclo)} km)</div>`:''}</div>${calc.mediaCiclo>0?`<div style="text-align:right"><div style="font-size:11px;color:var(--text-secondary)">MÉDIA POR CICLO</div><div style="font-size:18px;font-weight:bold;color:#8b5cf6">${formatKM(calc.mediaCiclo)} km</div><div style="font-size:11px;color:var(--text-secondary)">${calc.ciclos.length} ciclo(s)</div></div>`:'<div style="font-size:11px;color:var(--text-secondary)">Apenas 1 troca — sem ciclo.</div>'}</div>`;
             return html;
         };
         container.innerHTML = `
@@ -2338,8 +2431,8 @@ function showRelatorio(tipo) {
                         <div><h3 style="margin:0">${highlightText(v.motorista, filterSearch)}</h3><span style="font-size:11px;color:var(--text-secondary)">${highlightText(v.placa, filterSearch)} | ${highlightText(v.modelo, filterSearch)} | <span class="km-tag">${formatKM(v.km)} km</span></span></div>
                         <div style="display:flex;gap:8px"><span class="badge" style="background:rgba(59,130,246,0.15);color:#3b82f6">🔵 ${dianteiros.length} dianteiro</span><span class="badge" style="background:rgba(139,92,246,0.15);color:#8b5cf6">🟣 ${traseiros.length} traseiro</span></div>
                     </div>
-                    <div style="border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:12px;background:rgba(59,130,246,0.04)"><div style="font-size:12px;font-weight:bold;color:#3b82f6;margin-bottom:10px">● PNEU DIANTEIRO</div>${rct(calcD,'pneu dianteiro')}</div>
-                    <div style="border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:14px;background:rgba(139,92,246,0.04)"><div style="font-size:12px;font-weight:bold;color:#8b5cf6;margin-bottom:10px">● PNEU TRASEIRO</div>${rct(calcT,'pneu traseiro')}</div>
+                    <div style="border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:12px;background:rgba(59,130,246,0.04)"><div style="font-size:12px;font-weight:bold;color:#3b82f6;margin-bottom:10px">● PNEU DIANTEIRO</div>${rct(calcD,'pneu dianteiro', v)}</div>
+                    <div style="border:1px solid rgba(139,92,246,0.2);border-radius:10px;padding:14px;background:rgba(139,92,246,0.04)"><div style="font-size:12px;font-weight:bold;color:#8b5cf6;margin-bottom:10px">● PNEU TRASEIRO</div>${rct(calcT,'pneu traseiro', v)}</div>
                 </div>`).join('')}`;
 
     } else if (tipo === 'abastecimento') {
@@ -3020,14 +3113,44 @@ function exportarCSV() {
 // RENDER TUDO
 // ============================================================
 function renderizarTudo() {
-    renderVeiculos(); renderDashboard(); if(veiculoAtual) renderizarVeiculo();
+    // Find the currently active page to re-render only what's visible
+    const activePage = document.querySelector('.main > div:not(.hidden)');
+    if (!activePage) {
+        renderDashboard(); // Default to dashboard if no page is active
+        return;
+    }
+
+    const pageId = activePage.id; // e.g., "tab-relatorios"
+    const tabName = pageId.replace('tab-', '');
+
+    // Call the appropriate render function for the active tab
+    switch (tabName) {
+        case 'dash':
+            renderDashboard();
+            break;
+        case 'frota':
+            renderVeiculos();
+            break;
+        case 'servicos':
+            renderServicos();
+            break;
+        case 'estoque':
+            renderEstoque();
+            break;
+        case 'relatorios':
+            reRenderRelatorio(); // This uses the global _relatorioAtual to show the correct report
+            break;
+        case 'detalhes':
+            if (veiculoAtual) renderizarVeiculo();
+            break;
+    }
 }
 
 // ============================================================
 // EXPOR FUNÇÕES GLOBAIS
 // ============================================================
 Object.assign(window, {
-    tab, addVeiculo, abrirVeiculo, atualizarKM, addServico, updateTipoSelect, atualizarPrecoEUnidadesPorPneu, executarRodizioPneus, addOficina, addRegra, addPeca, addCompra, showRelatorio, reRenderRelatorio, preencherFiltroAnos, salvarDados, maskKM, maskMoney, toggleSidebar
+    tab, addVeiculo, abrirVeiculo, atualizarKM, addServico, updateTipoSelect, atualizarPrecoEUnidadesPorPneu, executarRodizioPneus, addOficina, addRegra, addPeca, addCompra, showRelatorio, reRenderRelatorio, preencherFiltroAnos, salvarDados, maskKM, maskMoney, toggleSidebar, editarKmCiclo
 });
 
 // ============================================================
