@@ -867,6 +867,9 @@ function carregarDados() {
         db.estoque.forEach(e => {
             if (!e || typeof e !== 'object') return;
             if (!Array.isArray(e.compras)) e.compras = [];
+            if (typeof e.ignorarAlertaBaixoEstoque !== 'boolean') {
+                e.ignorarAlertaBaixoEstoque = false;
+            }
         });
 
         popularHistoricoKmInicial();
@@ -881,7 +884,6 @@ function carregarDados() {
 }
 
 function salvar() { salvarDados(); renderizarTudo(); }
-function limparLogin() { document.getElementById('login_user').value = ''; document.getElementById('login_pass').value = ''; }
 
 // ============================================================
 // BACKUP
@@ -1037,7 +1039,14 @@ function renderDashboard() {
     if (!customAlertDiv.innerHTML) customAlertDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--custom-alert)"></i> Nenhum alerta personalizado ativo.</div>';
 
     db.estoque.forEach(e => {
-        if (e.qtd <= e.min) lowStockDiv.innerHTML += `<div class="card status-mini vencido"><span><strong>⚠️ ${e.nome}</strong><br><small>Estoque: ${e.qtd} | Mínimo: ${e.min}</small></span></div>`;
+        if (e.qtd <= e.min && !e.ignorarAlertaBaixoEstoque) {
+            lowStockDiv.innerHTML += `<div class="card status-mini vencido" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span><strong>⚠️ ${e.nome}</strong><br><small>Estoque: ${e.qtd} | Mínimo: ${e.min}</small></span>
+                        <button class="icon-btn" onclick="toggleAlertaEstoque(${e.id}, true)" title="Ocultar alerta de estoque baixo">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                    </div>`;
+        }
     });
     if (!lowStockDiv.innerHTML) lowStockDiv.innerHTML = '<div class="card"><i class="fas fa-check-circle" style="color:var(--success)"></i> Estoque OK!</div>';
 
@@ -1953,11 +1962,20 @@ function renderEstoque() {
     document.getElementById('select_peca').innerHTML = '<option value="">-- Selecione a peça --</option>' + db.estoque.map(e => `<option value="${e.id}">${e.nome} (Estoque: ${e.qtd})</option>`).join('');
     document.getElementById('tbl_estoque').querySelector('tbody').innerHTML = db.estoque.map(e => {
         let baixo = e.qtd <= e.min;
+        let ignorado = e.ignorarAlertaBaixoEstoque;
+        let statusBadge;
+        if (baixo) {
+            statusBadge = ignorado 
+                ? `<span class="badge badge-warn" style="cursor:pointer" onclick="toggleAlertaEstoque(${e.id}, false)" title="Alerta oculto. Clique para reativar.">Baixo (Oculto)</span>`
+                : `<span class="badge badge-danger">Baixo</span>`;
+        } else {
+            statusBadge = '<span class="badge badge-success">OK</span>';
+        }
         return `<tr>
             <td><strong>${e.nome}</strong></td>
-            <td style="color:${baixo?'var(--danger)':'inherit'};font-weight:${baixo?'bold':'normal'}">${e.qtd} ${baixo?'⚠️':''}</td>
-            <td>${e.min}</td><td>R$ ${formatMoney(e.val)}</td><td>R$ ${formatMoney(e.qtd*e.val)}</td>
-            <td>${baixo?'<span class="badge badge-danger">Baixo</span>':'<span class="badge badge-success">OK</span>'}</td>
+            <td style="color:${baixo && !ignorado ? 'var(--danger)' : 'inherit'};font-weight:${baixo && !ignorado ? 'bold' : 'normal'}">${e.qtd} ${baixo && !ignorado ? '⚠️' : ''}</td>
+            <td>${e.min}</td><td>R$ ${formatMoney(e.val)}</td><td>R$ ${formatMoney(e.qtd * e.val)}</td>
+            <td>${statusBadge}</td>
             <td>
                 <button class="btn-small" onclick="editarEstoque(${e.id})"><i class="fas fa-edit"></i></button>
                 <button class="btn-small btn-danger" style="margin-left:4px" onclick="excluirEstoque(${e.id})"><i class="fas fa-trash"></i></button>
@@ -1974,6 +1992,7 @@ function addCompra() {
     let val  = parseVal(document.getElementById('compra_val').value);
     if (!qtd || qtd <= 0) return alert('Informe a quantidade!');
     peca.qtd += qtd;
+    peca.ignorarAlertaBaixoEstoque = false; // Reset flag on new purchase
     if (val) peca.val = val;
     if (!peca.compras) peca.compras = [];
     peca.compras.unshift({ data: document.getElementById('compra_data').value || new Date().toISOString().split('T')[0], qtd, valorUnit: val||peca.val, fornecedor: document.getElementById('compra_forn').value||'Não informado', total: qtd*(val||peca.val) });
@@ -2082,6 +2101,15 @@ function salvarEdicaoOficina(i) {
     salvar();
     renderListaOficinas();
 }
+
+function toggleAlertaEstoque(id, ignorar) {
+    const item = db.estoque.find(e => e.id == id);
+    if (item) {
+        item.ignorarAlertaBaixoEstoque = ignorar;
+        salvar();
+    }
+}
+
 function addOficina() {
     let n = document.getElementById('nova_oficina').value.trim();
     if (!n) return;
@@ -3150,7 +3178,7 @@ function renderizarTudo() {
 // EXPOR FUNÇÕES GLOBAIS
 // ============================================================
 Object.assign(window, {
-    tab, addVeiculo, abrirVeiculo, atualizarKM, addServico, updateTipoSelect, atualizarPrecoEUnidadesPorPneu, executarRodizioPneus, addOficina, addRegra, addPeca, addCompra, showRelatorio, reRenderRelatorio, preencherFiltroAnos, salvarDados, maskKM, maskMoney, toggleSidebar, editarKmCiclo
+    loginApp, limparLogin, logoutApp, tab, addVeiculo, abrirVeiculo, atualizarKM, addServico, updateTipoSelect, atualizarPrecoEUnidadesPorPneu, executarRodizioPneus, addOficina, addRegra, addPeca, addCompra, showRelatorio, reRenderRelatorio, preencherFiltroAnos, salvarDados, maskKM, maskMoney, toggleSidebar, editarKmCiclo, toggleAlertaEstoque
 });
 
 // ============================================================
