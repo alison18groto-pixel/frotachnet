@@ -2,16 +2,22 @@
   "rules": {
     "appData": {
       ".read": "auth != null",
-      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)",
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.uid === 'uYUbXBTRVCUCAZINzzxNqFRGjH63' || auth.token.admin === true)",
       ".validate": "newData.hasChildren(['veiculos', 'oficinas', 'regras', 'estoque', 'usuarios'])"
     },
     "auditLogs": {
-      ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)",
-      ".write": "auth != null"
+      "$logId": {
+        ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)",
+        ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
+        ".validate": "newData.hasChildren(['at', 'uid', 'acao']) && newData.child('at').isString() && newData.child('uid').val() === auth.uid && newData.child('acao').isString()"
+      }
     },
     "loginAliases": {
       ".read": "auth != null",
-      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)"
+      "$login": {
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)",
+        ".validate": "newData.hasChildren(['email']) && newData.child('email').isString()"
+      }
     }
   }
 }
