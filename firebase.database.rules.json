@@ -7,6 +7,10 @@
     "auditLogs": {
       ".read": "auth != null && auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1'",
       ".write": false
+    },
+    "loginAliases": {
+      ".read": true,
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)"
     }
   }
 }

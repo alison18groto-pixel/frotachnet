@@ -64,6 +64,7 @@ exports.criarUsuarioTemporario = onCall(async (request) => {
     profile.expiresAt = expiresAt; profile.expiresAtEpoch = expiresAtEpoch;
   } else await getAuth().setCustomUserClaims(created.uid, { temporary: false });
   await getDatabase().ref(`appData/usuarios/${keyForEmail(authEmail)}`).set(profile);
+  if (tipo === 'permanente') await getDatabase().ref(`loginAliases/${keyForEmail(login)}`).set({ email, nome });
   await getDatabase().ref('auditLogs').push({ at: new Date().toISOString(), uid: request.auth.uid, email: request.auth.token.email || null, acao: 'criação de usuário', alteracoes: [tipo === 'demo' ? `demonstração:${login}` : `funcionário:${email}`, papel] });
   return { uid: created.uid, email: tipo === 'demo' ? null : email, login: tipo === 'demo' ? login : null, tipo, expiresAt };
 });
