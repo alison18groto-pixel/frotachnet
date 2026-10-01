@@ -917,14 +917,15 @@ async function editarUsuario(email) {
     const papel = prompt('Papel do usuário: leitor, operador ou admin', usuario.papel || 'leitor');
     if (papel === null) return;
     if (!['leitor', 'operador', 'admin'].includes(papel.trim().toLowerCase())) return alert('Papel inválido.');
-    const leitura = prompt('Módulos com acesso de LEITURA, separados por vírgula (frota, servicos, estoque, relatorios):', Object.keys(usuario.permissoes || {}).filter(m => usuario.permissoes[m] === 'read').join(', '));
+    const leitura = prompt('Módulos com acesso de LEITURA, separados por vírgula (veículos, serviços, estoque, relatórios):', Object.keys(usuario.permissoes || {}).filter(m => usuario.permissoes[m] === 'read').join(', '));
     if (leitura === null) return;
-    const completo = prompt('Módulos com acesso COMPLETO, separados por vírgula (frota, servicos, estoque, relatorios):', Object.keys(usuario.permissoes || {}).filter(m => usuario.permissoes[m] === 'full').join(', '));
+    const completo = prompt('Módulos com acesso COMPLETO, separados por vírgula (veículos, serviços, estoque, relatórios):', Object.keys(usuario.permissoes || {}).filter(m => usuario.permissoes[m] === 'full').join(', '));
     if (completo === null) return;
-    const permitidos = Object.keys(MODULE_LABELS);
+    const aliases = { frota: 'frota', veiculos: 'frota', veículos: 'frota', servicos: 'servicos', serviços: 'servicos', configuracoes: 'servicos', configurações: 'servicos', estoque: 'estoque', relatorios: 'relatorios', relatórios: 'relatorios' };
+    const converterModulos = texto => texto.split(',').map(v => v.trim().toLowerCase()).filter(Boolean).map(v => aliases[v]).filter(Boolean);
     const permissoes = {};
-    leitura.split(',').map(v => v.trim().toLowerCase()).filter(Boolean).forEach(m => { if (permitidos.includes(m)) permissoes[m] = 'read'; });
-    completo.split(',').map(v => v.trim().toLowerCase()).filter(Boolean).forEach(m => { if (permitidos.includes(m)) permissoes[m] = 'full'; });
+    converterModulos(leitura).forEach(m => { permissoes[m] = 'read'; });
+    converterModulos(completo).forEach(m => { permissoes[m] = 'full'; });
     usuario.papel = papel.trim().toLowerCase();
     usuario.permissoes = permissoes;
     usuario.atualizadoEm = new Date().toISOString();
@@ -987,7 +988,11 @@ function initSidebarToggle() {
 // PERSISTÊNCIA
 // ============================================================
 function salvarDados() {
-    if (!currentUserProfile || (!isAdmin() && !['frota','servicos','estoque'].some(podeEditar))) { alert('Seu perfil não possui permissão para gravar dados.'); return false; }
+    if (!currentUserProfile || (!isAdmin() && !['frota','servicos','estoque'].some(podeEditar))) {
+        console.warn('Salvamento bloqueado pelo perfil:', currentUserProfile);
+        alert(`Seu perfil não possui permissão de gravação. Papel: ${currentUserProfile?.papel || 'não carregado'}. Permissões: ${Object.entries(currentUserProfile?.permissoes || {}).map(([m,p]) => `${m}:${p}`).join(', ') || 'nenhuma'}. Peça ao ADMIN para marcar acesso COMPLETO em Veículos, Serviços ou Estoque.`);
+        return;
+    }
     const btn = document.getElementById('save-btn');
     if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
     database.ref('appData').set(db)
