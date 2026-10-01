@@ -768,7 +768,9 @@ function definirPerfilAtual(user) {
 function isAdmin() { return isBootstrapAdmin(currentAuthUser) || (!!currentUserProfile && currentUserProfile.papel === 'admin'); }
 function nivelPermissao(modulo) {
     if (isAdmin()) return 'full';
-    return (currentUserProfile && currentUserProfile.permissoes && currentUserProfile.permissoes[modulo]) || 'none';
+    // Todo usuário autorizado pode operar o sistema; somente ADMIN gerencia usuários.
+    if (currentUserProfile && currentAuthUser) return 'full';
+    return 'none';
 }
 function podeLer(modulo) { return nivelPermissao(modulo) !== 'none'; }
 function podeEditar(modulo) { return nivelPermissao(modulo) === 'full'; }
@@ -1010,9 +1012,9 @@ function initSidebarToggle() {
 // PERSISTÊNCIA
 // ============================================================
 function salvarDados() {
-    if (!currentUserProfile || (!isAdmin() && !['frota','servicos','estoque'].some(podeEditar))) {
-        console.warn('Salvamento bloqueado pelo perfil:', currentUserProfile);
-        alert(`Seu perfil não possui permissão de gravação. Papel: ${currentUserProfile?.papel || 'não carregado'}. Permissões: ${Object.entries(currentUserProfile?.permissoes || {}).map(([m,p]) => `${m}:${p}`).join(', ') || 'nenhuma'}. Peça ao ADMIN para marcar acesso COMPLETO em Veículos, Serviços ou Estoque.`);
+    if (!currentUserProfile || !currentAuthUser) {
+        console.warn('Salvamento bloqueado: usuário não autorizado ou sessão ausente.', currentUserProfile);
+        alert('Sua sessão não está autorizada para salvar. Saia e entre novamente.');
         return;
     }
     const btn = document.getElementById('save-btn');
