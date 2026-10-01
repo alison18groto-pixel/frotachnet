@@ -497,7 +497,9 @@
             <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. Funcionários têm acesso permanente; demonstrações são somente leitura e expiram em 1 hora. O convidado escolhe a própria senha por e-mail.</p>
             <div class="flex-row">
                 <input id="novo_usuario_nome" placeholder="Nome do usuário" style="flex:1;margin-bottom:0">
-                <input id="novo_usuario_email" type="email" placeholder="E-mail da conta Firebase" style="flex:1;margin-bottom:0">
+                <input id="novo_usuario_email" type="email" placeholder="E-mail do funcionário" style="flex:1;margin-bottom:0">
+                <input id="novo_usuario_login" class="hidden" placeholder="Login da demonstração" style="flex:1;margin-bottom:0">
+                <input id="novo_usuario_senha" class="hidden" type="password" placeholder="Senha da demonstração" style="flex:1;margin-bottom:0">
                 <select id="novo_usuario_tipo" style="flex:1;margin-bottom:0" onchange="atualizarTipoConvite()" title="Tipo de acesso">
                     <option value="permanente">Funcionário — permanente</option>
                     <option value="demo">Demonstração — 1 hora</option>
@@ -791,7 +793,7 @@ function loginApp() {
     if (usuarioDigitado.toLowerCase() === "chnet") {
         emailCompleto = "chnettelecomunicacoes@gmail.com";
     } else if (!usuarioDigitado.includes('@')) {
-        emailCompleto = usuarioDigitado.toLowerCase() + "@chnettelecomunicacoes.com";
+        emailCompleto = usuarioDigitado.toLowerCase() + "@demo.frota.local";
     }
 
     // Envia para o Firebase Authentication validar
@@ -842,11 +844,14 @@ function renderUsuarios() {
     el.innerHTML = lista.map((u, i) => {
         const perms = Object.entries(MODULE_LABELS).filter(([m]) => (u.permissoes || {})[m]).map(([m, l]) => `${l}: ${(u.permissoes[m] === 'full' ? 'completo' : 'leitura')}`).join(' · ');
         const roleClass = `user-role-${u.papel || 'leitor'}`;
-        return `<div class="item-editavel"><div class="item-info"><span class="item-nome">${u.nome || u.email}</span><span class="item-detalhe">${u.email}</span><span class="${roleClass}">${(u.papel || 'leitor').toUpperCase()}</span><span class="item-detalhe">${perms || 'sem módulos'}</span></div><div class="item-acoes"><button class="btn-del-inline" onclick="removerUsuario('${String(u.email).replace(/'/g,"\'")}')"><i class="fas fa-trash"></i></button></div></div>`;
+        return `<div class="item-editavel"><div class="item-info"><span class="item-nome">${u.nome || u.email}</span><span class="item-detalhe">${u.login ? `Login: ${u.login}` : u.email}</span><span class="${roleClass}">${(u.papel || 'leitor').toUpperCase()}</span><span class="item-detalhe">${perms || 'sem módulos'}</span></div><div class="item-acoes"><button class="btn-del-inline" onclick="removerUsuario('${String(u.email).replace(/'/g,"\'")}')"><i class="fas fa-trash"></i></button></div></div>`;
     }).join('');
 }
 function atualizarTipoConvite() {
     const demo = document.getElementById('novo_usuario_tipo').value === 'demo';
+    document.getElementById('novo_usuario_email').classList.toggle('hidden', demo);
+    document.getElementById('novo_usuario_login').classList.toggle('hidden', !demo);
+    document.getElementById('novo_usuario_senha').classList.toggle('hidden', !demo);
     const papel = document.getElementById('novo_usuario_papel');
     const duracao = document.getElementById('novo_usuario_duracao');
     duracao.disabled = !demo;
@@ -857,21 +862,26 @@ async function criarConviteUsuario() {
     if (!isAdmin()) return exigirPermissao('usuarios', true);
     const nome = document.getElementById('novo_usuario_nome').value.trim();
     const email = normalizarEmail(document.getElementById('novo_usuario_email').value);
+    const login = document.getElementById('novo_usuario_login').value.trim().toLowerCase();
+    const senha = document.getElementById('novo_usuario_senha').value;
     const tipo = document.getElementById('novo_usuario_tipo').value;
     const papel = tipo === 'demo' ? 'leitor' : document.getElementById('novo_usuario_papel').value;
     const duracaoHoras = Number(document.getElementById('novo_usuario_duracao').value || 1);
-    if (!email || !email.includes('@')) return alert('Informe um e-mail válido.');
-    if (email === normalizarEmail(currentAuthUser.email)) return alert('O ADMIN inicial não precisa ser cadastrado.');
+    if (tipo === 'permanente' && (!email || !email.includes('@'))) return alert('Informe um e-mail válido para o funcionário.');
+    if (tipo === 'demo' && (!/^[a-z0-9._-]{3,32}$/.test(login) || senha.length < 6)) return alert('Informe um login de 3 a 32 caracteres e uma senha com pelo menos 6 caracteres.');
+    if (tipo === 'permanente' && email === normalizarEmail(currentAuthUser.email)) return alert('O ADMIN inicial não precisa ser cadastrado.');
     const permissoes = {};
     Object.keys(MODULE_LABELS).forEach(m => { const cb = document.getElementById('perm_' + m); if (cb.checked) permissoes[m] = papel === 'leitor' ? 'read' : 'full'; });
     try {
         const criar = functions.httpsCallable('criarUsuarioTemporario');
-        const resultado = await criar({ email, nome: nome || email, tipo, papel, permissoes, duracaoHoras });
-        await firebase.auth().sendPasswordResetEmail(email);
+        const resultado = await criar({ email, login, senha, nome: nome || login || email, tipo, papel, permissoes, duracaoHoras });
+        if (tipo === 'permanente') await firebase.auth().sendPasswordResetEmail(email);
         const expira = resultado.data && resultado.data.expiresAt ? new Date(resultado.data.expiresAt).toLocaleString('pt-BR') : 'em 1 hora';
         document.getElementById('novo_usuario_nome').value = '';
         document.getElementById('novo_usuario_email').value = '';
-        alert(tipo === 'demo' ? `Demonstração criada para ${email}. O link para escolher a senha foi enviado e expira em ${expira}.` : `Funcionário permanente criado para ${email}. O link para escolher a senha foi enviado. O acesso não expira.`);
+        document.getElementById('novo_usuario_login').value = '';
+        document.getElementById('novo_usuario_senha').value = '';
+        alert(tipo === 'demo' ? `Demonstração criada. Login: ${login}. Acesso somente leitura até ${expira}.` : `Funcionário permanente criado para ${email}. O link para escolher a senha foi enviado. O acesso não expira.`);
     } catch (err) {
         console.error('Erro ao criar usuário temporário:', err);
         const code = err.code || '';
