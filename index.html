@@ -712,7 +712,7 @@ function getRegrasVeiculo(v) {
 // LOGIN
 // ============================================================
 function isBootstrapAdmin(user) {
-    return !!user && (user.email || '').toLowerCase() === 'chnettelecomunicacoes@gmail.com';
+    return !!user && (user.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || (user.email || '').toLowerCase() === 'chnettelecomunicacoes@gmail.com');
 }
 function normalizarEmail(email) { return String(email || '').trim().toLowerCase(); }
 function perfilPadrao(user) {
