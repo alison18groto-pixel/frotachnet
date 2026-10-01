@@ -494,17 +494,21 @@
     <div id="tab-usuarios" class="hidden">
         <h2>👥 Usuários e permissões</h2>
         <div class="card">
-            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. O usuário temporário será criado por 1 hora e receberá um e-mail para escolher a própria senha. A senha nunca é salva no Frotas.</p>
+            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. Funcionários têm acesso permanente; demonstrações são somente leitura e expiram em 1 hora. O convidado escolhe a própria senha por e-mail.</p>
             <div class="flex-row">
                 <input id="novo_usuario_nome" placeholder="Nome do usuário" style="flex:1;margin-bottom:0">
                 <input id="novo_usuario_email" type="email" placeholder="E-mail da conta Firebase" style="flex:1;margin-bottom:0">
+                <select id="novo_usuario_tipo" style="flex:1;margin-bottom:0" onchange="atualizarTipoConvite()" title="Tipo de acesso">
+                    <option value="permanente">Funcionário — permanente</option>
+                    <option value="demo">Demonstração — 1 hora</option>
+                </select>
                 <select id="novo_usuario_papel" style="flex:1;margin-bottom:0">
                     <option value="leitor">Leitor</option>
                     <option value="operador">Operador</option>
                     <option value="admin">ADMIN</option>
                 </select>
-                <select id="novo_usuario_duracao" style="flex:1;margin-bottom:0" title="Validade do acesso">
-                    <option value="1">Temporário — 1 hora</option>
+                <select id="novo_usuario_duracao" style="flex:1;margin-bottom:0" title="Validade do acesso" disabled>
+                    <option value="1">Demonstração por 1 hora</option>
                 </select>
             </div>
             <div class="permission-grid">
@@ -513,7 +517,7 @@
                 <div class="permission-item"><label><input type="checkbox" id="perm_estoque" checked> Estoque</label></div>
                 <div class="permission-item"><label><input type="checkbox" id="perm_relatorios" checked> Relatórios</label></div>
             </div>
-            <button onclick="criarUsuarioTemporario()" class="btn-small" style="width:auto"><i class="fas fa-user-clock"></i> Criar convite de 1 hora</button>
+            <button onclick="criarConviteUsuario()" class="btn-small" style="width:auto"><i class="fas fa-paper-plane"></i> Enviar convite</button>
         </div>
         <div class="card"><h3>Usuários autorizados</h3><div id="lista_usuarios"></div></div>
     </div>
@@ -841,11 +845,20 @@ function renderUsuarios() {
         return `<div class="item-editavel"><div class="item-info"><span class="item-nome">${u.nome || u.email}</span><span class="item-detalhe">${u.email}</span><span class="${roleClass}">${(u.papel || 'leitor').toUpperCase()}</span><span class="item-detalhe">${perms || 'sem módulos'}</span></div><div class="item-acoes"><button class="btn-del-inline" onclick="removerUsuario('${String(u.email).replace(/'/g,"\'")}')"><i class="fas fa-trash"></i></button></div></div>`;
     }).join('');
 }
-async function criarUsuarioTemporario() {
+function atualizarTipoConvite() {
+    const demo = document.getElementById('novo_usuario_tipo').value === 'demo';
+    const papel = document.getElementById('novo_usuario_papel');
+    const duracao = document.getElementById('novo_usuario_duracao');
+    duracao.disabled = !demo;
+    if (demo) { papel.value = 'leitor'; papel.disabled = true; }
+    else { papel.disabled = false; }
+}
+async function criarConviteUsuario() {
     if (!isAdmin()) return exigirPermissao('usuarios', true);
     const nome = document.getElementById('novo_usuario_nome').value.trim();
     const email = normalizarEmail(document.getElementById('novo_usuario_email').value);
-    const papel = document.getElementById('novo_usuario_papel').value;
+    const tipo = document.getElementById('novo_usuario_tipo').value;
+    const papel = tipo === 'demo' ? 'leitor' : document.getElementById('novo_usuario_papel').value;
     const duracaoHoras = Number(document.getElementById('novo_usuario_duracao').value || 1);
     if (!email || !email.includes('@')) return alert('Informe um e-mail válido.');
     if (email === normalizarEmail(currentAuthUser.email)) return alert('O ADMIN inicial não precisa ser cadastrado.');
@@ -853,12 +866,12 @@ async function criarUsuarioTemporario() {
     Object.keys(MODULE_LABELS).forEach(m => { const cb = document.getElementById('perm_' + m); if (cb.checked) permissoes[m] = papel === 'leitor' ? 'read' : 'full'; });
     try {
         const criar = functions.httpsCallable('criarUsuarioTemporario');
-        const resultado = await criar({ email, nome: nome || email, papel, permissoes, duracaoHoras });
+        const resultado = await criar({ email, nome: nome || email, tipo, papel, permissoes, duracaoHoras });
         await firebase.auth().sendPasswordResetEmail(email);
         const expira = resultado.data && resultado.data.expiresAt ? new Date(resultado.data.expiresAt).toLocaleString('pt-BR') : 'em 1 hora';
         document.getElementById('novo_usuario_nome').value = '';
         document.getElementById('novo_usuario_email').value = '';
-        alert(`Convite criado para ${email}. O Firebase enviou o link para Eduardo escolher a senha. O acesso expira em ${expira}.`);
+        alert(tipo === 'demo' ? `Demonstração criada para ${email}. O link para escolher a senha foi enviado e expira em ${expira}.` : `Funcionário permanente criado para ${email}. O link para escolher a senha foi enviado. O acesso não expira.`);
     } catch (err) {
         console.error('Erro ao criar usuário temporário:', err);
         const code = err.code || '';
@@ -867,7 +880,7 @@ async function criarUsuarioTemporario() {
         alert('Não foi possível criar o convite. Verifique a publicação da função Firebase.');
     }
 }
-function salvarUsuario() { return criarUsuarioTemporario(); }
+function salvarUsuario() { return criarConviteUsuario(); }
 
 function removerUsuario(email) {
     if (!isAdmin()) return exigirPermissao('usuarios', true);

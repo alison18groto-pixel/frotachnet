@@ -1,8 +1,13 @@
-# Usuários temporários
+# Convites permanentes e demonstrações
 
-O fluxo seguro usa uma Cloud Function. O ADMIN informa nome, e-mail, papel e módulos; a função cria uma conta Firebase com uma senha aleatória que nunca é salva no Frotas. Em seguida, o frontend solicita ao Firebase o e-mail de redefinição de senha. O convidado escolhe a própria senha no link recebido.
+Na tela de usuários existem dois tipos de convite:
 
-A validade começa **no momento da criação** e dura uma hora. A expiração é gravada no perfil e em custom claims (`expiresAtEpoch`), e as regras do Realtime Database também bloqueiam leitura quando o prazo termina.
+- **Funcionário — permanente**: como Eduardo. A conta não recebe expiração. O ADMIN escolhe o papel e os módulos; o funcionário define a própria senha pelo link enviado ao e-mail.
+- **Demonstração — 1 hora**: para mostrar o Frotas a clientes ou visitantes. O acesso é forçado para **Leitor**, não pode gravar dados e expira uma hora depois da criação.
+
+Em ambos os casos, a função cria uma senha aleatória interna e solicita o e-mail de redefinição de senha. A senha escolhida pelo convidado nunca é salva no Realtime Database nem no código.
+
+O e-mail deve ser exclusivo no Firebase Authentication. Para Eduardo, use um endereço próprio, por exemplo `eduardo@empresa.com`; não use o e-mail do ADMIN.
 
 ## Publicação
 
@@ -15,4 +20,4 @@ firebase deploy --only functions,database
 
 A publicação requer Billing/Blaze em muitos projetos Firebase para Cloud Functions. Se o projeto estiver no plano Spark, o Firebase poderá impedir o deploy da função.
 
-Não armazene senhas no Realtime Database, no código ou no frontend. O e-mail do convidado precisa ser exclusivo no Firebase Authentication.
+A função valida o UID do ADMIN `0bUm9uxTizLn7S3dShqbLCYnFWz1` no servidor. As regras do Realtime Database usam os custom claims de expiração para bloquear demonstrações vencidas também fora da interface.

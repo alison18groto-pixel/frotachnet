@@ -18,20 +18,33 @@ exports.criarUsuarioTemporario = onCall(async (request) => {
   const data = request.data || {};
   const email = String(data.email || '').trim().toLowerCase();
   const nome = String(data.nome || email).trim();
-  const papel = ['leitor', 'operador', 'admin'].includes(data.papel) ? data.papel : 'leitor';
+  const tipo = data.tipo === 'demo' ? 'demo' : 'permanente';
+  const papel = tipo === 'demo' ? 'leitor' : (['leitor', 'operador', 'admin'].includes(data.papel) ? data.papel : 'leitor');
   const duracaoHoras = Number(data.duracaoHoras || 1);
-  if (!email.includes('@') || duracaoHoras !== 1) throw new HttpsError('invalid-argument', 'E-mail ou duração inválidos.');
+  if (!email.includes('@') || (tipo === 'demo' && duracaoHoras !== 1)) {
+    throw new HttpsError('invalid-argument', 'E-mail ou duração inválidos.');
+  }
   const permissoes = {};
   for (const module of MODULES) {
-    if (data.permissoes && ['read', 'full'].includes(data.permissoes[module])) permissoes[module] = papel === 'leitor' ? 'read' : 'full';
+    if (data.permissoes && ['read', 'full'].includes(data.permissoes[module])) {
+      permissoes[module] = tipo === 'demo' || papel === 'leitor' ? 'read' : 'full';
+    }
   }
-  const expiresAtEpoch = Date.now() + 60 * 60 * 1000;
-  const expiresAt = new Date(expiresAtEpoch).toISOString();
   const created = await getAuth().createUser({ email, password: temporaryPassword(), displayName: nome, emailVerified: false });
-  await getAuth().setCustomUserClaims(created.uid, { temporary: true, expiresAt, expiresAtEpoch });
-  await getDatabase().ref(`appData/usuarios/${keyForEmail(email)}`).set({
-    uid: created.uid, email, nome, papel, permissoes, temporary: true, expiresAt, expiresAtEpoch,
+  const profile = {
+    uid: created.uid, email, nome, papel, permissoes, tipo, temporary: tipo === 'demo',
     atualizadoEm: new Date().toISOString(), atualizadoPor: request.auth.token.email || request.auth.uid
-  });
-  return { uid: created.uid, email, expiresAt };
+  };
+  let expiresAt;
+  if (tipo === 'demo') {
+    const expiresAtEpoch = Date.now() + 60 * 60 * 1000;
+    expiresAt = new Date(expiresAtEpoch).toISOString();
+    await getAuth().setCustomUserClaims(created.uid, { temporary: true, expiresAt, expiresAtEpoch });
+    profile.expiresAt = expiresAt;
+    profile.expiresAtEpoch = expiresAtEpoch;
+  } else {
+    await getAuth().setCustomUserClaims(created.uid, { temporary: false });
+  }
+  await getDatabase().ref(`appData/usuarios/${keyForEmail(email)}`).set(profile);
+  return { uid: created.uid, email, tipo, expiresAt: expiresAt || null };
 });
