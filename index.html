@@ -877,7 +877,7 @@ function renderUsuarios() {
     el.innerHTML = lista.map((u, i) => {
         const perms = Object.entries(MODULE_LABELS).filter(([m]) => (u.permissoes || {})[m]).map(([m, l]) => `${l}: ${(u.permissoes[m] === 'full' ? 'completo' : 'leitura')}`).join(' · ');
         const roleClass = `user-role-${u.papel || 'leitor'}`;
-        return `<div class="item-editavel"><div class="item-info"><span class="item-nome">${u.nome || u.email}</span><span class="item-detalhe">${u.login ? `Login: ${u.login}` : u.email}</span><span class="${roleClass}">${(u.papel || 'leitor').toUpperCase()}</span><span class="item-detalhe">${perms || 'sem módulos'}</span></div><div class="item-acoes"><button class="btn-del-inline" onclick="removerUsuario('${String(u.email).replace(/'/g,"\'")}')"><i class="fas fa-trash"></i></button></div></div>`;
+        return `<div class="item-editavel"><div class="item-info"><span class="item-nome">${u.nome || u.email}</span><span class="item-detalhe">${u.login ? `Login: ${u.login}` : u.email}</span><span class="${roleClass}">${(u.papel || 'leitor').toUpperCase()}</span><span class="item-detalhe">${perms || 'sem módulos'}</span></div><div class="item-acoes"><button class="btn-small" style="width:auto" onclick="editarUsuario('${String(u.email).replace(/'/g,"\'")}')"><i class="fas fa-edit"></i> Editar</button><button class="btn-del-inline" onclick="removerUsuario('${String(u.email).replace(/'/g,"\'")}')"><i class="fas fa-trash"></i></button></div></div>`;
     }).join('');
 }
 async function criarConviteUsuario() {
@@ -908,6 +908,37 @@ async function criarConviteUsuario() {
     }
 }
 function salvarUsuario() { return criarConviteUsuario(); }
+
+async function editarUsuario(email) {
+    if (!isAdmin()) return exigirPermissao('usuarios', true);
+    const key = Object.keys(db.usuarios || {}).find(k => normalizarEmail(db.usuarios[k].email) === normalizarEmail(email));
+    const usuario = key ? db.usuarios[key] : null;
+    if (!usuario) return alert('Usuário não encontrado.');
+    const papel = prompt('Papel do usuário: leitor, operador ou admin', usuario.papel || 'leitor');
+    if (papel === null) return;
+    if (!['leitor', 'operador', 'admin'].includes(papel.trim().toLowerCase())) return alert('Papel inválido.');
+    const leitura = prompt('Módulos com acesso de LEITURA, separados por vírgula (frota, servicos, estoque, relatorios):', Object.keys(usuario.permissoes || {}).filter(m => usuario.permissoes[m] === 'read').join(', '));
+    if (leitura === null) return;
+    const completo = prompt('Módulos com acesso COMPLETO, separados por vírgula (frota, servicos, estoque, relatorios):', Object.keys(usuario.permissoes || {}).filter(m => usuario.permissoes[m] === 'full').join(', '));
+    if (completo === null) return;
+    const permitidos = Object.keys(MODULE_LABELS);
+    const permissoes = {};
+    leitura.split(',').map(v => v.trim().toLowerCase()).filter(Boolean).forEach(m => { if (permitidos.includes(m)) permissoes[m] = 'read'; });
+    completo.split(',').map(v => v.trim().toLowerCase()).filter(Boolean).forEach(m => { if (permitidos.includes(m)) permissoes[m] = 'full'; });
+    usuario.papel = papel.trim().toLowerCase();
+    usuario.permissoes = permissoes;
+    usuario.atualizadoEm = new Date().toISOString();
+    usuario.atualizadoPor = currentAuthUser.email;
+    try {
+        await database.ref('appData').set(db);
+        await registrarLogAuditoria('alteração de permissões', [email, usuario.papel, ...Object.entries(permissoes).map(([m, p]) => `${m}:${p}`)]);
+        alert('Permissões atualizadas com sucesso.');
+        renderUsuarios();
+    } catch (err) {
+        console.error('Erro ao atualizar permissões:', err);
+        alert(`Não foi possível atualizar as permissões: ${err.code || err.message || 'erro desconhecido'}`);
+    }
+}
 
 function removerUsuario(email) {
     if (!isAdmin()) return exigirPermissao('usuarios', true);
