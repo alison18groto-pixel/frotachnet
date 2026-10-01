@@ -793,26 +793,12 @@ function initAuth() {
     });
 }
 
-async function autenticarFirebase(email, senha) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
-    try {
-        const resposta = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password: senha, returnSecureToken: true }), signal: controller.signal
-        });
-        const dados = await resposta.json();
-        if (!resposta.ok) { const erro = new Error(dados.error?.message || 'AUTH_ERROR'); erro.firebaseCode = dados.error?.message || 'AUTH_ERROR'; throw erro; }
-        return dados;
-    } finally { clearTimeout(timer); }
-}
 async function loginApp() {
     const usuarioDigitado = document.getElementById('login_user').value.trim();
     const senhaDigitada = document.getElementById('login_pass').value;
     const error = document.getElementById('login_error');
     const button = document.getElementById('login-submit-btn');
     error.textContent = '';
-    error.style.color = '#fca5a5';
     if (!usuarioDigitado || !senhaDigitada) { error.textContent = 'Informe usuário e senha.'; return; }
     button.disabled = true;
     button.textContent = 'Entrando...';
@@ -828,19 +814,21 @@ async function loginApp() {
                     new Promise((_, reject) => setTimeout(() => reject(new Error('alias-timeout')), 4000))
                 ]);
                 emailCompleto = alias.val()?.email || usuarioDigitado.toLowerCase() + '@demo.frota.local';
-            } catch (lookupError) { emailCompleto = usuarioDigitado.toLowerCase() + '@demo.frota.local'; }
+            } catch (lookupError) {
+                emailCompleto = usuarioDigitado.toLowerCase() + '@demo.frota.local';
+            }
         }
-        const dados = await autenticarFirebase(emailCompleto, senhaDigitada);
-        const credencial = firebase.auth.EmailAuthProvider.credential(emailCompleto, senhaDigitada);
-        await firebase.auth().signInWithCredential(credencial);
+        await Promise.race([
+            firebase.auth().signInWithEmailAndPassword(emailCompleto, senhaDigitada),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('auth-timeout')), 12000))
+        ]);
     } catch (err) {
         console.error('Erro de login:', err);
-        const code = err.firebaseCode || err.code || err.name || err.message || 'desconhecido';
-        if (code === 'INVALID_LOGIN_CREDENTIALS' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') error.textContent = 'Usuário ou senha incorretos.';
-        else if (code === 'EMAIL_NOT_FOUND' || code === 'auth/user-not-found') error.textContent = 'Usuário não encontrado no Firebase Authentication.';
-        else if (code === 'USER_DISABLED') error.textContent = 'Esta conta foi desativada no Firebase Authentication.';
-        else if (code === 'OPERATION_NOT_ALLOWED') error.textContent = 'Ative E-mail/senha em Firebase > Authentication > Sign-in method.';
-        else if (err.name === 'AbortError') error.textContent = 'O Firebase não respondeu em 12 segundos. Verifique a conexão.';
+        const code = err.code || err.message || 'desconhecido';
+        if (code === 'auth-timeout') error.textContent = 'O Firebase não respondeu. Verifique a conexão e tente novamente.';
+        else if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') error.textContent = 'Usuário não encontrado ou senha incorreta.';
+        else if (code === 'auth/wrong-password') error.textContent = 'Senha incorreta.';
+        else if (code === 'auth/operation-not-allowed') error.textContent = 'Ative E-mail/senha em Firebase > Authentication > Sign-in method.';
         else error.textContent = `Erro de login: ${code}`;
     } finally {
         button.disabled = false;
