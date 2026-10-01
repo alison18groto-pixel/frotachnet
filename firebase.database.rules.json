@@ -2,7 +2,7 @@
   "rules": {
     ".read": "auth != null",
     "/appData": {
-      ".write": "auth != null && (auth.token.admin === true || auth.uid === 'REPLACE_WITH_OWNER_UID')"
+      ".write": "auth != null && (auth.token.admin === true || auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1')"
     }
   }
 }

@@ -14,7 +14,7 @@ O Frotas é um HTML estático que grava todo o domínio em uma única chave `app
 
 Antes de vender o produto:
 
-1. Publique regras do Realtime Database que permitam leitura apenas a usuários autenticados e gravação somente ao ADMIN (arquivo `firebase.database.rules.json`).
+1. Publique regras do Realtime Database que permitam leitura apenas a usuários autenticados e gravação somente ao ADMIN (arquivo `firebase.database.rules.json`). O UID do proprietário já está preenchido no arquivo.
 2. Migre os dados para nós separados por domínio (`vehicles`, `services`, `inventory`, `settings`, `users`) se precisar aplicar permissão de escrita por módulo no servidor.
 3. Crie usuários via Firebase Authentication/Cloud Function; este frontend apenas autoriza o e-mail e não deve receber credenciais de serviço.
 4. Remova o bootstrap por e-mail e troque-o por uma configuração inicial de tenant/owner.
