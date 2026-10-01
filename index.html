@@ -802,15 +802,22 @@ async function loginApp() {
             emailCompleto = 'chnettelecomunicacoes@gmail.com';
         } else if (!usuarioDigitado.includes('@')) {
             const aliasKey = usuarioDigitado.toLowerCase().replace(/[.#$\[\]]/g, '_');
-            const alias = await database.ref(`loginAliases/${aliasKey}`).once('value');
-            emailCompleto = alias.val()?.email || usuarioDigitado.toLowerCase() + '@demo.frota.local';
+            try {
+                const alias = await database.ref(`loginAliases/${aliasKey}`).once('value');
+                emailCompleto = alias.val()?.email || usuarioDigitado.toLowerCase() + '@demo.frota.local';
+            } catch (lookupError) {
+                console.warn('Mapa de nomes indisponível; tentando login de demonstração:', lookupError);
+                emailCompleto = usuarioDigitado.toLowerCase() + '@demo.frota.local';
+            }
         }
         await firebase.auth().signInWithEmailAndPassword(emailCompleto, senhaDigitada);
     } catch (err) {
         console.error('Erro de login:', err.code, err.message);
         if (err.code === 'auth/user-not-found') error.textContent = 'Usuário não encontrado. Autorize o nome de usuário no Frotas e crie a conta no Firebase Authentication.';
         else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') error.textContent = 'Senha incorreta.';
-        else error.textContent = 'Erro ao fazer login. Verifique usuário e senha.';
+        else if (err.code === 'auth/user-disabled') error.textContent = 'Esta conta foi desativada no Firebase Authentication.';
+        else if (err.code === 'auth/operation-not-allowed') error.textContent = 'O provedor E-mail/senha está desativado no Firebase Authentication.';
+        else error.textContent = `Erro ao fazer login (${err.code || 'desconhecido'}).`;
     }
 }
 
@@ -1061,9 +1068,7 @@ function carregarDados() {
 
     }, (error) => {
         console.error("Erro ao carregar dados do Firebase:", error);
-        alert("Ocorreu um erro crítico ao carregar os dados do sistema. Pode ser um problema de permissão ou conexão. O aplicativo será desconectado para segurança.");
-        // Força o logout se o usuário autenticado não consegue ler os dados.
-        logoutApp();
+        alert(`Login aceito, mas os dados não puderam ser carregados: ${error.code || error.message}. Verifique as regras do Realtime Database e publique com \"firebase deploy --only database\". A sessão foi mantida para diagnóstico.`);
     });
 }
 
