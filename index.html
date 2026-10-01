@@ -256,7 +256,7 @@
         <input id="login_pass" type="password" placeholder="Senha">
         <div class="login-error" id="login_error"></div>
         <div class="login-actions">
-            <button onclick="loginApp()">Entrar</button>
+            <button id="login-submit-btn" onclick="loginApp()">Entrar</button>
             <button onclick="limparLogin()" style="background:rgba(255,255,255,0.08)">Limpar</button>
         </div>
     </div>
@@ -782,6 +782,8 @@ function initAuth() {
         if (user) {
             currentAuthUser = user;
             registrarLogAuditoria('login');
+            const loginError = document.getElementById('login_error');
+            if (loginError) loginError.textContent = 'Login aceito. Carregando dados...';
             loginPage.classList.add('hidden');
             carregarDados();
         } else {
@@ -793,9 +795,14 @@ function initAuth() {
 
 async function loginApp() {
     const usuarioDigitado = document.getElementById('login_user').value.trim();
-    const senhaDigitada = document.getElementById('login_pass').value.trim();
+    const senhaDigitada = document.getElementById('login_pass').value;
     const error = document.getElementById('login_error');
+    const button = document.getElementById('login-submit-btn');
     error.textContent = '';
+    error.style.color = '#fca5a5';
+    if (!usuarioDigitado || !senhaDigitada) { error.textContent = 'Informe usuário e senha.'; return; }
+    button.disabled = true;
+    button.textContent = 'Entrando...';
     let emailCompleto = usuarioDigitado;
     try {
         if (usuarioDigitado.toLowerCase() === 'chnet') {
@@ -803,21 +810,30 @@ async function loginApp() {
         } else if (!usuarioDigitado.includes('@')) {
             const aliasKey = usuarioDigitado.toLowerCase().replace(/[.#$\[\]]/g, '_');
             try {
-                const alias = await database.ref(`loginAliases/${aliasKey}`).once('value');
+                const alias = await Promise.race([
+                    database.ref(`loginAliases/${aliasKey}`).once('value'),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('alias-timeout')), 5000))
+                ]);
                 emailCompleto = alias.val()?.email || usuarioDigitado.toLowerCase() + '@demo.frota.local';
             } catch (lookupError) {
-                console.warn('Mapa de nomes indisponível; tentando login de demonstração:', lookupError);
                 emailCompleto = usuarioDigitado.toLowerCase() + '@demo.frota.local';
             }
         }
-        await firebase.auth().signInWithEmailAndPassword(emailCompleto, senhaDigitada);
+        await Promise.race([
+            firebase.auth().signInWithEmailAndPassword(emailCompleto, senhaDigitada),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('auth-timeout')), 12000))
+        ]);
     } catch (err) {
         console.error('Erro de login:', err.code, err.message);
-        if (err.code === 'auth/user-not-found') error.textContent = 'Usuário não encontrado. Autorize o nome de usuário no Frotas e crie a conta no Firebase Authentication.';
+        if (err.message === 'auth-timeout') error.textContent = 'O Firebase não respondeu. Verifique a internet e tente novamente.';
+        else if (err.code === 'auth/user-not-found') error.textContent = 'Usuário não encontrado. Verifique o e-mail ou autorize o nome de usuário.';
         else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') error.textContent = 'Senha incorreta.';
         else if (err.code === 'auth/user-disabled') error.textContent = 'Esta conta foi desativada no Firebase Authentication.';
-        else if (err.code === 'auth/operation-not-allowed') error.textContent = 'O provedor E-mail/senha está desativado no Firebase Authentication.';
-        else error.textContent = `Erro ao fazer login (${err.code || 'desconhecido'}).`;
+        else if (err.code === 'auth/operation-not-allowed') error.textContent = 'Ative o provedor E-mail/senha em Firebase > Authentication > Sign-in method.';
+        else error.textContent = `Erro de login: ${err.code || err.message || 'verifique os dados'}`;
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Entrar';
     }
 }
 
