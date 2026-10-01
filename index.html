@@ -677,6 +677,7 @@ let _fuelCharts = {}; // store chart instances for fuel report
 let currentUserProfile = null;
 let currentAuthUser = null;
 let lastSavedDbSnapshot = null;
+let saveQueue = Promise.resolve();
 const MODULE_LABELS = { frota: 'Veículos', servicos: 'Serviços/configurações', estoque: 'Estoque', relatorios: 'Relatórios' };
 
 // ============================================================
@@ -1015,29 +1016,29 @@ function salvarDados() {
     if (!currentUserProfile || !currentAuthUser) {
         console.warn('Salvamento bloqueado: usuário não autorizado ou sessão ausente.', currentUserProfile);
         alert('Sua sessão não está autorizada para salvar. Saia e entre novamente.');
-        return;
+        return Promise.reject(new Error('unauthorized-session'));
     }
+    const snapshotToSave = JSON.parse(JSON.stringify(db));
     const btn = document.getElementById('save-btn');
     if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-    database.ref('appData').set(db)
-        .then(() => {
-            const modules = ['veiculos', 'oficinas', 'regras', 'estoque', 'usuarios'];
-            const alteracoes = modules.filter(chave => JSON.stringify((lastSavedDbSnapshot || {})[chave]) !== JSON.stringify(db[chave]));
-            lastSavedDbSnapshot = JSON.parse(JSON.stringify(db));
-            registrarLogAuditoria('alteração de dados', alteracoes);
-            if (btn) {
-                btn.innerHTML = '<i class="fas fa-check"></i> Sincronizado!';
-                setTimeout(() => {
-                    if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar';
-                }, 2000);
-            }
-        })
-        .catch(error => {
-            console.error("Erro ao sincronizar:", error);
-            if (btn) btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falhou';
-            alert(`Não foi possível salvar no Firebase: ${error.code || error.message || 'erro desconhecido'}. Publique as regras com: firebase deploy --only database`);
-        });
-    localStorage.setItem('frota_pro_v47', JSON.stringify(db));
+    saveQueue = saveQueue.then(() => database.ref('appData').set(snapshotToSave)).then(() => {
+        const modules = ['veiculos', 'oficinas', 'regras', 'estoque', 'usuarios'];
+        const alteracoes = modules.filter(chave => JSON.stringify((lastSavedDbSnapshot || {})[chave]) !== JSON.stringify(snapshotToSave[chave]));
+        lastSavedDbSnapshot = snapshotToSave;
+        registrarLogAuditoria('alteração de dados', alteracoes);
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-check"></i> Sincronizado!';
+            setTimeout(() => { if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar'; }, 2000);
+        }
+        localStorage.setItem('frota_pro_v47', JSON.stringify(snapshotToSave));
+        return true;
+    }).catch(error => {
+        console.error('Erro ao sincronizar:', error);
+        if (btn) btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falhou';
+        alert(`Não foi possível salvar no Firebase: ${error.code || error.message || 'erro desconhecido'}`);
+        throw error;
+    });
+    return saveQueue;
 }
 
 function popularHistoricoKmInicial() {
@@ -1126,7 +1127,7 @@ function carregarDados() {
     });
 }
 
-function salvar() { salvarDados(); renderizarTudo(); }
+function salvar() { const promise = salvarDados(); renderizarTudo(); return promise; }
 
 // ============================================================
 // BACKUP
@@ -1984,7 +1985,8 @@ function excluirVeiculo() {
     if (!exigirPermissao('frota', true)) return;
     if (confirm(`Excluir veículo de ${veiculoAtual.motorista} (${veiculoAtual.placa})?`)) {
         db.veiculos = db.veiculos.filter(v => v.id !== veiculoAtual.id);
-        veiculoAtual = null; salvar(); tab('frota');
+        veiculoAtual = null;
+        salvar().then(() => tab('frota')).catch(() => {});
     }
 }
 
