@@ -916,6 +916,24 @@ async function criarConviteUsuario() {
     if (tipo === 'permanente' && email === normalizarEmail(currentAuthUser.email)) return alert('O ADMIN inicial não precisa ser cadastrado.');
     const permissoes = {};
     Object.keys(MODULE_LABELS).forEach(m => { const cb = document.getElementById('perm_' + m); if (cb.checked) permissoes[m] = papel === 'leitor' ? 'read' : 'full'; });
+
+    // Plano gratuito: funcionário permanente é autorizado diretamente, sem Cloud Function.
+    if (tipo === 'permanente') {
+        db.usuarios = db.usuarios || {};
+        db.usuarios[email.replace(/[.#$\[\]]/g, '_')] = { uid: null, email, login, nome: nome || email, papel, permissoes, tipo: 'permanente', atualizadoEm: new Date().toISOString(), atualizadoPor: currentAuthUser.email };
+        try {
+            await database.ref(`loginAliases/${login.replace(/[.#$\[\]]/g, '_')}`).set({ email, nome: nome || email });
+            await salvarDados();
+            document.getElementById('novo_usuario_nome').value = '';
+            document.getElementById('novo_usuario_email').value = '';
+            document.getElementById('novo_usuario_login_permanente').value = '';
+            alert('Usuário autorizado com sucesso. Agora crie essa mesma conta em Firebase Authentication usando o e-mail informado. Depois ele poderá entrar com o nome curto: ' + login);
+        } catch (err) {
+            console.error('Erro ao autorizar usuário:', err);
+            alert('Não foi possível salvar a autorização. Verifique se as regras do Realtime Database foram publicadas e se você está logado como ADMIN.');
+        }
+        return;
+    }
     try {
         const criar = functions.httpsCallable('criarUsuarioTemporario');
         const resultado = await criar({ email, login, senha, nome: nome || login || email, tipo, papel, permissoes, duracaoHoras });
