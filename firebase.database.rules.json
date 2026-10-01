@@ -6,7 +6,7 @@
     },
     "auditLogs": {
       ".read": "auth != null && auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1'",
-      ".write": false
+      ".write": "auth != null"
     },
     "loginAliases": {
       ".read": true,

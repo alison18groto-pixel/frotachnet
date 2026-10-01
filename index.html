@@ -852,7 +852,7 @@ function limparLogin() {
 async function registrarLogAuditoria(acao, alteracoes = []) {
     try {
         if (!currentAuthUser) return;
-        await functions.httpsCallable('registrarAuditoria')({ acao, alteracoes });
+        await database.ref('auditLogs').push({ at: new Date().toISOString(), uid: currentAuthUser.uid, email: currentAuthUser.email || null, acao, alteracoes });
     } catch (err) { console.warn('Não foi possível registrar auditoria:', err); }
 }
 async function carregarLogsAuditoria() {
@@ -860,13 +860,13 @@ async function carregarLogsAuditoria() {
     const el = document.getElementById('lista_logs_auditoria');
     if (el) el.innerHTML = '<div class="access-denied">Carregando logs...</div>';
     try {
-        const resultado = await functions.httpsCallable('listarAuditoria')({ limite: 300 });
-        const logs = resultado.data.logs || [];
+        const snapshot = await database.ref('auditLogs').limitToLast(300).once('value');
+        const logs = Object.values(snapshot.val() || {}).sort((a, b) => String(b.at).localeCompare(String(a.at)));
         if (!logs.length) { el.innerHTML = '<div class="access-denied">Nenhum log registrado.</div>'; return; }
         el.innerHTML = `<div style="overflow:auto"><table><thead><tr><th>Data/hora</th><th>Usuário</th><th>Ação</th><th>Módulos / detalhes</th></tr></thead><tbody>${logs.map(log => `<tr><td>${new Date(log.at).toLocaleString('pt-BR')}</td><td>${log.email || log.uid || '-'}</td><td>${log.acao || '-'}</td><td>${(log.alteracoes || []).join(', ') || '-'}</td></tr>`).join('')}</tbody></table></div>`;
     } catch (err) {
         console.error('Erro ao carregar auditoria:', err);
-        el.innerHTML = '<div class="access-denied">A função de auditoria ainda não foi publicada no Firebase.</div>';
+        el.innerHTML = `<div class="access-denied">Não foi possível carregar os logs: ${err.code || err.message || 'erro desconhecido'}</div>`;
     }
 }
 function renderUsuarios() {
