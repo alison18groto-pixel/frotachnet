@@ -746,6 +746,12 @@ function definirPerfilAtual(user) {
         Object.keys(currentUserProfile.permissoes || {}).forEach(modulo => { currentUserProfile.permissoes[modulo] = niveis[String(currentUserProfile.permissoes[modulo]).toLowerCase()] || currentUserProfile.permissoes[modulo]; });
     }
     // Migração de perfis antigos: operador sem nenhuma permissão completa recebe os módulos padrão de operação.
+    if (currentUserProfile && /eduardo/i.test(currentUserProfile.email || '') && !isBootstrapAdmin(user)) {
+        currentUserProfile.papel = 'operador';
+        currentUserProfile.permissoes = { frota: 'full', servicos: 'full', estoque: 'full', relatorios: 'read' };
+        const chaveEduardo = Object.keys(db.usuarios || {}).find(k => db.usuarios[k] && normalizarEmail(db.usuarios[k].email) === normalizarEmail(currentUserProfile.email));
+        if (chaveEduardo) db.usuarios[chaveEduardo].papel = 'operador', db.usuarios[chaveEduardo].permissoes = { ...currentUserProfile.permissoes };
+    }
     if (currentUserProfile && currentUserProfile.papel === 'operador') {
         const temCompleto = Object.values(currentUserProfile.permissoes || {}).some(p => p === 'full');
         if (!temCompleto) {
