@@ -793,7 +793,7 @@ function initAuth() {
     });
 }
 
-function loginApp() {
+async function loginApp() {
     const usuarioDigitado = document.getElementById('login_user').value.trim();
     const senhaDigitada = document.getElementById('login_pass').value.trim();
     const error = document.getElementById('login_error');
@@ -803,7 +803,18 @@ function loginApp() {
     if (usuarioDigitado.toLowerCase() === "chnet") {
         emailCompleto = "chnettelecomunicacoes@gmail.com";
     } else if (!usuarioDigitado.includes('@')) {
-        emailCompleto = usuarioDigitado.toLowerCase() + "@demo.frota.local";
+        const aliasKey = usuarioDigitado.toLowerCase().replace(/[.#$\[\]]/g, '_');
+        try {
+            const aliasSnapshot = await Promise.race([
+                database.ref(`loginAliases/${aliasKey}`).once('value'),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('alias-timeout')), 4000))
+            ]);
+            emailCompleto = aliasSnapshot.val()?.email || usuarioDigitado.toLowerCase() + "@demo.frota.local";
+        } catch (lookupError) {
+            // Se as regras públicas de loginAliases ainda não foram publicadas,
+            // mantém o fallback antigo das demonstrações sem bloquear o login.
+            emailCompleto = usuarioDigitado.toLowerCase() + "@demo.frota.local";
+        }
     }
 
     // Envia para o Firebase Authentication validar
