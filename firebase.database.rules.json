@@ -1,7 +1,7 @@
 {
   "rules": {
     ".read": "auth != null",
-    "/appData": {
+    "appData": {
       ".write": "auth != null && (auth.token.admin === true || auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1')"
     }
   }
