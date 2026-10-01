@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-functions-compat.js"></script>
 
     <script>
       const firebaseConfig = {
@@ -22,6 +23,7 @@
       };
       firebase.initializeApp(firebaseConfig);
       const database = firebase.database();
+      const functions = firebase.functions();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -492,7 +494,7 @@
     <div id="tab-usuarios" class="hidden">
         <h2>👥 Usuários e permissões</h2>
         <div class="card">
-            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. O cadastro nesta tela autoriza o e-mail no sistema; a conta/senha deve existir no Firebase Authentication.</p>
+            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. O usuário temporário será criado por 1 hora e receberá um e-mail para escolher a própria senha. A senha nunca é salva no Frotas.</p>
             <div class="flex-row">
                 <input id="novo_usuario_nome" placeholder="Nome do usuário" style="flex:1;margin-bottom:0">
                 <input id="novo_usuario_email" type="email" placeholder="E-mail da conta Firebase" style="flex:1;margin-bottom:0">
@@ -501,6 +503,9 @@
                     <option value="operador">Operador</option>
                     <option value="admin">ADMIN</option>
                 </select>
+                <select id="novo_usuario_duracao" style="flex:1;margin-bottom:0" title="Validade do acesso">
+                    <option value="1">Temporário — 1 hora</option>
+                </select>
             </div>
             <div class="permission-grid">
                 <div class="permission-item"><label><input type="checkbox" id="perm_frota" checked> Veículos</label></div>
@@ -508,7 +513,7 @@
                 <div class="permission-item"><label><input type="checkbox" id="perm_estoque" checked> Estoque</label></div>
                 <div class="permission-item"><label><input type="checkbox" id="perm_relatorios" checked> Relatórios</label></div>
             </div>
-            <button onclick="salvarUsuario()" class="btn-small" style="width:auto"><i class="fas fa-user-plus"></i> Autorizar usuário</button>
+            <button onclick="criarUsuarioTemporario()" class="btn-small" style="width:auto"><i class="fas fa-user-clock"></i> Criar convite de 1 hora</button>
         </div>
         <div class="card"><h3>Usuários autorizados</h3><div id="lista_usuarios"></div></div>
     </div>
@@ -723,7 +728,9 @@ function obterPerfil(user) {
     const perfis = db.usuarios || db.users || {};
     const lista = Array.isArray(perfis) ? perfis : Object.values(perfis);
     const email = normalizarEmail(user && user.email);
-    return lista.find(p => p && (p.uid === user.uid || normalizarEmail(p.email) === email)) || null;
+    const perfil = lista.find(p => p && (p.uid === user.uid || normalizarEmail(p.email) === email)) || null;
+    if (perfil && perfil.expiresAt && Date.parse(perfil.expiresAt) <= Date.now()) return null;
+    return perfil;
 }
 function definirPerfilAtual(user) {
     currentAuthUser = user;
@@ -834,21 +841,34 @@ function renderUsuarios() {
         return `<div class="item-editavel"><div class="item-info"><span class="item-nome">${u.nome || u.email}</span><span class="item-detalhe">${u.email}</span><span class="${roleClass}">${(u.papel || 'leitor').toUpperCase()}</span><span class="item-detalhe">${perms || 'sem módulos'}</span></div><div class="item-acoes"><button class="btn-del-inline" onclick="removerUsuario('${String(u.email).replace(/'/g,"\'")}')"><i class="fas fa-trash"></i></button></div></div>`;
     }).join('');
 }
-function salvarUsuario() {
+async function criarUsuarioTemporario() {
     if (!isAdmin()) return exigirPermissao('usuarios', true);
     const nome = document.getElementById('novo_usuario_nome').value.trim();
     const email = normalizarEmail(document.getElementById('novo_usuario_email').value);
     const papel = document.getElementById('novo_usuario_papel').value;
+    const duracaoHoras = Number(document.getElementById('novo_usuario_duracao').value || 1);
     if (!email || !email.includes('@')) return alert('Informe um e-mail válido.');
     if (email === normalizarEmail(currentAuthUser.email)) return alert('O ADMIN inicial não precisa ser cadastrado.');
     const permissoes = {};
     Object.keys(MODULE_LABELS).forEach(m => { const cb = document.getElementById('perm_' + m); if (cb.checked) permissoes[m] = papel === 'leitor' ? 'read' : 'full'; });
-    db.usuarios = db.usuarios || {};
-    db.usuarios[email.replace(/[.#$\[\]]/g, '_')] = { email, nome: nome || email, papel, permissoes, atualizadoEm: new Date().toISOString(), atualizadoPor: currentAuthUser.email };
-    salvar();
-    document.getElementById('novo_usuario_nome').value = ''; document.getElementById('novo_usuario_email').value = '';
-    alert('Usuário autorizado. Agora crie a conta dele em Firebase Authentication para que ele consiga entrar.');
+    try {
+        const criar = functions.httpsCallable('criarUsuarioTemporario');
+        const resultado = await criar({ email, nome: nome || email, papel, permissoes, duracaoHoras });
+        await firebase.auth().sendPasswordResetEmail(email);
+        const expira = resultado.data && resultado.data.expiresAt ? new Date(resultado.data.expiresAt).toLocaleString('pt-BR') : 'em 1 hora';
+        document.getElementById('novo_usuario_nome').value = '';
+        document.getElementById('novo_usuario_email').value = '';
+        alert(`Convite criado para ${email}. O Firebase enviou o link para Eduardo escolher a senha. O acesso expira em ${expira}.`);
+    } catch (err) {
+        console.error('Erro ao criar usuário temporário:', err);
+        const code = err.code || '';
+        if (code.includes('already-exists') || code.includes('email-already-in-use')) return alert('Este e-mail já possui uma conta no Firebase. Use outro e-mail exclusivo.');
+        if (code.includes('not-found') || code.includes('functions/not-found')) return alert('A função de criação ainda não foi publicada no Firebase. Publique a pasta functions antes de criar usuários temporários.');
+        alert('Não foi possível criar o convite. Verifique a publicação da função Firebase.');
+    }
 }
+function salvarUsuario() { return criarUsuarioTemporario(); }
+
 function removerUsuario(email) {
     if (!isAdmin()) return exigirPermissao('usuarios', true);
     if (!confirm(`Remover a autorização de ${email}? A conta Firebase não será apagada.`)) return;

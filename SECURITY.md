@@ -22,4 +22,4 @@ Antes de vender o produto:
 
 ## Cadastro de usuário
 
-A tela **Usuários** cadastra a autorização (e-mail, papel e módulos). A conta/senha ainda precisa ser criada no Firebase Authentication. Em produção, substitua esse passo manual por uma Cloud Function administrativa com convite por e-mail.
+A tela **Usuários** cadastra a autorização (e-mail, papel e módulos). A conta/senha ainda precisa ser criada no Firebase Authentication. O fluxo temporário agora usa uma Cloud Function administrativa com convite por e-mail; consulte `TEMPORARY_USERS.md` para publicar as funções.
