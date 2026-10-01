@@ -522,6 +522,11 @@
             <button onclick="criarConviteUsuario()" class="btn-small" style="width:auto"><i class="fas fa-paper-plane"></i> Enviar convite</button>
         </div>
         <div class="card"><h3>Usuários autorizados</h3><div id="lista_usuarios"></div></div>
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h3 style="margin:0">Logs de auditoria</h3><button onclick="carregarLogsAuditoria()" class="btn-small" style="width:auto"><i class="fas fa-history"></i> Atualizar logs</button></div>
+            <p style="font-size:11px;color:var(--text-secondary)">Registra acessos, criação de convites e módulos alterados. Somente ADMIN consegue consultar.</p>
+            <div id="lista_logs_auditoria"><div class="access-denied">Clique em “Atualizar logs” para consultar.</div></div>
+        </div>
     </div>
     <!-- DETALHES VEÍCULO -->
     <div id="tab-detalhes" class="hidden">
@@ -679,6 +684,7 @@ let _kmHistoryCharts = {};
 let _fuelCharts = {}; // store chart instances for fuel report
 let currentUserProfile = null;
 let currentAuthUser = null;
+let lastSavedDbSnapshot = null;
 const MODULE_LABELS = { frota: 'Veículos', servicos: 'Serviços/configurações', estoque: 'Estoque', relatorios: 'Relatórios' };
 
 // ============================================================
@@ -774,6 +780,7 @@ function initAuth() {
         const loginPage = document.getElementById('login-page');
         if (user) {
             currentAuthUser = user;
+            registrarLogAuditoria('login');
             loginPage.classList.add('hidden');
             carregarDados();
         } else {
@@ -836,6 +843,26 @@ function limparLogin() {
 // ============================================================
 // USUÁRIOS E PERMISSÕES
 // ============================================================
+async function registrarLogAuditoria(acao, alteracoes = []) {
+    try {
+        if (!currentAuthUser) return;
+        await functions.httpsCallable('registrarAuditoria')({ acao, alteracoes });
+    } catch (err) { console.warn('Não foi possível registrar auditoria:', err); }
+}
+async function carregarLogsAuditoria() {
+    if (!isAdmin()) return exigirPermissao('usuarios', true);
+    const el = document.getElementById('lista_logs_auditoria');
+    if (el) el.innerHTML = '<div class="access-denied">Carregando logs...</div>';
+    try {
+        const resultado = await functions.httpsCallable('listarAuditoria')({ limite: 300 });
+        const logs = resultado.data.logs || [];
+        if (!logs.length) { el.innerHTML = '<div class="access-denied">Nenhum log registrado.</div>'; return; }
+        el.innerHTML = `<div style="overflow:auto"><table><thead><tr><th>Data/hora</th><th>Usuário</th><th>Ação</th><th>Módulos / detalhes</th></tr></thead><tbody>${logs.map(log => `<tr><td>${new Date(log.at).toLocaleString('pt-BR')}</td><td>${log.email || log.uid || '-'}</td><td>${log.acao || '-'}</td><td>${(log.alteracoes || []).join(', ') || '-'}</td></tr>`).join('')}</tbody></table></div>`;
+    } catch (err) {
+        console.error('Erro ao carregar auditoria:', err);
+        el.innerHTML = '<div class="access-denied">A função de auditoria ainda não foi publicada no Firebase.</div>';
+    }
+}
 function renderUsuarios() {
     const el = document.getElementById('lista_usuarios');
     if (!el || !isAdmin()) return;
@@ -944,6 +971,10 @@ function salvarDados() {
     if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
     database.ref('appData').set(db)
         .then(() => {
+            const modules = ['veiculos', 'oficinas', 'regras', 'estoque', 'usuarios'];
+            const alteracoes = modules.filter(chave => JSON.stringify((lastSavedDbSnapshot || {})[chave]) !== JSON.stringify(db[chave]));
+            lastSavedDbSnapshot = JSON.parse(JSON.stringify(db));
+            registrarLogAuditoria('alteração de dados', alteracoes);
             if (btn) {
                 btn.innerHTML = '<i class="fas fa-check"></i> Sincronizado!';
                 setTimeout(() => {
@@ -1035,6 +1066,7 @@ function carregarDados() {
         popularHistoricoKmInicial();
         definirPerfilAtual(currentAuthUser);
         if (!currentUserProfile) { alert('Esta conta ainda não foi autorizada pelo ADMIN.'); logoutApp(); return; }
+        lastSavedDbSnapshot = JSON.parse(JSON.stringify(db));
         renderizarTudo();
 
     }, (error) => {

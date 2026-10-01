@@ -18,8 +18,8 @@ Antes de vender o produto:
 2. Migre os dados para nós separados por domínio (`vehicles`, `services`, `inventory`, `settings`, `users`) se precisar aplicar permissão de escrita por módulo no servidor.
 3. Crie usuários via Firebase Authentication/Cloud Function; este frontend apenas autoriza o e-mail e não deve receber credenciais de serviço.
 4. Remova o bootstrap por e-mail e troque-o por uma configuração inicial de tenant/owner.
-5. Ative MFA, política de senha, logs de auditoria e backups automáticos.
+5. Ative MFA, política de senha e backups automáticos; a auditoria de login e alterações já está preparada pela Cloud Function.
 
 ## Cadastro de usuário
 
-A tela **Usuários** cadastra a autorização (e-mail, papel e módulos). A conta/senha ainda precisa ser criada no Firebase Authentication. O fluxo temporário agora usa uma Cloud Function administrativa com convite por e-mail; consulte `TEMPORARY_USERS.md` para publicar as funções.
+A tela **Usuários** cadastra convites permanentes e demonstrações. Funcionários usam e-mail; demonstrações usam login e senha sem e-mail. A Cloud Function registra logins bem-sucedidos, criação de usuários e módulos alterados em cada salvamento. A consulta dos logs fica disponível somente ao ADMIN; consulte `TEMPORARY_USERS.md` para publicar as funções.

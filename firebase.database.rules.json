@@ -1,8 +1,12 @@
 {
   "rules": {
-    ".read": "auth != null && (auth.token.temporary != true || auth.token.expiresAtEpoch > now)",
     "appData": {
+      ".read": "auth != null && (auth.token.temporary != true || auth.token.expiresAtEpoch > now)",
       ".write": "auth != null && (auth.token.admin === true || auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1')"
+    },
+    "auditLogs": {
+      ".read": "auth != null && auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1'",
+      ".write": false
     }
   }
 }
