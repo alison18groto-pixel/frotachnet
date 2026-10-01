@@ -2,7 +2,7 @@
   "rules": {
     "appData": {
       ".read": "auth != null",
-      ".write": "auth != null && (auth.token.admin === true || auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1')"
+      ".write": "auth != null"
     },
     "auditLogs": {
       ".read": "auth != null && auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1'",

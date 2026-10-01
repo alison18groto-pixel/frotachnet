@@ -23,3 +23,5 @@ Antes de vender o produto:
 ## Cadastro de usuário
 
 A tela **Usuários** cadastra funcionários permanentes. Cada funcionário usa e-mail no Firebase e pode ter um nome curto para login. A Cloud Function registra logins bem-sucedidos, criação de usuários e módulos alterados em cada salvamento. A consulta dos logs fica disponível somente ao ADMIN; consulte `USERS.md` para o fluxo de usuários.
+
+> Observação: como o domínio ainda está armazenado em uma única chave `appData`, a regra atual permite gravação a contas autenticadas e o controle de Leitor/Operador é aplicado pela interface. Antes de comercializar, separe os módulos em nós próprios e aplique regras por módulo no servidor.
