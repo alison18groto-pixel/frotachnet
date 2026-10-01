@@ -975,6 +975,7 @@ function salvarDados() {
         .catch(error => {
             console.error("Erro ao sincronizar:", error);
             if (btn) btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falhou';
+            alert(`Não foi possível salvar no Firebase: ${error.code || error.message || 'erro desconhecido'}. Publique as regras com: firebase deploy --only database`);
         });
     localStorage.setItem('frota_pro_v47', JSON.stringify(db));
 }
