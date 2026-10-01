@@ -494,7 +494,7 @@
     <div id="tab-usuarios" class="hidden">
         <h2>👥 Usuários e permissões</h2>
         <div class="card">
-            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. Funcionários têm acesso permanente; demonstrações são somente leitura e expiram em 1 hora. O convidado escolhe a própria senha por e-mail.</p>
+            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. No plano gratuito, funcionários devem ser criados primeiro no Firebase Authentication e depois autorizados aqui. Demonstrações automáticas exigem Cloud Functions.</p>
             <div class="flex-row">
                 <input id="novo_usuario_nome" placeholder="Nome do usuário" style="flex:1;margin-bottom:0">
                 <input id="novo_usuario_email" type="email" placeholder="E-mail do funcionário" style="flex:1;margin-bottom:0">
@@ -519,7 +519,7 @@
                 <div class="permission-item"><label><input type="checkbox" id="perm_estoque" checked> Estoque</label></div>
                 <div class="permission-item"><label><input type="checkbox" id="perm_relatorios" checked> Relatórios</label></div>
             </div>
-            <button onclick="criarConviteUsuario()" class="btn-small" style="width:auto"><i class="fas fa-paper-plane"></i> Enviar convite</button>
+            <button onclick="criarConviteUsuario()" class="btn-small" style="width:auto"><i class="fas fa-user-plus"></i> Autorizar usuário</button>
         </div>
         <div class="card"><h3>Usuários autorizados</h3><div id="lista_usuarios"></div></div>
         <div class="card">
@@ -751,7 +751,7 @@ function definirPerfilAtual(user) {
     aplicarPermissoesUI();
     return currentUserProfile;
 }
-function isAdmin() { return !!currentUserProfile && currentUserProfile.papel === 'admin'; }
+function isAdmin() { return isBootstrapAdmin(currentAuthUser) || (!!currentUserProfile && currentUserProfile.papel === 'admin'); }
 function nivelPermissao(modulo) {
     if (isAdmin()) return 'full';
     return (currentUserProfile && currentUserProfile.permissoes && currentUserProfile.permissoes[modulo]) || 'none';
@@ -913,8 +913,19 @@ async function criarConviteUsuario() {
         console.error('Erro ao criar usuário temporário:', err);
         const code = err.code || '';
         if (code.includes('already-exists') || code.includes('email-already-in-use')) return alert('Este e-mail já possui uma conta no Firebase. Use outro e-mail exclusivo.');
-        if (code.includes('not-found') || code.includes('functions/not-found')) return alert('A função de criação ainda não foi publicada no Firebase. Publique a pasta functions antes de criar usuários temporários.');
-        alert('Não foi possível criar o convite. Verifique a publicação da função Firebase.');
+        if (code.includes('not-found') || code.includes('functions/not-found') || code.includes('unavailable') || code.includes('internal')) {
+            if (tipo === 'permanente') {
+                db.usuarios = db.usuarios || {};
+                db.usuarios[email.replace(/[.#$\[\]]/g, '_')] = { uid: null, email, nome: nome || email, papel, permissoes, tipo: 'permanente', atualizadoEm: new Date().toISOString(), atualizadoPor: currentAuthUser.email };
+                salvar();
+                document.getElementById('novo_usuario_nome').value = '';
+                document.getElementById('novo_usuario_email').value = '';
+                alert('Usuário autorizado no Frotas. Agora crie a mesma conta em Firebase Authentication > Adicionar usuário, com este e-mail. A senha será definida por você no Firebase.');
+                return;
+            }
+            return alert('Sem Cloud Functions, o Frotas não consegue criar uma conta de demonstração automaticamente. Crie no Firebase Authentication uma conta com login@demo.frota.local e depois autorize-a aqui.');
+        }
+        alert('Não foi possível autorizar o usuário. Verifique o e-mail e as permissões.');
     }
 }
 function salvarUsuario() { return criarConviteUsuario(); }
