@@ -1,6 +1,17 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "appData": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)",
+      ".validate": "newData.hasChildren(['veiculos', 'oficinas', 'regras', 'estoque', 'usuarios'])"
+    },
+    "auditLogs": {
+      ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)",
+      ".write": "auth != null"
+    },
+    "loginAliases": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)"
+    }
   }
 }
