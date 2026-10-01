@@ -922,15 +922,20 @@ async function criarConviteUsuario() {
         db.usuarios = db.usuarios || {};
         db.usuarios[email.replace(/[.#$\[\]]/g, '_')] = { uid: null, email, login, nome: nome || email, papel, permissoes, tipo: 'permanente', atualizadoEm: new Date().toISOString(), atualizadoPor: currentAuthUser.email };
         try {
-            await database.ref(`loginAliases/${login.replace(/[.#$\[\]]/g, '_')}`).set({ email, nome: nome || email });
-            await salvarDados();
+            await database.ref('appData').set(db);
+            try {
+                await database.ref(`loginAliases/${login.replace(/[.#$\[\]]/g, '_')}`).set({ email, nome: nome || email });
+            } catch (aliasError) {
+                console.warn('Usuário salvo; apelido aguardando publicação das regras:', aliasError);
+            }
             document.getElementById('novo_usuario_nome').value = '';
             document.getElementById('novo_usuario_email').value = '';
             document.getElementById('novo_usuario_login_permanente').value = '';
             alert('Usuário autorizado com sucesso. Agora crie essa mesma conta em Firebase Authentication usando o e-mail informado. Depois ele poderá entrar com o nome curto: ' + login);
+            renderUsuarios();
         } catch (err) {
             console.error('Erro ao autorizar usuário:', err);
-            alert('Não foi possível salvar a autorização. Verifique se as regras do Realtime Database foram publicadas e se você está logado como ADMIN.');
+            alert('Não foi possível salvar a autorização. Verifique se você está logado como ADMIN e se as regras do Realtime Database permitem gravação.');
         }
         return;
     }
