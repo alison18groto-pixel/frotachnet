@@ -12,8 +12,15 @@ function keyForEmail(email) { return email.replace(/[.#$\\[\\]]/g, '_'); }
 function temporaryPassword() { return crypto.randomBytes(24).toString('base64url'); }
 
 exports.criarUsuarioTemporario = onCall(async (request) => {
-  if (!request.auth || request.auth.uid !== OWNER_UID) {
-    throw new HttpsError('permission-denied', 'Somente o ADMIN pode criar usuários.');
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'É necessário estar autenticado.');
+  }
+  const perfisSnapshot = await getDatabase().ref('appData/usuarios').once('value');
+  const perfis = Object.values(perfisSnapshot.val() || {});
+  const perfilAtual = perfis.find((perfil) => perfil && perfil.uid === request.auth.uid);
+  const administrador = request.auth.uid === OWNER_UID || (perfilAtual && perfilAtual.papel === 'admin');
+  if (!administrador) {
+    throw new HttpsError('permission-denied', 'Somente usuários ADMIN podem criar convites.');
   }
   const data = request.data || {};
   const email = String(data.email || '').trim().toLowerCase();
