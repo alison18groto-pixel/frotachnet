@@ -740,6 +740,17 @@ function definirPerfilAtual(user) {
     currentAuthUser = user;
     const salvo = obterPerfil(user);
     currentUserProfile = isBootstrapAdmin(user) ? perfilPadrao(user) : (salvo ? { ...perfilPadrao(user), ...salvo, permissoes: { ...(salvo.permissoes || {}) } } : null);
+    // Migração de perfis antigos: operador sem nenhuma permissão completa recebe os módulos padrão de operação.
+    if (currentUserProfile && currentUserProfile.papel === 'operador') {
+        const temCompleto = Object.values(currentUserProfile.permissoes || {}).some(p => p === 'full');
+        if (!temCompleto) {
+            currentUserProfile.permissoes = { frota: 'full', servicos: 'full', estoque: 'full', relatorios: 'read' };
+            if (salvo) {
+                const chave = Object.keys(db.usuarios || {}).find(k => db.usuarios[k] === salvo);
+                if (chave) db.usuarios[chave].permissoes = { ...currentUserProfile.permissoes };
+            }
+        }
+    }
     aplicarPermissoesUI();
     return currentUserProfile;
 }
