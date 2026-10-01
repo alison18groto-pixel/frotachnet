@@ -1,0 +1,8 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    "/appData": {
+      ".write": "auth != null && (auth.token.admin === true || auth.uid === 'REPLACE_WITH_OWNER_UID')"
+    }
+  }
+}
