@@ -758,6 +758,7 @@ function initAuth() {
     firebase.auth().onAuthStateChanged(user => {
         const loginPage = document.getElementById('login-page');
         if (user) {
+            currentAuthUser = user;
             loginPage.classList.add('hidden');
             carregarDados();
         } else {
