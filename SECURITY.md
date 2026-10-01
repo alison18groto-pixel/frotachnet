@@ -22,4 +22,4 @@ Antes de vender o produto:
 
 ## Cadastro de usuário
 
-A tela **Usuários** cadastra convites permanentes e demonstrações. Funcionários usam e-mail; demonstrações usam login e senha sem e-mail. A Cloud Function registra logins bem-sucedidos, criação de usuários e módulos alterados em cada salvamento. A consulta dos logs fica disponível somente ao ADMIN; consulte `TEMPORARY_USERS.md` para publicar as funções.
+A tela **Usuários** cadastra funcionários permanentes. Cada funcionário usa e-mail no Firebase e pode ter um nome curto para login. A Cloud Function registra logins bem-sucedidos, criação de usuários e módulos alterados em cada salvamento. A consulta dos logs fica disponível somente ao ADMIN; consulte `USERS.md` para o fluxo de usuários.

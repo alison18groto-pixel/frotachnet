@@ -494,24 +494,15 @@
     <div id="tab-usuarios" class="hidden">
         <h2>👥 Usuários e permissões</h2>
         <div class="card">
-            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. No plano gratuito, funcionários devem ser criados primeiro no Firebase Authentication e depois autorizados aqui. Demonstrações automáticas exigem Cloud Functions.</p>
+            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Somente o ADMIN pode administrar acessos. Crie primeiro a conta do funcionário no Firebase Authentication e depois autorize aqui o e-mail, nome de usuário, papel e módulos.</p>
             <div class="flex-row">
                 <input id="novo_usuario_nome" placeholder="Nome do usuário" style="flex:1;margin-bottom:0">
                 <input id="novo_usuario_email" type="email" placeholder="E-mail do funcionário" style="flex:1;margin-bottom:0">
                 <input id="novo_usuario_login_permanente" placeholder="Nome de usuário para entrar" style="flex:1;margin-bottom:0">
-                <input id="novo_usuario_login" class="hidden" placeholder="Login da demonstração" style="flex:1;margin-bottom:0">
-                <input id="novo_usuario_senha" class="hidden" type="password" placeholder="Senha da demonstração" style="flex:1;margin-bottom:0">
-                <select id="novo_usuario_tipo" style="flex:1;margin-bottom:0" onchange="atualizarTipoConvite()" title="Tipo de acesso">
-                    <option value="permanente">Funcionário — permanente</option>
-                    <option value="demo">Demonstração — 1 hora</option>
-                </select>
                 <select id="novo_usuario_papel" style="flex:1;margin-bottom:0">
                     <option value="leitor">Leitor</option>
                     <option value="operador">Operador</option>
                     <option value="admin">ADMIN</option>
-                </select>
-                <select id="novo_usuario_duracao" style="flex:1;margin-bottom:0" title="Validade do acesso" disabled>
-                    <option value="1">Demonstração por 1 hora</option>
                 </select>
             </div>
             <div class="permission-grid">
@@ -809,11 +800,11 @@ async function loginApp() {
                 database.ref(`loginAliases/${aliasKey}`).once('value'),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('alias-timeout')), 4000))
             ]);
-            emailCompleto = aliasSnapshot.val()?.email || usuarioDigitado.toLowerCase() + "@demo.frota.local";
+            emailCompleto = aliasSnapshot.val()?.email || '';
+            if (!emailCompleto) throw new Error('username-not-found');
         } catch (lookupError) {
-            // Se as regras públicas de loginAliases ainda não foram publicadas,
-            // mantém o fallback antigo das demonstrações sem bloquear o login.
-            emailCompleto = usuarioDigitado.toLowerCase() + "@demo.frota.local";
+            error.textContent = 'Nome de usuário não cadastrado. Use o e-mail ou autorize o nome curto no Frotas.';
+            return;
         }
     }
 
@@ -889,86 +880,31 @@ function renderUsuarios() {
         return `<div class="item-editavel"><div class="item-info"><span class="item-nome">${u.nome || u.email}</span><span class="item-detalhe">${u.login ? `Login: ${u.login}` : u.email}</span><span class="${roleClass}">${(u.papel || 'leitor').toUpperCase()}</span><span class="item-detalhe">${perms || 'sem módulos'}</span></div><div class="item-acoes"><button class="btn-del-inline" onclick="removerUsuario('${String(u.email).replace(/'/g,"\'")}')"><i class="fas fa-trash"></i></button></div></div>`;
     }).join('');
 }
-function atualizarTipoConvite() {
-    const demo = document.getElementById('novo_usuario_tipo').value === 'demo';
-    document.getElementById('novo_usuario_email').classList.toggle('hidden', demo);
-    document.getElementById('novo_usuario_login_permanente').classList.toggle('hidden', demo);
-    document.getElementById('novo_usuario_login').classList.toggle('hidden', !demo);
-    document.getElementById('novo_usuario_senha').classList.toggle('hidden', !demo);
-    const papel = document.getElementById('novo_usuario_papel');
-    const duracao = document.getElementById('novo_usuario_duracao');
-    duracao.disabled = !demo;
-    if (demo) { papel.value = 'leitor'; papel.disabled = true; }
-    else { papel.disabled = false; }
-}
 async function criarConviteUsuario() {
     if (!isAdmin()) return exigirPermissao('usuarios', true);
     const nome = document.getElementById('novo_usuario_nome').value.trim();
     const email = normalizarEmail(document.getElementById('novo_usuario_email').value);
-    const tipo = document.getElementById('novo_usuario_tipo').value;
-    const login = (tipo === 'demo' ? document.getElementById('novo_usuario_login').value : document.getElementById('novo_usuario_login_permanente').value).trim().toLowerCase();
-    const senha = document.getElementById('novo_usuario_senha').value;
-    const papel = tipo === 'demo' ? 'leitor' : document.getElementById('novo_usuario_papel').value;
-    const duracaoHoras = Number(document.getElementById('novo_usuario_duracao').value || 1);
-    if (tipo === 'permanente' && (!email || !email.includes('@'))) return alert('Informe um e-mail válido para o funcionário.');
-    if (tipo === 'permanente' && !/^[a-z0-9._-]{3,32}$/.test(login)) return alert('Informe um nome de usuário de 3 a 32 caracteres, usando letras, números, ponto, hífen ou sublinhado.');
-    if (tipo === 'demo' && (!/^[a-z0-9._-]{3,32}$/.test(login) || senha.length < 6)) return alert('Informe um login de 3 a 32 caracteres e uma senha com pelo menos 6 caracteres.');
-    if (tipo === 'permanente' && email === normalizarEmail(currentAuthUser.email)) return alert('O ADMIN inicial não precisa ser cadastrado.');
+    const login = document.getElementById('novo_usuario_login_permanente').value.trim().toLowerCase();
+    const papel = document.getElementById('novo_usuario_papel').value;
+    if (!email || !email.includes('@')) return alert('Informe um e-mail válido para o funcionário.');
+    if (!/^[a-z0-9._-]{3,32}$/.test(login)) return alert('Informe um nome de usuário de 3 a 32 caracteres, usando letras, números, ponto, hífen ou sublinhado.');
+    if (email === normalizarEmail(currentAuthUser.email)) return alert('O ADMIN inicial não precisa ser cadastrado.');
     const permissoes = {};
     Object.keys(MODULE_LABELS).forEach(m => { const cb = document.getElementById('perm_' + m); if (cb.checked) permissoes[m] = papel === 'leitor' ? 'read' : 'full'; });
-
-    // Plano gratuito: funcionário permanente é autorizado diretamente, sem Cloud Function.
-    if (tipo === 'permanente') {
-        db.usuarios = db.usuarios || {};
-        db.usuarios[email.replace(/[.#$\[\]]/g, '_')] = { uid: null, email, login, nome: nome || email, papel, permissoes, tipo: 'permanente', atualizadoEm: new Date().toISOString(), atualizadoPor: currentAuthUser.email };
-        try {
-            await database.ref('appData').set(db);
-            try {
-                await database.ref(`loginAliases/${login.replace(/[.#$\[\]]/g, '_')}`).set({ email, nome: nome || email });
-            } catch (aliasError) {
-                console.warn('Usuário salvo; apelido aguardando publicação das regras:', aliasError);
-            }
-            document.getElementById('novo_usuario_nome').value = '';
-            document.getElementById('novo_usuario_email').value = '';
-            document.getElementById('novo_usuario_login_permanente').value = '';
-            alert('Usuário autorizado com sucesso. Agora crie essa mesma conta em Firebase Authentication usando o e-mail informado. Depois ele poderá entrar com o nome curto: ' + login);
-            renderUsuarios();
-        } catch (err) {
-            console.error('Erro ao autorizar usuário:', err);
-            alert('Não foi possível salvar a autorização. Verifique se você está logado como ADMIN e se as regras do Realtime Database permitem gravação.');
-        }
-        return;
-    }
+    db.usuarios = db.usuarios || {};
+    db.usuarios[email.replace(/[.#$\[\]]/g, '_')] = { uid: null, email, login, nome: nome || email, papel, permissoes, tipo: 'permanente', atualizadoEm: new Date().toISOString(), atualizadoPor: currentAuthUser.email };
     try {
-        const criar = functions.httpsCallable('criarUsuarioTemporario');
-        const resultado = await criar({ email, login, senha, nome: nome || login || email, tipo, papel, permissoes, duracaoHoras });
-        if (tipo === 'permanente') await firebase.auth().sendPasswordResetEmail(email);
-        const expira = resultado.data && resultado.data.expiresAt ? new Date(resultado.data.expiresAt).toLocaleString('pt-BR') : 'em 1 hora';
+        await database.ref('appData').set(db);
+        try { await database.ref(`loginAliases/${login.replace(/[.#$\[\]]/g, '_')}`).set({ email, nome: nome || email }); }
+        catch (aliasError) { console.warn('Usuário salvo; apelido aguardando publicação das regras:', aliasError); }
         document.getElementById('novo_usuario_nome').value = '';
         document.getElementById('novo_usuario_email').value = '';
         document.getElementById('novo_usuario_login_permanente').value = '';
-        document.getElementById('novo_usuario_login').value = '';
-        document.getElementById('novo_usuario_senha').value = '';
-        alert(tipo === 'demo' ? `Demonstração criada. Login: ${login}. Acesso somente leitura até ${expira}.` : `Funcionário permanente criado para ${email}. O link para escolher a senha foi enviado. O acesso não expira.`);
+        alert('Usuário autorizado com sucesso. Crie essa mesma conta no Firebase Authentication. O login poderá ser feito com: ' + login);
+        renderUsuarios();
     } catch (err) {
-        console.error('Erro ao criar usuário temporário:', err);
-        const code = err.code || '';
-        if (code.includes('already-exists') || code.includes('email-already-in-use')) return alert('Este e-mail já possui uma conta no Firebase. Use outro e-mail exclusivo.');
-        if (code.includes('not-found') || code.includes('functions/not-found') || code.includes('unavailable') || code.includes('internal')) {
-            if (tipo === 'permanente') {
-                db.usuarios = db.usuarios || {};
-                db.usuarios[email.replace(/[.#$\[\]]/g, '_')] = { uid: null, email, login, nome: nome || email, papel, permissoes, tipo: 'permanente', atualizadoEm: new Date().toISOString(), atualizadoPor: currentAuthUser.email };
-                await database.ref(`loginAliases/${login.replace(/[.#$\[\]]/g, '_')}`).set({ email, nome: nome || email });
-                salvar();
-                document.getElementById('novo_usuario_nome').value = '';
-                document.getElementById('novo_usuario_email').value = '';
-                document.getElementById('novo_usuario_login_permanente').value = '';
-                alert('Usuário autorizado no Frotas. Agora crie a mesma conta em Firebase Authentication > Adicionar usuário, com este e-mail. A senha será definida por você no Firebase.');
-                return;
-            }
-            return alert('Sem Cloud Functions, o Frotas não consegue criar uma conta de demonstração automaticamente. Crie no Firebase Authentication uma conta com login@demo.frota.local e depois autorize-a aqui.');
-        }
-        alert('Não foi possível autorizar o usuário. Verifique o e-mail e as permissões.');
+        console.error('Erro ao autorizar usuário:', err);
+        alert('Não foi possível salvar a autorização. Verifique se você está logado como ADMIN e se as regras permitem gravação.');
     }
 }
 function salvarUsuario() { return criarConviteUsuario(); }

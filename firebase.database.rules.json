@@ -1,7 +1,7 @@
 {
   "rules": {
     "appData": {
-      ".read": "auth != null && (auth.token.temporary != true || auth.token.expiresAtEpoch > now)",
+      ".read": "auth != null",
       ".write": "auth != null && (auth.token.admin === true || auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1')"
     },
     "auditLogs": {
