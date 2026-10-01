@@ -793,48 +793,56 @@ function initAuth() {
     });
 }
 
-async function loginApp() {
+function loginApp() {
     const usuarioDigitado = document.getElementById('login_user').value.trim();
-    const senhaDigitada = document.getElementById('login_pass').value;
+    const senhaDigitada = document.getElementById('login_pass').value.trim();
     const error = document.getElementById('login_error');
-    const button = document.getElementById('login-submit-btn');
-    error.textContent = '';
-    if (!usuarioDigitado || !senhaDigitada) { error.textContent = 'Informe usuário e senha.'; return; }
-    button.disabled = true;
-    button.textContent = 'Entrando...';
+    error.textContent = ''; // Limpa erros anteriores
+
     let emailCompleto = usuarioDigitado;
-    try {
-        if (usuarioDigitado.toLowerCase() === 'chnet') {
-            emailCompleto = 'chnettelecomunicacoes@gmail.com';
-        } else if (!usuarioDigitado.includes('@')) {
-            const aliasKey = usuarioDigitado.toLowerCase().replace(/[.#$\[\]]/g, '_');
-            try {
-                const alias = await Promise.race([
-                    database.ref(`loginAliases/${aliasKey}`).once('value'),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('alias-timeout')), 4000))
-                ]);
-                emailCompleto = alias.val()?.email || usuarioDigitado.toLowerCase() + '@demo.frota.local';
-            } catch (lookupError) {
-                emailCompleto = usuarioDigitado.toLowerCase() + '@demo.frota.local';
-            }
-        }
-        await Promise.race([
-            firebase.auth().signInWithEmailAndPassword(emailCompleto, senhaDigitada),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('auth-timeout')), 12000))
-        ]);
-    } catch (err) {
-        console.error('Erro de login:', err);
-        const code = err.code || err.message || 'desconhecido';
-        if (code === 'auth-timeout') error.textContent = 'O Firebase não respondeu. Verifique a conexão e tente novamente.';
-        else if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') error.textContent = 'Usuário não encontrado ou senha incorreta.';
-        else if (code === 'auth/wrong-password') error.textContent = 'Senha incorreta.';
-        else if (code === 'auth/operation-not-allowed') error.textContent = 'Ative E-mail/senha em Firebase > Authentication > Sign-in method.';
-        else error.textContent = `Erro de login: ${code}`;
-    } finally {
-        button.disabled = false;
-        button.textContent = 'Entrar';
+    if (usuarioDigitado.toLowerCase() === "chnet") {
+        emailCompleto = "chnettelecomunicacoes@gmail.com";
+    } else if (!usuarioDigitado.includes('@')) {
+        emailCompleto = usuarioDigitado.toLowerCase() + "@demo.frota.local";
     }
+
+    // Envia para o Firebase Authentication validar
+    firebase.auth().signInWithEmailAndPassword(emailCompleto, senhaDigitada)
+        .catch((err) => {
+            console.error("Erro de login:", err.code, err.message);
+            switch (err.code) {
+                case 'auth/invalid-email':
+                    error.textContent = 'O formato do nome de usuário é inválido.';
+                    break;
+                case 'auth/user-not-found':
+                    error.textContent = 'Usuário não encontrado.';
+                    break;
+                case 'auth/wrong-password':
+                    error.textContent = 'Senha incorreta.';
+                    break;
+                default:
+                    error.textContent = 'Erro ao fazer login. Verifique os dados.';
+            }
+        });
 }
+
+function logoutApp() {
+    database.ref('appData').off(); // Desconecta o listener de dados em tempo real
+    firebase.auth().signOut().then(() => {
+        // Recarrega a página para limpar o estado do aplicativo.
+        window.location.reload();
+    }).catch((error) => {
+        console.error('Erro ao fazer logout:', error);
+        alert('Ocorreu um erro ao tentar sair.');
+    });
+}
+
+function limparLogin() {
+    document.getElementById('login_user').value = '';
+    document.getElementById('login_pass').value = '';
+    document.getElementById('login_error').textContent = '';
+}
+
 
 // ============================================================
 // USUÁRIOS E PERMISSÕES
