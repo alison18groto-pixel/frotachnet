@@ -2,8 +2,7 @@
   "rules": {
     "appData": {
       ".read": "auth != null",
-      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.uid === 'uYUbXBTRVCUCAZINzzxNqFRGjH63' || auth.token.admin === true)",
-      ".validate": "newData.hasChildren(['veiculos', 'oficinas', 'regras', 'estoque', 'usuarios'])"
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.uid === 'uYUbXBTRVCUCAZINzzxNqFRGjH63' || auth.token.admin === true)"
     },
     "auditLogs": {
       "$logId": {
