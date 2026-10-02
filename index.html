@@ -1203,7 +1203,8 @@ function importarBackup() {
         reader.onload = evt => {
             try {
                 let data = JSON.parse(evt.target.result);
-                const veiculos = Array.isArray(data?.veiculos) ? data.veiculos : Object.values(data?.veiculos || {});
+                const origem = data?.appData && typeof data.appData === 'object' ? data.appData : data;
+                const veiculos = Array.isArray(origem?.veiculos) ? origem.veiculos : Object.values(origem?.veiculos || {});
                 if (!data || !veiculos.length || veiculos.some(v => !v || typeof v !== 'object' || !v.id)) {
                     alert('❌ Arquivo inválido: o backup precisa conter uma lista de veículos com ID.');
                     return;
@@ -1216,7 +1217,7 @@ function importarBackup() {
                 const resumo = `${veiculos.length} veículo(s), ${veiculos.reduce((n, v) => n + (Array.isArray(v.servicos) ? v.servicos.length : 0), 0)} serviço(s) e ${veiculos.reduce((n, v) => n + (Array.isArray(v.abastecimentos) ? v.abastecimentos.length : 0), 0)} abastecimento(s)`;
                 if (!confirm(`Restaurar este backup?\n\n${resumo}\n\nUm backup do estado atual será baixado antes da restauração.`)) return;
                 exportarBackup();
-                db = { ...data, veiculos };
+                db = { ...origem, veiculos };
                 salvar().then(() => alert('✅ Backup restaurado e sincronizado!')).catch(() => alert('❌ A restauração falhou; o estado remoto não foi confirmado.'));
             } catch(err) { alert('❌ Erro: ' + err.message); }
         };
@@ -2677,13 +2678,14 @@ function renderRelatorioExecutivo(filterYear, filterMonth, filterStart, filterEn
             consumoLitros += i.litros;
         });
         const kmRodado = calcularKmRodadoPeriodo(v, filterYear, filterMonth, filterStart, filterEnd);
+        const kmOdometro = parseKM(v.km);
         const total = manutencao + combustivel;
-        porVeiculo.push({ v, kmAtual: parseKM(v.km), manutencao, combustivel, litros, consumoKm, consumoLitros, consumoKmL: consumoLitros ? consumoKm/consumoLitros : 0, kmRodado, total, custoKm: kmRodado ? total/kmRodado : 0, servicos:ss.length, abastecimentos:aa.length });
+        porVeiculo.push({ v, kmAtual: kmOdometro, manutencao, combustivel, litros, consumoKm, consumoLitros, consumoKmL: consumoLitros ? consumoKm/consumoLitros : 0, kmRodado, total, custoKm: kmOdometro ? total/kmOdometro : 0, servicos:ss.length, abastecimentos:aa.length });
     });
     const totalManutencao = servicos.reduce((sum, s) => sum + (Number(s.val)||0), 0);
     const totalCombustivel = abastecimentos.reduce((sum, a) => sum + (Number(a.valor)||0), 0);
     const totalLitros = abastecimentos.reduce((sum, a) => sum + (Number(a.qtd)||0), 0);
-    const totalKm = porVeiculo.reduce((sum, d) => sum + d.kmRodado, 0);
+    const totalKm = porVeiculo.reduce((sum, d) => sum + d.kmAtual, 0);
     const totalConsumoKm = porVeiculo.reduce((sum, d) => sum + d.consumoKm, 0);
     const totalConsumoLitros = porVeiculo.reduce((sum, d) => sum + d.consumoLitros, 0);
     const total = totalManutencao + totalCombustivel;
@@ -2699,15 +2701,15 @@ function renderRelatorioExecutivo(filterYear, filterMonth, filterStart, filterEn
             <div class="report-kpi"><div class="report-kpi-label">Custo total</div><div class="report-kpi-value" style="color:var(--accent)">R$ ${formatMoney(total)}</div><div style="font-size:11px;color:var(--text-secondary)">manutenção + combustível</div></div>
             <div class="report-kpi"><div class="report-kpi-label">Manutenção</div><div class="report-kpi-value">R$ ${formatMoney(totalManutencao)}</div><div style="font-size:11px;color:var(--text-secondary)">${servicos.length} serviço(s)</div></div>
             <div class="report-kpi"><div class="report-kpi-label">Combustível</div><div class="report-kpi-value" style="color:var(--fuel)">R$ ${formatMoney(totalCombustivel)}</div><div style="font-size:11px;color:var(--text-secondary)">${totalLitros.toFixed(1)} litros</div></div>
-            <div class="report-kpi"><div class="report-kpi-label">Custo por KM</div><div class="report-kpi-value" style="color:var(--warn)">${totalKm ? 'R$ ' + formatMoney(total/totalKm) : '—'}</div><div style="font-size:11px;color:var(--text-secondary)">${formatKM(totalKm)} km analisados</div></div>
+            <div class="report-kpi"><div class="report-kpi-label">Custo por KM</div><div class="report-kpi-value" style="color:var(--warn)">${totalKm ? 'R$ ' + formatMoney(total/totalKm) : '—'}</div><div style="font-size:11px;color:var(--text-secondary)">${formatKM(totalKm)} km nos odômetros atuais</div></div>
             <div class="report-kpi"><div class="report-kpi-label">Consumo médio</div><div class="report-kpi-value" style="color:var(--success)">${consumo ? consumo.toFixed(2) + ' km/l' : '—'}</div><div style="font-size:11px;color:var(--text-secondary)">${abastecimentos.length} abastecimento(s)</div></div>
             <div class="report-kpi"><div class="report-kpi-label">Alertas vencidos</div><div class="report-kpi-value" style="color:${alertas ? 'var(--danger)' : 'var(--success)'}">${alertas}</div><div style="font-size:11px;color:var(--text-secondary)">manutenções que exigem atenção</div></div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px">
             <div class="card"><h3>Veículos com maior custo</h3>${ranking(topCusto, d => 'R$ '+formatMoney(d.total))}</div>
-            <div class="card"><h3>Maior custo por KM</h3>${topKm.length ? topKm.map((d,i) => `<div class="report-ranking-row"><div class="report-ranking-position">${i+1}</div><div style="flex:1"><strong>${d.v.motorista || 'Sem motorista'}</strong><div style="font-size:11px;color:var(--text-secondary)">${d.v.placa || '-'} · KM atual: ${formatKM(d.v.km)} · ${formatKM(d.kmRodado)} km rodados</div></div><strong style="color:var(--warn)">${d.custoKm > 0 ? 'R$ '+formatMoney(d.custoKm)+'/km' : 'Sem KM suficiente'}</strong></div>`).join('') : '<div class="report-empty">Nenhum veículo encontrado.</div>'}</div>
+            <div class="card"><h3>Maior custo por KM</h3>${topKm.length ? topKm.map((d,i) => `<div class="report-ranking-row"><div class="report-ranking-position">${i+1}</div><div style="flex:1"><strong>${d.v.motorista || 'Sem motorista'}</strong><div style="font-size:11px;color:var(--text-secondary)">${d.v.placa || '-'} · KM atual: ${formatKM(d.kmAtual)} · Base do custo</div></div><strong style="color:var(--warn)">${d.custoKm > 0 ? 'R$ '+formatMoney(d.custoKm)+'/km' : 'Sem KM suficiente'}</strong></div>`).join('') : '<div class="report-empty">Nenhum veículo encontrado.</div>'}</div>
         </div>
-        <div class="card"><h3>Resumo por veículo</h3><div class="report-table-wrap"><table><thead><tr><th>Veículo</th><th>Manutenção</th><th>Combustível</th><th>Total</th><th>KM ATUAL (ODÔMETRO)</th><th>KM rodados</th><th>Custo/KM</th><th>Consumo</th></tr></thead><tbody>${porVeiculo.sort((a,b)=>b.total-a.total).map(d => `<tr><td><strong>${d.v.motorista || '-'}</strong><br><small>${d.v.placa || '-'} · ${d.v.modelo || '-'}</small></td><td>R$ ${formatMoney(d.manutencao)}</td><td>R$ ${formatMoney(d.combustivel)}</td><td><strong>R$ ${formatMoney(d.total)}</strong></td><td><strong>${formatKM(d.v.km)}</strong></td><td>${formatKM(d.kmRodado)}</td><td>${d.custoKm ? 'R$ '+formatMoney(d.custoKm) : '—'}</td><td>${d.consumoKmL ? d.consumoKmL.toFixed(2)+' km/l' : '—'}</td></tr>`).join('') || '<tr><td colspan="8" class="report-empty">Nenhum dado no período.</td></tr>'}</tbody></table></div></div>`;
+        <div class="card"><h3>Resumo por veículo</h3><div class="report-table-wrap"><table><thead><tr><th>Veículo</th><th>Manutenção</th><th>Combustível</th><th>Total</th><th>KM ATUAL (ODÔMETRO)</th><th>KM rodados históricos</th><th>Custo/KM pelo odômetro</th><th>Consumo</th></tr></thead><tbody>${porVeiculo.sort((a,b)=>b.total-a.total).map(d => `<tr><td><strong>${d.v.motorista || '-'}</strong><br><small>${d.v.placa || '-'} · ${d.v.modelo || '-'}</small></td><td>R$ ${formatMoney(d.manutencao)}</td><td>R$ ${formatMoney(d.combustivel)}</td><td><strong>R$ ${formatMoney(d.total)}</strong></td><td><strong>${formatKM(d.kmAtual)}</strong></td><td>${formatKM(d.kmRodado)}</td><td>${d.custoKm ? 'R$ '+formatMoney(d.custoKm) : '—'}</td><td>${d.consumoKmL ? d.consumoKmL.toFixed(2)+' km/l' : '—'}</td></tr>`).join('') || '<tr><td colspan="8" class="report-empty">Nenhum dado no período.</td></tr>'}</tbody></table></div></div>`;
 }
 
 function preencherFiltroAnos() {
@@ -3506,7 +3508,7 @@ function exportarCSVExecutivo() {
     const end = document.getElementById('filter_end')?.value || '';
     const year = document.getElementById('filter_year')?.value || '';
     const month = document.getElementById('filter_month')?.value || '';
-    const rows = [['Motorista','Placa','Modelo','Manutenção (R$)','Combustível (R$)','Total (R$)','KM atual','KM rodados analisados','Custo/KM (R$)','Abastecimentos','Serviços']];
+    const rows = [['Motorista','Placa','Modelo','Manutenção (R$)','Combustível (R$)','Total (R$)','KM atual (odômetro)','KM rodados históricos','Custo/KM pelo odômetro (R$)','Abastecimentos','Serviços']];
     db.veiculos.forEach(v => {
         const ss = (v.servicos||[]).filter(s => periodoRelatorioValido(s.data, year, month, start, end));
         const aa = (v.abastecimentos||[]).filter(a => periodoRelatorioValido(a.data, year, month, start, end));
@@ -3514,7 +3516,8 @@ function exportarCSVExecutivo() {
         const fuel = aa.reduce((sum,a)=>sum+(Number(a.valor)||0),0);
         const km = calcularKmRodadoPeriodo(v, year, month, start, end);
         const total = manut + fuel;
-        rows.push([v.motorista||'',v.placa||'',v.modelo||'',manut.toFixed(2),fuel.toFixed(2),total.toFixed(2),parseKM(v.km),km,km ? (total/km).toFixed(4) : '',aa.length,ss.length]);
+        const kmAtual = parseKM(v.km);
+        rows.push([v.motorista||'',v.placa||'',v.modelo||'',manut.toFixed(2),fuel.toFixed(2),total.toFixed(2),kmAtual,km,kmAtual ? (total/kmAtual).toFixed(4) : '',aa.length,ss.length]);
     });
     const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})); a.download=`frota_relatorio_executivo_${new Date().toISOString().split('T')[0]}.csv`; a.click();

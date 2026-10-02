@@ -41,4 +41,11 @@ assert.equal(intervalos.length, 2);
 assert.equal(intervalos.reduce((sum, item) => sum + item.kmRod, 0), 1000);
 assert.equal(intervalos.reduce((sum, item) => sum + item.litros, 0), 100);
 
+const odometros = [161518, 157801, 86943, 139982, 83422, 24158, 815];
+const gastos = [28534.01, 21186.81, 18399.49, 16081.90, 29180.87, 4591.84, 876.02];
+const totalOdometros = odometros.reduce((sum, km) => sum + km, 0);
+const totalGastos = gastos.reduce((sum, valor) => sum + valor, 0);
+assert.equal(totalOdometros, 654639);
+assert.equal(Number((totalGastos / totalOdometros).toFixed(6)), 0.181552);
+
 console.log('OK: testes de normalização, consumo e exclusão de outlier passaram.');

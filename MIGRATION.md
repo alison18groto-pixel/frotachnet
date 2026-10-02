@@ -21,6 +21,17 @@ node scripts/migrate-realtime-db.js \
 
 O comando é idempotente e informa quantos veículos, serviços, itens de estoque, usuários e logs foram preservados.
 
+## Regra do custo por KM
+
+O relatório executivo usa o **odômetro atual de cada veículo** como base do custo por KM. Portanto:
+
+```text
+KM total da frota = soma de appData.veiculos[*].km
+Custo por KM = (manutenção + combustível) / KM total da frota
+```
+
+O KM rodado calculado pelo histórico continua sendo exibido separadamente para análise, mas não é usado como denominador do KPI principal de custo por KM.
+
 ## Validação antes do deploy
 
 ```bash
