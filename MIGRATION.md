@@ -7,7 +7,6 @@
 - O frontend respeita `read`/`full` por módulo em vez de liberar edição para qualquer usuário autorizado.
 - Operadores gravam apenas os nós legados necessários (`veiculos`, `estoque`, `oficinas` e `regras`); usuários e logs continuam restritos ao ADMIN.
 - O primeiro login sincroniza o perfil pelo UID para que as regras do Realtime Database possam validar permissões.
-- O Canal de denúncia grava relatos em `denuncias`; a leitura é restrita à administração e a identidade só é salva quando escolhida.
 - Foi corrigido o erro `key is not defined` das Cloud Functions.
 
 ## Gerar uma cópia migrada localmente
@@ -45,7 +44,3 @@ firebase deploy --only functions,database
 4. Se regras forem publicadas, reaplicar o arquivo de regras anterior versionado no commit imediatamente anterior.
 
 > Esta implementação não publica o banco real automaticamente e não inclui o backup anexado no Git.
-
-## Anexos de denúncias
-
-A primeira versão registra os metadados dos arquivos selecionados, mas não grava o conteúdo binário no Realtime Database. Isso evita colocar fotos, áudios ou documentos sensíveis no banco. Para anexos efetivos, configure Firebase Storage com regras privadas antes de habilitar o upload em produção.

@@ -348,7 +348,6 @@
     <div class="nav-item" onclick="tab('servicos')"><i class="fas fa-tools"></i> <span>Serviços</span></div>
     <div class="nav-item" onclick="tab('estoque')"><i class="fas fa-boxes"></i> <span>Estoque</span></div>
     <div class="nav-item" onclick="tab('relatorios')"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></div>
-    <div class="nav-item" onclick="tab('denuncias')"><i class="fas fa-shield-alt"></i> <span>Canal de denúncia</span></div>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -489,47 +488,6 @@
             </div>
         </div>
         <div id="relatorio-content"></div>
-    </div>
-
-    <!-- CANAL DE DENÚNCIA -->
-    <div id="tab-denuncias" class="hidden">
-        <h2>🛡️ Canal de denúncia</h2>
-        <div class="card">
-            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Seu relato será acessível somente à administração. A identidade só será gravada se você escolher se identificar.</p>
-            <div class="permission-grid">
-                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Assédio Moral"> Assédio Moral</label></div>
-                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Assédio Sexual"> Assédio Sexual</label></div>
-                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Violência/Agressão"> Violência/Agressão</label></div>
-                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Discriminação ou Preconceito"> Discriminação ou Preconceito</label></div>
-                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Condição perigosa ou insegura"> Condição perigosa ou insegura</label></div>
-                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Outro assunto"> Outro assunto</label></div>
-            </div>
-            <label>Descreva detalhadamente o que aconteceu</label>
-            <textarea id="denuncia_descricao" rows="5" placeholder="Relate os fatos com o máximo de detalhes possível..."></textarea>
-            <label>Quem é a pessoa envolvida (denunciado)?</label>
-            <input id="denuncia_denunciado" placeholder="Nome ou identificação da pessoa envolvida">
-            <label>Houve testemunha? Se sim, quem?</label>
-            <input id="denuncia_testemunhas" placeholder="Nome das testemunhas, se houver">
-            <label>Quando e onde o fato aconteceu?</label>
-            <textarea id="denuncia_quando_onde" rows="3" placeholder="Datas, horários e local"></textarea>
-            <label>Você possui alguma prova?</label>
-            <div class="flex-row" style="margin:8px 0 12px">
-                <label><input type="radio" name="denuncia_provas" value="sim"> Sim</label>
-                <label><input type="radio" name="denuncia_provas" value="nao" checked> Não</label>
-            </div>
-            <input id="denuncia_arquivos" type="file" multiple>
-            <label style="margin-top:12px">Identificação</label>
-            <div class="flex-row" style="margin:8px 0 12px">
-                <label><input type="radio" name="denuncia_identificacao" value="identificado" onchange="toggleContatoDenuncia()"> Quero me identificar</label>
-                <label><input type="radio" name="denuncia_identificacao" value="anonimo" checked onchange="toggleContatoDenuncia()"> Desejo permanecer totalmente anônimo</label>
-            </div>
-            <div id="denuncia_contato_wrapper" class="hidden">
-                <label>Nome e telefone/e-mail para contato (opcional)</label>
-                <input id="denuncia_contato" placeholder="Nome, telefone e/ou e-mail">
-            </div>
-            <button onclick="enviarDenuncia()" style="margin-top:10px"><i class="fas fa-paper-plane"></i> Enviar relato com sigilo</button>
-        </div>
-        <div id="denuncia_status" class="card hidden"></div>
     </div>
 
     <!-- USUÁRIOS E PERMISSÕES -->
@@ -1265,51 +1223,15 @@ function showImage(src) {
 }
 
 // ============================================================
-// CANAL DE DENÚNCIA
-// ============================================================
-function toggleContatoDenuncia() {
-    const identificado = document.querySelector('input[name="denuncia_identificacao"]:checked')?.value === 'identificado';
-    document.getElementById('denuncia_contato_wrapper')?.classList.toggle('hidden', !identificado);
-}
-async function enviarDenuncia() {
-    if (!currentAuthUser) return alert('Faça login para enviar um relato.');
-    const categorias = [...document.querySelectorAll('input[name="denuncia_categoria"]:checked')].map(el => el.value);
-    const descricao = document.getElementById('denuncia_descricao').value.trim();
-    const denunciado = document.getElementById('denuncia_denunciado').value.trim();
-    const quandoOnde = document.getElementById('denuncia_quando_onde').value.trim();
-    const identificacao = document.querySelector('input[name="denuncia_identificacao"]:checked')?.value || 'anonimo';
-    const temProvas = document.querySelector('input[name="denuncia_provas"]:checked')?.value === 'sim';
-    const arquivos = [...(document.getElementById('denuncia_arquivos').files || [])].map(file => ({ nome: file.name, tipo: file.type, tamanho: file.size }));
-    if (!categorias.length || !descricao || !denunciado || !quandoOnde) return alert('Preencha categoria, descrição, denunciado e quando/onde.');
-    if (temProvas && !arquivos.length) return alert('Selecione ao menos um arquivo de prova ou marque “Não”.');
-    const contato = identificacao === 'identificado' ? document.getElementById('denuncia_contato').value.trim() : '';
-    const denunciaRef = database.ref('denuncias').push();
-    const payload = { categoria: categorias.join(', '), descricao, denunciado, testemunhas: document.getElementById('denuncia_testemunhas').value.trim(), quandoOnde, temProvas, arquivos, identificacao, contato, autorUid: currentAuthUser.uid, criadoEm: new Date().toISOString() };
-    try {
-        await denunciaRef.set(payload);
-        await registrarLogAuditoria('denúncia registrada', categorias);
-        document.querySelectorAll('#tab-denuncias input, #tab-denuncias textarea').forEach(el => { if (el.type === 'radio') el.checked = el.value === (el.name === 'denuncia_provas' ? 'nao' : 'anonimo'); else if (el.type === 'checkbox') el.checked = false; else el.value = ''; });
-        toggleContatoDenuncia();
-        const status = document.getElementById('denuncia_status');
-        status.classList.remove('hidden');
-        status.innerHTML = '<strong>Relato enviado.</strong><br>O protocolo foi registrado com sigilo. Os arquivos ficam registrados como anexos e devem ser disponibilizados pelo administrador em um Storage protegido.';
-    } catch (err) {
-        console.error('Erro ao enviar denúncia:', err);
-        alert('Não foi possível enviar o relato. Verifique sua conexão e tente novamente.');
-    }
-}
-
-// ============================================================
 // NAVEGAÇÃO
 // ============================================================
 function tab(t) {
     if (t === 'usuarios' && !isAdmin()) { alert('Apenas o ADMIN pode acessar o gerenciamento de usuários.'); return; }
-    if (t === 'denuncias' && !currentAuthUser) { alert('Faça login para acessar o canal de denúncia.'); return; }
     if (MODULE_LABELS[t] && !exigirPermissao(t)) return;
     document.querySelectorAll('.main > div').forEach(d => d.classList.add('hidden'));
     document.getElementById('tab-' + t).classList.remove('hidden');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const idx = { dash: 0, frota: 1, servicos: 2, estoque: 3, relatorios: 4, denuncias: 5, usuarios: 6 };
+    const idx = { dash: 0, frota: 1, servicos: 2, estoque: 3, relatorios: 4, usuarios: 5 };
     const items = document.querySelectorAll('.nav-item');
     if (idx[t] !== undefined) items[idx[t]].classList.add('active');
     if (t === 'dash')       renderDashboard();

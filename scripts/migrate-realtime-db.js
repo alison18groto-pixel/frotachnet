@@ -50,7 +50,6 @@ const migrated = {
     nextId: Number(appData.nextId) || 1,
   },
   usuariosPorUid: usersByUid,
-  denuncias: source.denuncias && typeof source.denuncias === 'object' ? source.denuncias : {},
   migrationMeta: {
     version: 1,
     migratedAt: new Date().toISOString(),

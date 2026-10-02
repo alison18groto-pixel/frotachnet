@@ -39,13 +39,6 @@
       ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')",
       ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')"
     },
-    "denuncias": {
-      ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('papel').val() === 'admin')",
-      "$denunciaId": {
-        ".write": "auth != null && !data.exists() && newData.child('autorUid').val() === auth.uid",
-        ".validate": "newData.hasChildren(['categoria', 'descricao', 'denunciado', 'quandoOnde', 'temProvas', 'identificacao', 'autorUid', 'criadoEm']) && newData.child('categoria').isString() && newData.child('descricao').isString() && newData.child('denunciado').isString() && newData.child('quandoOnde').isString() && newData.child('temProvas').isBoolean() && (newData.child('identificacao').val() === 'identificado' || newData.child('identificacao').val() === 'anonimo') && newData.child('autorUid').val() === auth.uid"
-      }
-    },
     "auditLogs": {
       "$logId": {
         ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('papel').val() === 'admin')",
