@@ -1219,6 +1219,29 @@ function maskMoney(i) {
 }
 function parseKM(v)  { return parseInt(String(v).replace(/\D/g, '')) || 0; }
 function parseVal(v) { return parseFloat(String(v).replace(/[R$\s.]/g, '').replace(',', '.')) || 0; }
+function parseNumero(v) {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    const texto = String(v ?? '').trim().replace(/\s/g, '');
+    if (!texto) return 0;
+    const normalizado = texto.includes(',') ? texto.replace(/\./g, '').replace(',', '.') : texto;
+    const numero = Number(normalizado);
+    return Number.isFinite(numero) ? numero : 0;
+}
+function intervalosConsumo(v) {
+    const abastecimentos = (v?.abastecimentos || [])
+        .map(a => ({ ...a, km: parseKM(a.km), qtd: parseNumero(a.qtd) }))
+        .filter(a => a.km > 0 && a.qtd > 0)
+        .sort((a, b) => a.km - b.km);
+    const intervalos = [];
+    for (let i = 1; i < abastecimentos.length; i++) {
+        const anterior = abastecimentos[i - 1];
+        const atual = abastecimentos[i];
+        const kmRod = atual.km - anterior.km;
+        const consumo = kmRod / atual.qtd;
+        if (kmRod > 0 && consumo <= 20) intervalos.push({ atual, anterior, kmRod, litros: atual.qtd, consumo });
+    }
+    return intervalos;
+}
 function formatKM(v) { return v ? String(v).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') : '0'; }
 function formatMoney(v) { return (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function formatDate(dateStr) {
@@ -1443,7 +1466,7 @@ function renderOdoAbastBlock() {
             const sortedAsc = [...v.abastecimentos].sort((x,y) => (x.km||0)-(y.km||0));
             const posAsc = sortedAsc.findIndex(x => x === a);
             let consumo = 0;
-            if (posAsc > 0) { const ant = sortedAsc[posAsc-1]; const kmRod = a.km - ant.km; if (kmRod > 0) consumo = kmRod / a.qtd; }
+            if (posAsc > 0) { const ant = sortedAsc[posAsc-1]; const kmRod = parseKM(a.km) - parseKM(ant.km); const litros = parseNumero(a.qtd); if (kmRod > 0 && litros > 0 && kmRod / litros <= 20) consumo = kmRod / litros; }
             recentesHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
                 <div>
                     <div style="font-size:12px;font-weight:600">📅 ${formatDate(a.data)} — <span style="color:var(--accent)">${formatKM(a.km)} km</span></div>
@@ -1455,8 +1478,8 @@ function renderOdoAbastBlock() {
         });
         if (sorted.length > 3) recentesHtml += `<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary)">(${sorted.length-3} mais antigo(s))</div>`;
     }
-    const totalLitros = v.abastecimentos.reduce((s,a) => s+(a.qtd||0), 0);
-    const totalGasto  = v.abastecimentos.reduce((s,a) => s+(a.valor||0), 0);
+    const totalLitros = v.abastecimentos.reduce((s,a) => s+parseNumero(a.qtd), 0);
+    const totalGasto  = v.abastecimentos.reduce((s,a) => s+parseNumero(a.valor), 0);
     const block = document.getElementById('odo-abast-block');
     block.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -1820,17 +1843,10 @@ function excluirAbastecimento(idx) {
 }
 
 function calcularMediaConsumo(v) {
-    const abast = v.abastecimentos || [];
-    if (abast.length < 2) return { media: 0, total: 0 };
-    const sorted = [...abast].sort((a,b) => (a.km||0)-(b.km||0));
-    let totalKm = 0, totalLitros = 0;
-    for (let i = 1; i < sorted.length; i++) {
-        const kmRod = sorted[i].km - sorted[i-1].km;
-        const litros = Number(sorted[i].qtd) || 0;
-        const consumoIntervalo = litros > 0 ? kmRod / litros : 0;
-        if (kmRod > 0 && litros > 0 && consumoIntervalo <= 20) { totalKm += kmRod; totalLitros += litros; }
-    }
-    return { media: totalLitros > 0 ? totalKm/totalLitros : 0, total: totalLitros };
+    const intervalos = intervalosConsumo(v);
+    const totalKm = intervalos.reduce((s, i) => s + i.kmRod, 0);
+    const totalLitros = intervalos.reduce((s, i) => s + i.litros, 0);
+    return { media: totalLitros > 0 ? totalKm / totalLitros : 0, total: totalLitros };
 }
 
 // ============================================================
@@ -2599,16 +2615,10 @@ function renderRelatorioExecutivo(filterYear, filterMonth, filterStart, filterEn
         const combustivel = aa.reduce((sum, a) => sum + (Number(a.valor) || 0), 0);
         const litros = aa.reduce((sum, a) => sum + (Number(a.qtd) || 0), 0);
         let consumoKm = 0, consumoLitros = 0;
-        const allFuelSorted = [...(v.abastecimentos || [])].sort((a,b) => (a.km||0)-(b.km||0));
-        allFuelSorted.forEach((a, i) => {
-            if (!a.data || !periodoRelatorioValido(a.data, filterYear, filterMonth, filterStart, filterEnd) || i === 0) return;
-            const anterior = allFuelSorted[i - 1];
-            const kmEntreAbastecimentos = (a.km || 0) - (anterior.km || 0);
-            const consumoIntervalo = (Number(a.qtd) || 0) > 0 ? kmEntreAbastecimentos / (Number(a.qtd) || 0) : 0;
-            if (kmEntreAbastecimentos > 0 && (Number(a.qtd) || 0) > 0 && consumoIntervalo <= 20) {
-                consumoKm += kmEntreAbastecimentos;
-                consumoLitros += Number(a.qtd) || 0;
-            }
+        intervalosConsumo(v).forEach(i => {
+            if (!i.atual.data || !periodoRelatorioValido(i.atual.data, filterYear, filterMonth, filterStart, filterEnd)) return;
+            consumoKm += i.kmRod;
+            consumoLitros += i.litros;
         });
         const hist = (v.kmHistory || []).filter(h => periodoRelatorioValido(h.date, filterYear, filterMonth, filterStart, filterEnd)).sort((a,b) => (a.km||0)-(b.km||0));
         const kmRodado = hist.length > 1 ? Math.max(0, (hist[hist.length-1].km||0) - (hist[0].km||0)) : 0;
@@ -3105,19 +3115,21 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
         const sorted = [...abast].sort((a,b) => (a.km||0)-(b.km||0));
 
         // Compute per-fill consumption (km/l) (corrigido)
+        const intervalosValidos = new Set(intervalosConsumo(v).map(i => i.atual));
         const registros = sorted.map((a, i) => {
             let consumo = null;
-            if (i > 0) {
+            if (i > 0 && intervalosValidos.has(a)) {
                 const ant = sorted[i-1];
-                const kmRod = (a.km||0) - (ant.km||0);
-                if (kmRod > 0 && a.qtd > 0) consumo = kmRod / a.qtd;
+                const kmRod = parseKM(a.km) - parseKM(ant.km);
+                const litros = parseNumero(a.qtd);
+                if (kmRod > 0 && litros > 0) consumo = kmRod / litros;
             }
             return { ...a, consumo };
         });
 
         // Totals (corrigido)
-        const totalLitros  = abast.reduce((s,a) => s+(a.qtd||0), 0);
-        const totalGasto   = abast.reduce((s,a) => s+(a.valor||0), 0);
+        const totalLitros  = abast.reduce((s,a) => s+parseNumero(a.qtd), 0);
+        const totalGasto   = abast.reduce((s,a) => s+parseNumero(a.valor), 0);
         const totalAbast   = abast.length;
         const mediaConsumo = calcularMediaConsumo(v);
 
@@ -3560,8 +3572,9 @@ function exportarCSVAbastecimento() {
             let consumo = '';
             if (i > 0) {
                 const ant = sorted[i-1];
-                const kmRod = (a.km||0)-(ant.km||0);
-                if (kmRod > 0 && a.qtd > 0) consumo = (kmRod/a.qtd).toFixed(2);
+                const kmRod = parseKM(a.km)-parseKM(ant.km);
+                const litros = parseNumero(a.qtd);
+                if (kmRod > 0 && litros > 0 && kmRod/litros <= 20) consumo = (kmRod/litros).toFixed(2);
             }
             const precoL = a.qtd > 0 && a.valor > 0 ? (a.valor/a.qtd).toFixed(2) : '';
             rows.push([formatDate(a.data), v.motorista, v.placa, v.modelo, a.km||0, (a.qtd||0).toFixed(2), (a.valor||0).toFixed(2), precoL, consumo]);
