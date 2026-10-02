@@ -348,6 +348,7 @@
     <div class="nav-item" onclick="tab('servicos')"><i class="fas fa-tools"></i> <span>Serviços</span></div>
     <div class="nav-item" onclick="tab('estoque')"><i class="fas fa-boxes"></i> <span>Estoque</span></div>
     <div class="nav-item" onclick="tab('relatorios')"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></div>
+    <div class="nav-item" onclick="tab('denuncias')"><i class="fas fa-shield-alt"></i> <span>Canal de denúncia</span></div>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -488,6 +489,47 @@
             </div>
         </div>
         <div id="relatorio-content"></div>
+    </div>
+
+    <!-- CANAL DE DENÚNCIA -->
+    <div id="tab-denuncias" class="hidden">
+        <h2>🛡️ Canal de denúncia</h2>
+        <div class="card">
+            <p style="color:var(--text-secondary);font-size:12px;margin-top:0">Seu relato será acessível somente à administração. A identidade só será gravada se você escolher se identificar.</p>
+            <div class="permission-grid">
+                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Assédio Moral"> Assédio Moral</label></div>
+                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Assédio Sexual"> Assédio Sexual</label></div>
+                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Violência/Agressão"> Violência/Agressão</label></div>
+                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Discriminação ou Preconceito"> Discriminação ou Preconceito</label></div>
+                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Condição perigosa ou insegura"> Condição perigosa ou insegura</label></div>
+                <div class="permission-item"><label><input type="checkbox" name="denuncia_categoria" value="Outro assunto"> Outro assunto</label></div>
+            </div>
+            <label>Descreva detalhadamente o que aconteceu</label>
+            <textarea id="denuncia_descricao" rows="5" placeholder="Relate os fatos com o máximo de detalhes possível..."></textarea>
+            <label>Quem é a pessoa envolvida (denunciado)?</label>
+            <input id="denuncia_denunciado" placeholder="Nome ou identificação da pessoa envolvida">
+            <label>Houve testemunha? Se sim, quem?</label>
+            <input id="denuncia_testemunhas" placeholder="Nome das testemunhas, se houver">
+            <label>Quando e onde o fato aconteceu?</label>
+            <textarea id="denuncia_quando_onde" rows="3" placeholder="Datas, horários e local"></textarea>
+            <label>Você possui alguma prova?</label>
+            <div class="flex-row" style="margin:8px 0 12px">
+                <label><input type="radio" name="denuncia_provas" value="sim"> Sim</label>
+                <label><input type="radio" name="denuncia_provas" value="nao" checked> Não</label>
+            </div>
+            <input id="denuncia_arquivos" type="file" multiple>
+            <label style="margin-top:12px">Identificação</label>
+            <div class="flex-row" style="margin:8px 0 12px">
+                <label><input type="radio" name="denuncia_identificacao" value="identificado" onchange="toggleContatoDenuncia()"> Quero me identificar</label>
+                <label><input type="radio" name="denuncia_identificacao" value="anonimo" checked onchange="toggleContatoDenuncia()"> Desejo permanecer totalmente anônimo</label>
+            </div>
+            <div id="denuncia_contato_wrapper" class="hidden">
+                <label>Nome e telefone/e-mail para contato (opcional)</label>
+                <input id="denuncia_contato" placeholder="Nome, telefone e/ou e-mail">
+            </div>
+            <button onclick="enviarDenuncia()" style="margin-top:10px"><i class="fas fa-paper-plane"></i> Enviar relato com sigilo</button>
+        </div>
+        <div id="denuncia_status" class="card hidden"></div>
     </div>
 
     <!-- USUÁRIOS E PERMISSÕES -->
@@ -769,9 +811,9 @@ function definirPerfilAtual(user) {
 function isAdmin() { return isBootstrapAdmin(currentAuthUser) || (!!currentUserProfile && currentUserProfile.papel === 'admin'); }
 function nivelPermissao(modulo) {
     if (isAdmin()) return 'full';
-    // Todo usuário autorizado pode operar o sistema; somente ADMIN gerencia usuários.
-    if (currentUserProfile && currentAuthUser) return 'full';
-    return 'none';
+    if (!currentUserProfile || !currentAuthUser) return 'none';
+    const nivel = String((currentUserProfile.permissoes || {})[modulo] || '').toLowerCase();
+    return ({ completo: 'full', full: 'full', leitura: 'read', read: 'read' })[nivel] || 'none';
 }
 function podeLer(modulo) { return nivelPermissao(modulo) !== 'none'; }
 function podeEditar(modulo) { return nivelPermissao(modulo) === 'full'; }
@@ -801,7 +843,8 @@ function initAuth() {
             const loginError = document.getElementById('login_error');
             if (loginError) loginError.textContent = 'Login aceito. Carregando dados...';
             loginPage.classList.add('hidden');
-            carregarDados();
+            const sincronizar = functions.httpsCallable('sincronizarPerfil');
+            sincronizar().catch(err => console.warn('Sincronização de perfil indisponível; seguindo com o perfil local:', err)).finally(() => carregarDados());
         } else {
             currentAuthUser = null; currentUserProfile = null;
             loginPage.classList.remove('hidden');
@@ -1021,9 +1064,23 @@ function salvarDados() {
     const snapshotToSave = JSON.parse(JSON.stringify(db));
     const btn = document.getElementById('save-btn');
     if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-    saveQueue = saveQueue.then(() => database.ref('appData').set(snapshotToSave)).then(() => {
+    saveQueue = saveQueue.then(async () => {
+        const previous = lastSavedDbSnapshot || {};
+        const updates = {};
+        if (isAdmin()) {
+            updates.appData = snapshotToSave;
+        } else {
+            if (podeEditar('frota') || podeEditar('servicos')) updates['appData/veiculos'] = snapshotToSave.veiculos;
+            if (podeEditar('estoque')) updates['appData/estoque'] = snapshotToSave.estoque;
+            if (podeEditar('servicos')) {
+                updates['appData/oficinas'] = snapshotToSave.oficinas;
+                updates['appData/regras'] = snapshotToSave.regras;
+            }
+        }
+        if (!Object.keys(updates).length) throw new Error('no-authorized-module');
+        await database.ref().update(updates);
         const modules = ['veiculos', 'oficinas', 'regras', 'estoque', 'usuarios'];
-        const alteracoes = modules.filter(chave => JSON.stringify((lastSavedDbSnapshot || {})[chave]) !== JSON.stringify(snapshotToSave[chave]));
+        const alteracoes = modules.filter(chave => JSON.stringify(previous[chave]) !== JSON.stringify(snapshotToSave[chave]));
         lastSavedDbSnapshot = snapshotToSave;
         registrarLogAuditoria('alteração de dados', alteracoes);
         if (btn) {
@@ -1208,15 +1265,51 @@ function showImage(src) {
 }
 
 // ============================================================
+// CANAL DE DENÚNCIA
+// ============================================================
+function toggleContatoDenuncia() {
+    const identificado = document.querySelector('input[name="denuncia_identificacao"]:checked')?.value === 'identificado';
+    document.getElementById('denuncia_contato_wrapper')?.classList.toggle('hidden', !identificado);
+}
+async function enviarDenuncia() {
+    if (!currentAuthUser) return alert('Faça login para enviar um relato.');
+    const categorias = [...document.querySelectorAll('input[name="denuncia_categoria"]:checked')].map(el => el.value);
+    const descricao = document.getElementById('denuncia_descricao').value.trim();
+    const denunciado = document.getElementById('denuncia_denunciado').value.trim();
+    const quandoOnde = document.getElementById('denuncia_quando_onde').value.trim();
+    const identificacao = document.querySelector('input[name="denuncia_identificacao"]:checked')?.value || 'anonimo';
+    const temProvas = document.querySelector('input[name="denuncia_provas"]:checked')?.value === 'sim';
+    const arquivos = [...(document.getElementById('denuncia_arquivos').files || [])].map(file => ({ nome: file.name, tipo: file.type, tamanho: file.size }));
+    if (!categorias.length || !descricao || !denunciado || !quandoOnde) return alert('Preencha categoria, descrição, denunciado e quando/onde.');
+    if (temProvas && !arquivos.length) return alert('Selecione ao menos um arquivo de prova ou marque “Não”.');
+    const contato = identificacao === 'identificado' ? document.getElementById('denuncia_contato').value.trim() : '';
+    const denunciaRef = database.ref('denuncias').push();
+    const payload = { categoria: categorias.join(', '), descricao, denunciado, testemunhas: document.getElementById('denuncia_testemunhas').value.trim(), quandoOnde, temProvas, arquivos, identificacao, contato, autorUid: currentAuthUser.uid, criadoEm: new Date().toISOString() };
+    try {
+        await denunciaRef.set(payload);
+        await registrarLogAuditoria('denúncia registrada', categorias);
+        document.querySelectorAll('#tab-denuncias input, #tab-denuncias textarea').forEach(el => { if (el.type === 'radio') el.checked = el.value === (el.name === 'denuncia_provas' ? 'nao' : 'anonimo'); else if (el.type === 'checkbox') el.checked = false; else el.value = ''; });
+        toggleContatoDenuncia();
+        const status = document.getElementById('denuncia_status');
+        status.classList.remove('hidden');
+        status.innerHTML = '<strong>Relato enviado.</strong><br>O protocolo foi registrado com sigilo. Os arquivos ficam registrados como anexos e devem ser disponibilizados pelo administrador em um Storage protegido.';
+    } catch (err) {
+        console.error('Erro ao enviar denúncia:', err);
+        alert('Não foi possível enviar o relato. Verifique sua conexão e tente novamente.');
+    }
+}
+
+// ============================================================
 // NAVEGAÇÃO
 // ============================================================
 function tab(t) {
     if (t === 'usuarios' && !isAdmin()) { alert('Apenas o ADMIN pode acessar o gerenciamento de usuários.'); return; }
+    if (t === 'denuncias' && !currentAuthUser) { alert('Faça login para acessar o canal de denúncia.'); return; }
     if (MODULE_LABELS[t] && !exigirPermissao(t)) return;
     document.querySelectorAll('.main > div').forEach(d => d.classList.add('hidden'));
     document.getElementById('tab-' + t).classList.remove('hidden');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const idx = { dash: 0, frota: 1, servicos: 2, estoque: 3, relatorios: 4, usuarios: 5 };
+    const idx = { dash: 0, frota: 1, servicos: 2, estoque: 3, relatorios: 4, denuncias: 5, usuarios: 6 };
     const items = document.querySelectorAll('.nav-item');
     if (idx[t] !== undefined) items[idx[t]].classList.add('active');
     if (t === 'dash')       renderDashboard();
@@ -1994,7 +2087,7 @@ function excluirVeiculo() {
 // SERVIÇOS
 // ============================================================
 function addServico() {
-    if (!exigirPermissao('frota', true)) return;
+    if (!exigirPermissao('servicos', true)) return;
     const vid = veiculoAtual ? veiculoAtual.id : null;
     if (!vid) return alert('Selecione um veículo primeiro!');
     const v = db.veiculos.find(x => x.id === vid);
@@ -2104,7 +2197,7 @@ function addServico() {
 }
 
 function excluirServico(idx) {
-    if (!exigirPermissao('frota', true)) return;
+    if (!exigirPermissao('servicos', true)) return;
     if (!confirm('Excluir este serviço?')) return;
     const v = db.veiculos.find(x => x.id === veiculoAtual.id);
     let s = v.servicos[idx];
@@ -2133,7 +2226,7 @@ function abrirModalEditar(idx) {
 function fecharModalEditar() { _editandoIdx = null; document.getElementById('modal-edit-servico').classList.remove('active'); }
 
 function salvarEdicaoServico() {
-    if (!exigirPermissao('frota', true)) return;
+    if (!exigirPermissao('servicos', true)) return;
     if (_editandoIdx === null) return;
     const v = db.veiculos.find(x => x.id === veiculoAtual.id);
     let s = v.servicos[_editandoIdx];
@@ -2167,7 +2260,7 @@ function recalcularBases(v) {
 // ALERTAS PERSONALIZADOS
 // ============================================================
 function addAlerta() {
-    if (!exigirPermissao('frota', true)) return;
+    if (!exigirPermissao('servicos', true)) return;
     let texto = document.getElementById('alerta_texto').value.trim();
     let km    = parseKM(document.getElementById('alerta_km').value);
     let data  = document.getElementById('alerta_data').value;
@@ -2182,7 +2275,7 @@ function addAlerta() {
 }
 
 function removerAlerta(idx) {
-    if (!exigirPermissao('frota', true)) return;
+    if (!exigirPermissao('servicos', true)) return;
     const v = db.veiculos.find(x => x.id === veiculoAtual.id);
     v.alertas.splice(idx, 1);
     veiculoAtual = v;
@@ -2193,7 +2286,7 @@ function removerAlerta(idx) {
 // NOTAS E FOTOS
 // ============================================================
 function addNota() {
-    if (!exigirPermissao('frota', true)) return;
+    if (!exigirPermissao('servicos', true)) return;
     let texto = document.getElementById('nova_nota').value.trim();
     if (!texto) return;
     if (!veiculoAtual.notas) veiculoAtual.notas = [];
@@ -2202,17 +2295,17 @@ function addNota() {
 }
 
 function removerNota(idx) {
-    if (!exigirPermissao('frota', true)) return; veiculoAtual.notas.splice(idx, 1); salvar(); }
+    if (!exigirPermissao('servicos', true)) return; veiculoAtual.notas.splice(idx, 1); salvar(); }
 
 function addFotos() {
-    if (!exigirPermissao('frota', true)) return;
+    if (!exigirPermissao('servicos', true)) return;
     let files = document.getElementById('fotos_carro').files;
     if (!veiculoAtual.fotos) veiculoAtual.fotos = [];
     for (let f of files) { let r = new FileReader(); r.onload = e => { veiculoAtual.fotos.push(e.target.result); salvar(); }; r.readAsDataURL(f); }
 }
 
 function removerFoto(idx) {
-    if (!exigirPermissao('frota', true)) return; veiculoAtual.fotos.splice(idx, 1); salvar(); }
+    if (!exigirPermissao('servicos', true)) return; veiculoAtual.fotos.splice(idx, 1); salvar(); }
 
 function ignorarAlerta(veiculoId, regra) {
     let veiculo = db.veiculos.find(v => v.id === veiculoId);

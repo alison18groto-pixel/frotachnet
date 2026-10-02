@@ -1,12 +1,54 @@
 {
   "rules": {
+    ".write": false,
     "appData": {
       ".read": "auth != null",
-      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.uid === 'uYUbXBTRVCUCAZINzzxNqFRGjH63' || auth.token.admin === true)"
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.uid === 'uYUbXBTRVCUCAZINzzxNqFRGjH63' || auth.token.admin === true)",
+      "veiculos": {
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/frota').val() === 'full' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')"
+      },
+      "estoque": {
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/estoque').val() === 'full')"
+      },
+      "oficinas": {
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')"
+      },
+      "regras": {
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')"
+      }
+    },
+    "usuariosPorUid": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || auth.uid === $uid)",
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)"
+      }
+    },
+    "veiculos": {
+      ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/frota').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/frota').val() === 'full')",
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/frota').val() === 'full')"
+    },
+    "servicos": {
+      ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')",
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')"
+    },
+    "estoque": {
+      ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/estoque').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/estoque').val() === 'full')",
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/estoque').val() === 'full')"
+    },
+    "configuracoes": {
+      ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')",
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')"
+    },
+    "denuncias": {
+      ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('papel').val() === 'admin')",
+      "$denunciaId": {
+        ".write": "auth != null && !data.exists() && newData.child('autorUid').val() === auth.uid",
+        ".validate": "newData.hasChildren(['categoria', 'descricao', 'denunciado', 'quandoOnde', 'temProvas', 'identificacao', 'autorUid', 'criadoEm']) && newData.child('categoria').isString() && newData.child('descricao').isString() && newData.child('denunciado').isString() && newData.child('quandoOnde').isString() && newData.child('temProvas').isBoolean() && (newData.child('identificacao').val() === 'identificado' || newData.child('identificacao').val() === 'anonimo') && newData.child('autorUid').val() === auth.uid"
+      }
     },
     "auditLogs": {
       "$logId": {
-        ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)",
+        ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('papel').val() === 'admin')",
         ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
         ".validate": "newData.hasChildren(['at', 'uid', 'acao']) && newData.child('at').isString() && newData.child('uid').val() === auth.uid && newData.child('acao').isString()"
       }

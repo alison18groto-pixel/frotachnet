@@ -9,12 +9,13 @@ const OWNER_UID = '0bUm9uxTizLn7S3dShqbLCYnFWz1';
 const MODULES = ['frota', 'servicos', 'estoque', 'relatorios'];
 function keyFor(value) { return String(value || '').replace(/[.#$\\[\\]]/g, '_'); }
 function randomPassword() { return crypto.randomBytes(24).toString('base64url'); }
+function normalizeRole(value) { return String(value || '').trim().toLowerCase(); }
 async function isAdminRequest(request) {
   if (!request.auth) return false;
   if (request.auth.uid === OWNER_UID) return true;
   const snapshot = await getDatabase().ref('appData/usuarios').once('value');
   const perfil = Object.values(snapshot.val() || {}).find((item) => item && item.uid === request.auth.uid);
-  return !!perfil && perfil.papel === 'admin';
+  return !!perfil && normalizeRole(perfil.papel) === 'admin';
 }
 exports.registrarAuditoria = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'É necessário estar autenticado.');
@@ -29,6 +30,19 @@ exports.listarAuditoria = onCall(async (request) => {
   const snapshot = await getDatabase().ref('auditLogs').orderByChild('at').limitToLast(limite).once('value');
   return { logs: Object.values(snapshot.val() || {}).sort((a, b) => String(b.at).localeCompare(String(a.at))) };
 });
+exports.sincronizarPerfil = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'É necessário estar autenticado.');
+  const db = getDatabase();
+  const snapshot = await db.ref('appData/usuarios').once('value');
+  const perfil = Object.values(snapshot.val() || {}).find((item) => item && (item.uid === request.auth.uid || String(item.email || '').toLowerCase() === String(request.auth.token.email || '').toLowerCase()));
+  if (!perfil) return { authorized: false };
+  const atualizado = { ...perfil, uid: request.auth.uid };
+  await Promise.all([
+    db.ref(`usuariosPorUid/${request.auth.uid}`).set(atualizado),
+    db.ref(`appData/usuarios/${keyFor(perfil.email)}`).update({ uid: request.auth.uid }),
+  ]);
+  return { authorized: true, papel: normalizeRole(atualizado.papel), permissoes: atualizado.permissoes || {} };
+});
 exports.criarUsuario = onCall(async (request) => {
   if (!(await isAdminRequest(request))) throw new HttpsError('permission-denied', 'Somente usuários ADMIN podem criar usuários.');
   const data = request.data || {};
@@ -39,7 +53,11 @@ exports.criarUsuario = onCall(async (request) => {
   const permissoes = {};
   for (const module of MODULES) if (data.permissoes && ['read', 'full'].includes(data.permissoes[module])) permissoes[module] = papel === 'leitor' ? 'read' : 'full';
   const created = await getAuth().createUser({ email, password: randomPassword(), displayName: nome, emailVerified: false });
-  await getDatabase().ref(`appData/usuarios/${key(email)}`).set({ uid: created.uid, email, nome, papel, permissoes, tipo: 'permanente', atualizadoEm: new Date().toISOString(), atualizadoPor: request.auth.token.email || request.auth.uid });
-  await getDatabase().ref(`loginAliases/${key(data.login)}`).set({ email, nome });
+  const profile = { uid: created.uid, email, nome, login: String(data.login || '').trim().toLowerCase(), papel, permissoes, tipo: 'permanente', atualizadoEm: new Date().toISOString(), atualizadoPor: request.auth.token.email || request.auth.uid };
+  await Promise.all([
+    getDatabase().ref(`appData/usuarios/${keyFor(email)}`).set(profile),
+    getDatabase().ref(`usuariosPorUid/${created.uid}`).set(profile),
+    getDatabase().ref(`loginAliases/${keyFor(data.login)}`).set({ email, nome }),
+  ]);
   return { uid: created.uid, email };
 });
