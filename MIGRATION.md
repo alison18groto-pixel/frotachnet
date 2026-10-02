@@ -8,6 +8,8 @@
 - Operadores gravam apenas os nós legados necessários (`veiculos`, `estoque`, `oficinas` e `regras`); usuários e logs continuam restritos ao ADMIN.
 - O primeiro login sincroniza o perfil pelo UID para que as regras do Realtime Database possam validar permissões.
 - Foi corrigido o erro `key is not defined` das Cloud Functions.
+- Os nós modulares foram copiados para o Firebase de produção em paralelo, sem apagar `appData`.
+- As regras de transição foram publicadas mantendo o legado e protegendo os nós modulares.
 
 ## Gerar uma cópia migrada localmente
 
@@ -44,7 +46,7 @@ npm --prefix functions install
 npm --prefix functions test --if-present
 ```
 
-`firebase.database.rules.modular-candidate.json` é somente uma proposta para homologação. Ele **não** é referenciado pelo `firebase.json` e não deve ser publicado em produção antes de o frontend ler e gravar os nós modulares e de o backup atual ser validado.
+`firebase.database.rules.modular-candidate.json` continua sendo uma referência de homologação. A versão publicada em produção é a regra de transição versionada em `firebase.database.rules.json`: ela mantém `appData` durante a adaptação do frontend e adiciona os nós modulares.
 
 O workflow `.github/workflows/validate.yml` executa as validações automaticamente em cada push e pull request para `main`.
 
@@ -61,4 +63,4 @@ firebase deploy --only functions,database
 3. Restaurar o JSON original pelo Firebase Console somente após conferir o projeto e a data do backup.
 4. Se regras forem publicadas, reaplicar o arquivo de regras anterior versionado no commit imediatamente anterior.
 
-> Esta implementação não publica o banco real automaticamente e não inclui o backup anexado no Git.
+> O backup real e as cópias de rollback ficam fora do repositório. A desativação de `appData` ainda depende da troca do frontend para leitura e gravação modular e de testes com ADMIN, operador e leitor.

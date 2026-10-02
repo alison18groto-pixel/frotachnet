@@ -22,14 +22,18 @@ const vehicles = Array.isArray(appData.veiculos) ? appData.veiculos : Object.val
 const inventory = Array.isArray(appData.estoque) ? appData.estoque : Object.values(appData.estoque || {});
 const services = [];
 for (const vehicle of vehicles) {
-  for (const service of Array.isArray(vehicle.servicos) ? vehicle.servicos : []) {
+  for (const [index, service] of (Array.isArray(vehicle.servicos) ? vehicle.servicos : []).entries()) {
     services.push({
       ...service,
       veiculoId: vehicle.id,
       placa: vehicle.placa || null,
+      migrationId: `${vehicle.id}_s${index + 1}`,
     });
   }
 }
+const vehiclesById = Object.fromEntries(vehicles.map(vehicle => [String(vehicle.id), vehicle]));
+const servicesById = Object.fromEntries(services.map(service => [service.migrationId, service]));
+const inventoryById = Object.fromEntries(inventory.map((item, index) => [String(item.id ?? `item_${index + 1}`), item]));
 
 const usersByUid = {};
 for (const user of Object.values(users)) {
@@ -41,9 +45,9 @@ const migrated = {
   // O legado permanece intacto para rollback e compatibilidade da versão atual.
   appData: source.appData || {},
   // Nós novos são preparados para regras granulares após a validação.
-  veiculos: vehicles,
-  servicos: services,
-  estoque: inventory,
+  veiculos: vehiclesById,
+  servicos: servicesById,
+  estoque: inventoryById,
   configuracoes: {
     oficinas: Array.isArray(appData.oficinas) ? appData.oficinas : [],
     regras: appData.regras && typeof appData.regras === 'object' ? appData.regras : {},
