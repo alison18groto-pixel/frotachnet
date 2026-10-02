@@ -1,0 +1,49 @@
+{
+  "rules": {
+    ".write": false,
+    "veiculos": {
+      ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/frota').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/frota').val() === 'full')",
+      "$vehicleId": {
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/frota').val() === 'full')",
+        ".validate": "newData.hasChildren(['id']) && newData.child('id').val() == $vehicleId"
+      }
+    },
+    "servicos": {
+      ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')",
+      "$serviceId": {
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')",
+        ".validate": "newData.hasChildren(['veiculoId'])"
+      }
+    },
+    "estoque": {
+      ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/estoque').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/estoque').val() === 'full')",
+      "$itemId": {
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/estoque').val() === 'full')"
+      }
+    },
+    "configuracoes": {
+      ".read": "auth != null && (auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'read' || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')",
+      ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('permissoes/servicos').val() === 'full')"
+    },
+    "usuariosPorUid": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.admin === true || auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1')",
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)"
+      }
+    },
+    "auditLogs": {
+      "$logId": {
+        ".read": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true || root.child('usuariosPorUid').child(auth.uid).child('papel').val() === 'admin')",
+        ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
+        ".validate": "newData.hasChildren(['at', 'uid', 'acao']) && newData.child('at').isString() && newData.child('uid').val() === auth.uid && newData.child('acao').isString()"
+      }
+    },
+    "loginAliases": {
+      "$login": {
+        ".read": false,
+        ".write": "auth != null && (auth.uid === '0bUm9uxTizLn7S3dShqbLCYnFWz1' || auth.token.admin === true)",
+        ".validate": "newData.hasChildren(['email']) && newData.child('email').isString()"
+      }
+    }
+  }
+}

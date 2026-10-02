@@ -1,0 +1,39 @@
+name: Validar Frotas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validar JavaScript da página
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          source = Path('index.html').read_text()
+          Path('/tmp/frotachnet.js').write_text('\n'.join(re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', source, re.S)))
+          PY
+          node --check /tmp/frotachnet.js
+      - name: Validar Cloud Functions
+        run: node --check functions/index.js
+      - name: Validar regras JSON
+        run: |
+          python3 -m json.tool firebase.database.rules.json >/dev/null
+          python3 -m json.tool firebase.database.rules.modular-candidate.json >/dev/null
+      - name: Executar testes de cálculo
+        run: node scripts/test-calculations.js
+      - name: Validar backups de exemplo
+        run: |
+          node scripts/validate-backup.js 'frota_backup_2026-03-30 (1).json'
+          node scripts/validate-backup.js 'frota_backup_2026-03-30 (2).json'

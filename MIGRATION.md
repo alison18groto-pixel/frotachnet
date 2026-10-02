@@ -26,9 +26,16 @@ O comando é idempotente e informa quantos veículos, serviços, itens de estoqu
 ```bash
 node --check functions/index.js
 python3 -m json.tool firebase.database.rules.json >/dev/null
+python3 -m json.tool firebase.database.rules.modular-candidate.json >/dev/null
+node scripts/validate-backup.js /caminho/backup-atual.json
+node scripts/test-calculations.js
 npm --prefix functions install
 npm --prefix functions test --if-present
 ```
+
+`firebase.database.rules.modular-candidate.json` é somente uma proposta para homologação. Ele **não** é referenciado pelo `firebase.json` e não deve ser publicado em produção antes de o frontend ler e gravar os nós modulares e de o backup atual ser validado.
+
+O workflow `.github/workflows/validate.yml` executa as validações automaticamente em cada push e pull request para `main`.
 
 Em seguida, testar primeiro em um projeto Firebase de homologação. O deploy de produção deve ser separado:
 
