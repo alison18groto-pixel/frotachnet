@@ -1115,13 +1115,9 @@ function popularHistoricoKmInicial() {
 function carregarDados() {
     database.ref('appData').on('value', (snapshot) => {
         const data = snapshot.val();
+        const currentVehicleId = veiculoAtual ? veiculoAtual.id : null;
         if (data) {
-            const currentVehicleId = veiculoAtual ? veiculoAtual.id : null;
             db = data;
-            if (currentVehicleId) {
-                // Re-find the current vehicle in the new db object to avoid stale references
-                veiculoAtual = db.veiculos.find(v => v.id === currentVehicleId);
-            }
         }
         if (typeof db !== 'object' || db === null) db = {};
 
@@ -1132,6 +1128,12 @@ function carregarDados() {
         if (!Array.isArray(db.oficinas)) db.oficinas = [];
         if (!Array.isArray(db.estoque)) db.estoque = [];
         if (!Array.isArray(db.veiculos)) db.veiculos = [];
+        // Firebase pode devolver posições vazias ou registros legados incompletos.
+        // Remova apenas entradas inválidas, sem interromper a lista inteira.
+        db.veiculos = db.veiculos.filter(v => v && typeof v === 'object');
+        if (currentVehicleId !== null) {
+            veiculoAtual = db.veiculos.find(v => String(v.id) === String(currentVehicleId)) || null;
+        }
         if (!db.nextId || typeof db.nextId !== 'number') {
             db.nextId = db.veiculos.length > 0 ? db.veiculos.reduce((max, v) => Math.max(max, v ? v.id : 0), 0) + 1 : 1;
         }
@@ -1391,7 +1393,7 @@ function renderDashboard() {
 // ============================================================
 function renderVeiculos() {
     const searchTerm = document.getElementById('frota_search')?.value.toLowerCase() || '';
-    const veiculosFiltrados = db.veiculos.filter(v => {
+    const veiculosFiltrados = (Array.isArray(db.veiculos) ? db.veiculos : []).filter(v => v && typeof v === 'object').filter(v => {
         if (!searchTerm) return true;
         const searchTerms = searchTerm.split(' ').filter(term => term.length > 0);
         const motorista = (v.motorista || '').toLowerCase();
@@ -1402,7 +1404,8 @@ function renderVeiculos() {
     });
 
     document.getElementById('grid-veiculos').innerHTML = veiculosFiltrados.map(v => {
-        let totalGasto = v.servicos.reduce((s, sv) => s + sv.val, 0);
+        const servicos = Array.isArray(v.servicos) ? v.servicos : [];
+        let totalGasto = servicos.reduce((s, sv) => s + (Number(sv?.val) || 0), 0);
         const regras = getRegrasVeiculo(v);
         let alertasVenc = Object.keys(regras).filter(r => {
             if (v.alertasIgnorados && v.alertasIgnorados.includes(r)) return false;
