@@ -1826,7 +1826,9 @@ function calcularMediaConsumo(v) {
     let totalKm = 0, totalLitros = 0;
     for (let i = 1; i < sorted.length; i++) {
         const kmRod = sorted[i].km - sorted[i-1].km;
-        if (kmRod > 0) { totalKm += kmRod; totalLitros += sorted[i].qtd; }
+        const litros = Number(sorted[i].qtd) || 0;
+        const consumoIntervalo = litros > 0 ? kmRod / litros : 0;
+        if (kmRod > 0 && litros > 0 && consumoIntervalo <= 20) { totalKm += kmRod; totalLitros += litros; }
     }
     return { media: totalLitros > 0 ? totalKm/totalLitros : 0, total: totalLitros };
 }
@@ -2602,7 +2604,8 @@ function renderRelatorioExecutivo(filterYear, filterMonth, filterStart, filterEn
             if (!a.data || !periodoRelatorioValido(a.data, filterYear, filterMonth, filterStart, filterEnd) || i === 0) return;
             const anterior = allFuelSorted[i - 1];
             const kmEntreAbastecimentos = (a.km || 0) - (anterior.km || 0);
-            if (kmEntreAbastecimentos > 0 && (Number(a.qtd) || 0) > 0) {
+            const consumoIntervalo = (Number(a.qtd) || 0) > 0 ? kmEntreAbastecimentos / (Number(a.qtd) || 0) : 0;
+            if (kmEntreAbastecimentos > 0 && (Number(a.qtd) || 0) > 0 && consumoIntervalo <= 20) {
                 consumoKm += kmEntreAbastecimentos;
                 consumoLitros += Number(a.qtd) || 0;
             }
