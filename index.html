@@ -135,6 +135,25 @@
         .relatorio-btn { margin-right: 5px; margin-bottom: 5px; }
         .relatorio-btn.ativo { background: var(--accent-gradient); }
         .relatorio-btn:not(.ativo) { background: rgba(255,255,255,0.08); }
+        .report-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:12px; margin-bottom:15px; }
+        .report-kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:15px; min-height:88px; }
+        .report-kpi-value { font-size:21px; font-weight:800; margin-top:8px; }
+        .report-kpi-label { color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+        .report-ranking-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+        .report-ranking-row:last-child { border-bottom:0; }
+        .report-ranking-position { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(139,92,246,.16); color:#c4b5fd; font-weight:800; font-size:12px; }
+        .report-bar { height:7px; border-radius:5px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:5px; }
+        .report-bar > span { display:block; height:100%; border-radius:5px; background:var(--accent-gradient); }
+        .report-table-wrap { overflow-x:auto; }
+        .report-empty { color:var(--text-secondary); text-align:center; padding:28px; }
+        @media print {
+            body { background:#fff !important; color:#111 !important; display:block; }
+            .sidebar, .top-bar, .filter-bar, .login-page, .modal-overlay, .icon-btn, button { display:none !important; }
+            .main { margin:0 !important; padding:0 !important; width:100% !important; }
+            .card, .report-kpi { background:#fff !important; color:#111 !important; border:1px solid #ccc !important; box-shadow:none !important; }
+            .report-kpi-label, h4, td, th { color:#333 !important; }
+            .hidden { display:none !important; }
+        }
         .alert-km-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); margin-top: 6px; overflow: hidden; }
         .alert-km-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
         .alert-km-detail { font-size: 11px; margin-top: 4px; color: var(--text-secondary); }
@@ -455,7 +474,8 @@
             <label for="filter_search">Pesquisar:</label>
             <input type="text" id="filter_search" onkeyup="reRenderRelatorio()" placeholder="Motorista, placa, serviço, data..." style="width: 250px; margin-bottom: 0; margin-right: 15px;">
             <label>Relatório:</label>
-            <button id="rbtn-geral" onclick="showRelatorio('geral')" class="btn-small relatorio-btn ativo">Geral</button>
+            <button id="rbtn-executivo" onclick="showRelatorio('executivo')" class="btn-small relatorio-btn ativo">Executivo</button>
+            <button id="rbtn-geral" onclick="showRelatorio('geral')" class="btn-small relatorio-btn">Geral</button>
             <button id="rbtn-veiculos" onclick="showRelatorio('veiculos')" class="btn-small relatorio-btn">Por Veículo</button>
             <button id="rbtn-mecanicas" onclick="showRelatorio('mecanicas')" class="btn-small relatorio-btn">Por Mecânica</button>
             <button id="rbtn-pneus" onclick="showRelatorio('pneus')" class="btn-small relatorio-btn">🔵 Pneus</button>
@@ -477,6 +497,13 @@
                     <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
                     <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
                 </select>
+                <label>De:</label><input type="date" id="filter_start" onchange="reRenderRelatorio()" style="width:auto;margin-bottom:0;padding:5px 8px">
+                <label>Até:</label><input type="date" id="filter_end" onchange="reRenderRelatorio()" style="width:auto;margin-bottom:0;padding:5px 8px">
+                <button onclick="aplicarPeriodoRelatorio(30)" class="btn-small" style="width:auto;background:#334155">30d</button>
+                <button onclick="aplicarPeriodoRelatorio(90)" class="btn-small" style="width:auto;background:#334155">90d</button>
+                <button onclick="aplicarPeriodoRelatorio('ano')" class="btn-small" style="width:auto;background:#334155">Este ano</button>
+                <button onclick="limparPeriodoRelatorio()" class="btn-small" style="width:auto;background:#334155">Limpar</button>
+                <button onclick="imprimirRelatorio()" class="btn-small" style="width:auto;background:#475569"><i class="fas fa-print"></i> Imprimir</button>
             </div>
             <!-- New filters for KM History report -->
             <div id="relatorio-km-history-filters" class="hidden" style="display: inline-flex; gap: 10px; align-items: center;">
@@ -1237,7 +1264,7 @@ function tab(t) {
     if (t === 'dash')       renderDashboard();
     if (t === 'estoque')    renderEstoque();
     if (t === 'servicos')   renderServicos();
-    if (t === 'relatorios') { preencherFiltroAnos(); showRelatorio('geral'); } // Removido: renderRelatorios()
+    if (t === 'relatorios') { preencherFiltroAnos(); showRelatorio('executivo'); }
     if (t === 'frota')      renderVeiculos();
     if (t === 'usuarios')   renderUsuarios();
 }
@@ -2527,6 +2554,81 @@ function editarKmCiclo(veiculoId, tireType, kmAtualCiclo, kmVeiculo) {
     }
 }
 
+function periodoRelatorioValido(data, filterYear, filterMonth, filterStart, filterEnd) {
+    if (!data) return !(filterYear || filterMonth || filterStart || filterEnd);
+    const d = new Date(data + 'T00:00:00');
+    if (filterYear && d.getFullYear() !== parseInt(filterYear)) return false;
+    if (filterMonth && d.getMonth() + 1 !== parseInt(filterMonth)) return false;
+    if (filterStart && data < filterStart) return false;
+    if (filterEnd && data > filterEnd) return false;
+    return true;
+}
+function aplicarPeriodoRelatorio(preset) {
+    const end = new Date();
+    const start = new Date();
+    if (preset === 'ano') start.setMonth(0, 1);
+    else start.setDate(start.getDate() - Number(preset) + 1);
+    const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    document.getElementById('filter_start').value = iso(start);
+    document.getElementById('filter_end').value = iso(end);
+    document.getElementById('filter_year').value = '';
+    document.getElementById('filter_month').value = '';
+    reRenderRelatorio();
+}
+function limparPeriodoRelatorio() {
+    ['filter_start','filter_end','filter_year','filter_month'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    reRenderRelatorio();
+}
+function imprimirRelatorio() {
+    if (_relatorioAtual === 'executivo') document.title = 'Relatório Executivo - Frota';
+    window.print();
+}
+function renderRelatorioExecutivo(filterYear, filterMonth, filterStart, filterEnd, filterSearch) {
+    const container = document.getElementById('relatorio-content');
+    const servicos = [], abastecimentos = [], porVeiculo = [];
+    const busca = filterSearch || '';
+    const matches = v => !busca || `${v.motorista||''} ${v.placa||''} ${v.modelo||''}`.toLowerCase().split(/\s+/).every(t => `${v.motorista||''} ${v.placa||''} ${v.modelo||''}`.toLowerCase().includes(t));
+    db.veiculos.filter(matches).forEach(v => {
+        const ss = (v.servicos || []).filter(s => periodoRelatorioValido(s.data, filterYear, filterMonth, filterStart, filterEnd));
+        const aa = (v.abastecimentos || []).filter(a => periodoRelatorioValido(a.data, filterYear, filterMonth, filterStart, filterEnd));
+        ss.forEach(s => servicos.push({ ...s, veiculo: v }));
+        aa.forEach(a => abastecimentos.push({ ...a, veiculo: v }));
+        const manutencao = ss.reduce((sum, s) => sum + (Number(s.val) || 0), 0);
+        const combustivel = aa.reduce((sum, a) => sum + (Number(a.valor) || 0), 0);
+        const litros = aa.reduce((sum, a) => sum + (Number(a.qtd) || 0), 0);
+        const hist = (v.kmHistory || []).filter(h => periodoRelatorioValido(h.date, filterYear, filterMonth, filterStart, filterEnd)).sort((a,b) => (a.km||0)-(b.km||0));
+        const kmRodado = hist.length > 1 ? Math.max(0, (hist[hist.length-1].km||0) - (hist[0].km||0)) : 0;
+        const total = manutencao + combustivel;
+        porVeiculo.push({ v, manutencao, combustivel, litros, kmRodado, total, custoKm: kmRodado ? total/kmRodado : 0, servicos:ss.length, abastecimentos:aa.length });
+    });
+    const totalManutencao = servicos.reduce((sum, s) => sum + (Number(s.val)||0), 0);
+    const totalCombustivel = abastecimentos.reduce((sum, a) => sum + (Number(a.valor)||0), 0);
+    const totalLitros = abastecimentos.reduce((sum, a) => sum + (Number(a.qtd)||0), 0);
+    const totalKm = porVeiculo.reduce((sum, d) => sum + d.kmRodado, 0);
+    const total = totalManutencao + totalCombustivel;
+    const consumo = totalLitros > 0 && totalKm > 0 ? totalKm / totalLitros : 0;
+    const alertas = db.veiculos.reduce((sum, v) => sum + Object.keys(getRegrasVeiculo(v)).filter(r => !v.alertasIgnorados?.includes(r) && (getRegrasVeiculo(v)[r] - (v.km - (v.bases?.[r] || 0))) <= 0).length, 0);
+    const topCusto = [...porVeiculo].sort((a,b) => b.total-a.total).slice(0,5);
+    const topKm = [...porVeiculo].filter(d => d.custoKm > 0).sort((a,b) => b.custoKm-a.custoKm).slice(0,5);
+    const maxCusto = topCusto[0]?.total || 1;
+    const ranking = (rows, formatter) => rows.length ? rows.map((d,i) => `<div class="report-ranking-row"><div class="report-ranking-position">${i+1}</div><div style="flex:1"><strong>${d.v.motorista || 'Sem motorista'}</strong><div style="font-size:11px;color:var(--text-secondary)">${d.v.placa || '-'} · ${d.v.modelo || '-'}</div><div class="report-bar"><span style="width:${Math.max(3, Math.min(100, d.total/maxCusto*100))}%"></span></div></div><strong>${formatter(d)}</strong></div>`).join('') : '<div class="report-empty">Sem dados no período selecionado.</div>';
+    const periodoTexto = filterStart || filterEnd ? `${filterStart ? formatDate(filterStart) : 'início'} até ${filterEnd ? formatDate(filterEnd) : 'hoje'}` : (filterYear || filterMonth ? `${filterMonth ? 'mês selecionado' : 'ano ' + filterYear}` : 'todo o histórico');
+    container.innerHTML = `<div class="card" style="border-left:3px solid var(--accent);margin-bottom:15px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h2 style="margin:0 0 5px">Relatório Executivo</h2><div style="color:var(--text-secondary);font-size:12px">Período: ${periodoTexto} · ${porVeiculo.length} veículo(s)</div></div><button onclick="exportarCSVExecutivo()" class="btn-small btn-success" style="width:auto"><i class="fas fa-file-csv"></i> Exportar resumo</button></div></div>
+        <div class="report-kpi-grid">
+            <div class="report-kpi"><div class="report-kpi-label">Custo total</div><div class="report-kpi-value" style="color:var(--accent)">R$ ${formatMoney(total)}</div><div style="font-size:11px;color:var(--text-secondary)">manutenção + combustível</div></div>
+            <div class="report-kpi"><div class="report-kpi-label">Manutenção</div><div class="report-kpi-value">R$ ${formatMoney(totalManutencao)}</div><div style="font-size:11px;color:var(--text-secondary)">${servicos.length} serviço(s)</div></div>
+            <div class="report-kpi"><div class="report-kpi-label">Combustível</div><div class="report-kpi-value" style="color:var(--fuel)">R$ ${formatMoney(totalCombustivel)}</div><div style="font-size:11px;color:var(--text-secondary)">${totalLitros.toFixed(1)} litros</div></div>
+            <div class="report-kpi"><div class="report-kpi-label">Custo por KM</div><div class="report-kpi-value" style="color:var(--warn)">${totalKm ? 'R$ ' + formatMoney(total/totalKm) : '—'}</div><div style="font-size:11px;color:var(--text-secondary)">${formatKM(totalKm)} km analisados</div></div>
+            <div class="report-kpi"><div class="report-kpi-label">Consumo médio</div><div class="report-kpi-value" style="color:var(--success)">${consumo ? consumo.toFixed(2) + ' km/l' : '—'}</div><div style="font-size:11px;color:var(--text-secondary)">${abastecimentos.length} abastecimento(s)</div></div>
+            <div class="report-kpi"><div class="report-kpi-label">Alertas vencidos</div><div class="report-kpi-value" style="color:${alertas ? 'var(--danger)' : 'var(--success)'}">${alertas}</div><div style="font-size:11px;color:var(--text-secondary)">manutenções que exigem atenção</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px">
+            <div class="card"><h3>Veículos com maior custo</h3>${ranking(topCusto, d => 'R$ '+formatMoney(d.total))}</div>
+            <div class="card"><h3>Maior custo por KM</h3>${topKm.length ? topKm.map((d,i) => `<div class="report-ranking-row"><div class="report-ranking-position">${i+1}</div><div style="flex:1"><strong>${d.v.motorista || 'Sem motorista'}</strong><div style="font-size:11px;color:var(--text-secondary)">${d.v.placa || '-'} · ${formatKM(d.kmRodado)} km</div></div><strong style="color:var(--warn)">R$ ${formatMoney(d.custoKm)}/km</strong></div>`).join('') : '<div class="report-empty">Registre histórico de KM para calcular.</div>'}</div>
+        </div>
+        <div class="card"><h3>Resumo por veículo</h3><div class="report-table-wrap"><table><thead><tr><th>Veículo</th><th>Manutenção</th><th>Combustível</th><th>Total</th><th>KM</th><th>Custo/KM</th><th>Consumo</th></tr></thead><tbody>${porVeiculo.sort((a,b)=>b.total-a.total).map(d => `<tr><td><strong>${d.v.motorista || '-'}</strong><br><small>${d.v.placa || '-'} · ${d.v.modelo || '-'}</small></td><td>R$ ${formatMoney(d.manutencao)}</td><td>R$ ${formatMoney(d.combustivel)}</td><td><strong>R$ ${formatMoney(d.total)}</strong></td><td>${formatKM(d.kmRodado)}</td><td>${d.custoKm ? 'R$ '+formatMoney(d.custoKm) : '—'}</td><td>${d.litros && d.kmRodado ? (d.kmRodado/d.litros).toFixed(2)+' km/l' : '—'}</td></tr>`).join('') || '<tr><td colspan="7" class="report-empty">Nenhum dado no período.</td></tr>'}</tbody></table></div></div>`;
+}
+
 function preencherFiltroAnos() {
     let anos = new Set([new Date().getFullYear()]);
     db.veiculos.forEach(v => {
@@ -2568,16 +2670,20 @@ function showRelatorio(tipo) {
 
     let filterYear  = document.getElementById('filter_year')?.value  || '';
     let filterMonth = document.getElementById('filter_month')?.value || '';
+    let filterStart = document.getElementById('filter_start')?.value || '';
+    let filterEnd = document.getElementById('filter_end')?.value || '';
     let filterSearch = document.getElementById('filter_search')?.value.toLowerCase() || '';
 
     function filtrarServicos(servicos, veiculo) {
         return servicos.filter(s => {
-            if (!s.data && (filterYear || filterMonth)) return false;
+            if (!s.data && (filterYear || filterMonth || filterStart || filterEnd)) return false;
             if (s.data) {
                 let d = new Date(s.data+'T00:00:00');
                 if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return false;
                 if (filterMonth && (d.getMonth()+1)   != parseInt(filterMonth)) return false;
             }
+            if (filterStart && (!s.data || s.data < filterStart)) return false;
+            if (filterEnd && (!s.data || s.data > filterEnd)) return false;
     
             if (filterSearch) {
                 const motorista = (veiculo ? veiculo.motorista : '').toLowerCase();
@@ -2605,12 +2711,14 @@ function showRelatorio(tipo) {
 
     function filtrarAbast(abastecimentos, veiculo) {
         return (abastecimentos||[]).filter(a => {
-            if (!a.data && (filterYear || filterMonth)) return false;
+            if (!a.data && (filterYear || filterMonth || filterStart || filterEnd)) return false;
             if (a.data) {
                 let d = new Date(a.data+'T00:00:00');
                 if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return false;
                 if (filterMonth && (d.getMonth()+1)   != parseInt(filterMonth)) return false;
             }
+            if (filterStart && (!a.data || a.data < filterStart)) return false;
+            if (filterEnd && (!a.data || a.data > filterEnd)) return false;
                 // For fuel, we only search by vehicle (corrigido)
             if (filterSearch) {
                 return filtrarVeiculoPorPesquisa(veiculo);
@@ -2625,11 +2733,15 @@ function showRelatorio(tipo) {
             let d = new Date(entry.date+'T00:00:00');
             if (filterYear  && d.getFullYear()    != parseInt(filterYear))  return false;
             if (filterMonth && (d.getMonth()+1)   != parseInt(filterMonth)) return false;
+            if (filterStart && entry.date < filterStart) return false;
+            if (filterEnd && entry.date > filterEnd) return false;
             return true;
         });
     }
 
-    if (tipo === 'geral') {
+    if (tipo === 'executivo') {
+        renderRelatorioExecutivo(filterYear, filterMonth, filterStart, filterEnd, filterSearch);
+    } else if (tipo === 'geral') {
             let todos = []; // Corrigido
         db.veiculos.forEach(v => filtrarServicos(v.servicos, v).forEach(s => todos.push({...s, motorista: v.motorista, placa: v.placa})));
         todos.sort((a,b) => new Date(b.data+'T00:00:00') - new Date(a.data+'T00:00:00'));
@@ -3311,9 +3423,31 @@ function renderRelatorioAbastecimento(filtrarAbast, filterYear, filterMonth, fil
     }, 50);
 }
 
+function exportarCSVExecutivo() {
+    const start = document.getElementById('filter_start')?.value || '';
+    const end = document.getElementById('filter_end')?.value || '';
+    const year = document.getElementById('filter_year')?.value || '';
+    const month = document.getElementById('filter_month')?.value || '';
+    const rows = [['Motorista','Placa','Modelo','Manutenção (R$)','Combustível (R$)','Total (R$)','KM analisados','Custo/KM (R$)','Abastecimentos','Serviços']];
+    db.veiculos.forEach(v => {
+        const ss = (v.servicos||[]).filter(s => periodoRelatorioValido(s.data, year, month, start, end));
+        const aa = (v.abastecimentos||[]).filter(a => periodoRelatorioValido(a.data, year, month, start, end));
+        const manut = ss.reduce((sum,s)=>sum+(Number(s.val)||0),0);
+        const fuel = aa.reduce((sum,a)=>sum+(Number(a.valor)||0),0);
+        const hist = (v.kmHistory||[]).filter(h=>periodoRelatorioValido(h.date,year,month,start,end)).sort((a,b)=>(a.km||0)-(b.km||0));
+        const km = hist.length > 1 ? Math.max(0,(hist[hist.length-1].km||0)-(hist[0].km||0)) : 0;
+        const total = manut + fuel;
+        rows.push([v.motorista||'',v.placa||'',v.modelo||'',manut.toFixed(2),fuel.toFixed(2),total.toFixed(2),km,km ? (total/km).toFixed(4) : '',aa.length,ss.length]);
+    });
+    const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})); a.download=`frota_relatorio_executivo_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+}
+
 function exportarCSVKmHistory() {
     const filterYear  = document.getElementById('filter_year')?.value  || ''; // Corrigido
     const filterMonth = document.getElementById('filter_month')?.value || '';
+    const filterStart = document.getElementById('filter_start')?.value || '';
+    const filterEnd = document.getElementById('filter_end')?.value || '';
     const rows = [['Data','Motorista','Placa','Modelo','KM Registrado','Fonte','KM Rodado','Intervalo (dias)','Média KM/Dia']];
     const sourceMap = {
         'manual': 'Manual',
@@ -3340,6 +3474,8 @@ function exportarCSVKmHistory() {
             const d = new Date(entry.date + 'T00:00:00'); // Corrigido
             if (filterYear && d.getFullYear() != parseInt(filterYear)) continue;
             if (filterMonth && (d.getMonth() + 1) != parseInt(filterMonth)) continue;
+            if (filterStart && entry.date < filterStart) continue;
+            if (filterEnd && entry.date > filterEnd) continue;
 
             let kmRodado = '', dias = '', mediaKmDia = '';
 
@@ -3388,6 +3524,8 @@ function toggleFuelCard(id) {
 function exportarCSVAbastecimento() {
     const filterYear  = document.getElementById('filter_year')?.value  || ''; // Corrigido
     const filterMonth = document.getElementById('filter_month')?.value || '';
+    const filterStart = document.getElementById('filter_start')?.value || '';
+    const filterEnd = document.getElementById('filter_end')?.value || '';
 
     const rows = [['Data','Motorista','Placa','Modelo','KM','Litros','Valor Total (R$)','Preço/Litro (R$)','Consumo (km/l)']];
 
@@ -3397,6 +3535,8 @@ function exportarCSVAbastecimento() {
             const d = new Date(a.data+'T00:00:00');
             if (filterYear && d.getFullYear() != parseInt(filterYear)) return false;
             if (filterMonth && (d.getMonth()+1) != parseInt(filterMonth)) return false;
+            if (filterStart && (!a.data || a.data < filterStart)) return false;
+            if (filterEnd && (!a.data || a.data > filterEnd)) return false;
             return true;
         });
         const sorted = [...abast].sort((a,b)=>(a.km||0)-(b.km||0));
@@ -3424,9 +3564,12 @@ function toggleRelatorioMecanicaDetalhes(id) { const el = document.getElementByI
 function exportarCSV() {
     let filterYear  = document.getElementById('filter_year')?.value  || '';
     let filterMonth = document.getElementById('filter_month')?.value || '';
+    let filterStart = document.getElementById('filter_start')?.value || '';
+    let filterEnd = document.getElementById('filter_end')?.value || '';
     let rows = [['Data','Motorista','Placa','Modelo','Tipo','Oficina','KM','Valor (R$)','Observações']];
     db.veiculos.forEach(v => v.servicos.forEach(s => {
-        if (s.data) { let d = new Date(s.data+'T00:00:00'); if (filterYear && d.getFullYear() != parseInt(filterYear)) return; if (filterMonth && (d.getMonth()+1) != parseInt(filterMonth)) return; }
+        if (s.data) { let d = new Date(s.data+'T00:00:00'); if (filterYear && d.getFullYear() != parseInt(filterYear)) return; if (filterMonth && (d.getMonth()+1) != parseInt(filterMonth)) return; if (filterStart && s.data < filterStart) return; if (filterEnd && s.data > filterEnd) return; }
+        else if (filterStart || filterEnd) return;
         rows.push([formatDate(s.data), v.motorista, v.placa, v.modelo, s.tipo, s.forn, s.km, s.val, s.obs||'']);
     }));
     let csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
@@ -3475,7 +3618,7 @@ function renderizarTudo() {
 // EXPOR FUNÇÕES GLOBAIS
 // ============================================================
 Object.assign(window, {
-    loginApp, limparLogin, logoutApp, tab, addVeiculo, abrirVeiculo, atualizarKM, addServico, updateTipoSelect, atualizarPrecoEUnidadesPorPneu, executarRodizioPneus, addOficina, addRegra, addPeca, addCompra, showRelatorio, reRenderRelatorio, preencherFiltroAnos, salvarDados, maskKM, maskMoney, toggleSidebar, editarKmCiclo, toggleAlertaEstoque
+    loginApp, limparLogin, logoutApp, tab, addVeiculo, abrirVeiculo, atualizarKM, addServico, updateTipoSelect, atualizarPrecoEUnidadesPorPneu, executarRodizioPneus, addOficina, addRegra, addPeca, addCompra, showRelatorio, reRenderRelatorio, preencherFiltroAnos, salvarDados, maskKM, maskMoney, toggleSidebar, editarKmCiclo, toggleAlertaEstoque, aplicarPeriodoRelatorio, limparPeriodoRelatorio, imprimirRelatorio, exportarCSVExecutivo
 });
 
 // ============================================================
