@@ -1851,7 +1851,28 @@ function calcularMediaConsumo(v) {
     const totalLitros = intervalos.reduce((s, i) => s + i.litros, 0);
     return { media: totalLitros > 0 ? totalKm / totalLitros : 0, total: totalLitros };
 }
-
+function calcularKmRodadoPeriodo(v, filterYear = '', filterMonth = '', filterStart = '', filterEnd = '') {
+    const temPeriodo = Boolean(filterYear || filterMonth || filterStart || filterEnd);
+    const registros = [];
+    const adicionar = (km, data) => {
+        const valorKm = parseKM(km);
+        if (valorKm > 0) registros.push({ km: valorKm, data: data || '' });
+    };
+    (v.kmHistory || []).forEach(h => adicionar(h.km, h.date));
+    (v.servicos || []).forEach(s => adicionar(s.km, s.data));
+    (v.abastecimentos || []).forEach(a => adicionar(a.km, a.data));
+    registros.sort((a, b) => (a.data || '').localeCompare(b.data || '') || a.km - b.km);
+    if (!registros.length) return 0;
+    let selecionados = registros.filter(r => periodoRelatorioValido(r.data, filterYear, filterMonth, filterStart, filterEnd));
+    if (temPeriodo && selecionados.length) {
+        const primeiro = selecionados[0];
+        const anterior = [...registros].reverse().find(r => (r.data || '') < (primeiro.data || ''));
+        if (anterior) selecionados.unshift(anterior);
+    }
+    if (!selecionados.length) return 0;
+    const ultimoKm = !temPeriodo && parseKM(v.km) > 0 ? Math.max(parseKM(v.km), selecionados[selecionados.length - 1].km) : selecionados[selecionados.length - 1].km;
+    return Math.max(0, ultimoKm - selecionados[0].km);
+}
 // ============================================================
 // KM MANUAL
 // ============================================================
@@ -2623,8 +2644,7 @@ function renderRelatorioExecutivo(filterYear, filterMonth, filterStart, filterEn
             consumoKm += i.kmRod;
             consumoLitros += i.litros;
         });
-        const hist = (v.kmHistory || []).filter(h => periodoRelatorioValido(h.date, filterYear, filterMonth, filterStart, filterEnd)).sort((a,b) => (a.km||0)-(b.km||0));
-        const kmRodado = hist.length > 1 ? Math.max(0, (hist[hist.length-1].km||0) - (hist[0].km||0)) : 0;
+        const kmRodado = calcularKmRodadoPeriodo(v, filterYear, filterMonth, filterStart, filterEnd);
         const total = manutencao + combustivel;
         porVeiculo.push({ v, manutencao, combustivel, litros, consumoKm, consumoLitros, consumoKmL: consumoLitros ? consumoKm/consumoLitros : 0, kmRodado, total, custoKm: kmRodado ? total/kmRodado : 0, servicos:ss.length, abastecimentos:aa.length });
     });
@@ -3465,8 +3485,7 @@ function exportarCSVExecutivo() {
         const aa = (v.abastecimentos||[]).filter(a => periodoRelatorioValido(a.data, year, month, start, end));
         const manut = ss.reduce((sum,s)=>sum+(Number(s.val)||0),0);
         const fuel = aa.reduce((sum,a)=>sum+(Number(a.valor)||0),0);
-        const hist = (v.kmHistory||[]).filter(h=>periodoRelatorioValido(h.date,year,month,start,end)).sort((a,b)=>(a.km||0)-(b.km||0));
-        const km = hist.length > 1 ? Math.max(0,(hist[hist.length-1].km||0)-(hist[0].km||0)) : 0;
+        const km = calcularKmRodadoPeriodo(v, year, month, start, end);
         const total = manut + fuel;
         rows.push([v.motorista||'',v.placa||'',v.modelo||'',manut.toFixed(2),fuel.toFixed(2),total.toFixed(2),km,km ? (total/km).toFixed(4) : '',aa.length,ss.length]);
     });
