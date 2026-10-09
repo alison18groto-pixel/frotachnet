@@ -2123,13 +2123,16 @@ function addServico() {
     let data = document.getElementById('servico_data').value;
     let obs = document.getElementById('servico_obs').value;
     let file = document.getElementById('servico_foto').files[0];
+    let pneuEixo = null;
+    let pneuQtd = 1;
     
     if (!forn || !tipo || !km || !valor || !data) return alert('Preencha os campos obrigatórios!');
     let tipoFinalParaServico = tipo;
     const wrapperEixo = document.getElementById('wrapper_pneu_eixo');
     if (wrapperEixo && !wrapperEixo.classList.contains('hidden')) {
-        const eixo = document.getElementById('pneu_eixo').value;
-        tipoFinalParaServico = `Pneu ${eixo}`;
+        pneuEixo = document.getElementById('pneu_eixo').value;
+        pneuQtd = parseInt(document.getElementById('pneu_qtd')?.value, 10) || 1;
+        tipoFinalParaServico = `Pneu ${pneuEixo}`;
     }
     
     if (!forn || !tipoFinalParaServico || !km || !valor || !data) return alert('Preencha os campos obrigatórios!');
@@ -2150,7 +2153,7 @@ function addServico() {
     }
 
     const processar = (img) => {
-        let servico = { tipo: tipoFinalParaServico, forn, val: valor, km, data, obs, img };
+        let servico = { tipo: tipoFinalParaServico, forn, val: valor, km, data, obs, img, pneuEixo, pneuQtd: pneuEixo ? pneuQtd : null, estoqueItem: forn === 'CHNET Estoque' ? tipo : null };
         if (servico.km > 0) {
             if (!v.kmHistory) v.kmHistory = [];
             const exists = v.kmHistory.some(h => h.date === data && h.km === servico.km);
@@ -2196,6 +2199,12 @@ function addServico() {
             });
         }
 
+        // Pneus precisam iniciar o ciclo mesmo quando o veículo não possui
+        // uma regra de alarme "Pneu Dianteiro/Traseiro" cadastrada.
+        if (pneuEixo) {
+            v.bases[tipoFinalParaServico] = km;
+        }
+
         v.servicos.push(servico);
         v.ultimaAtualizacao = data;
         veiculoAtual = v;
@@ -2225,7 +2234,10 @@ function excluirServico(idx) {
     if (!confirm('Excluir este serviço?')) return;
     const v = db.veiculos.find(x => x.id === veiculoAtual.id);
     let s = v.servicos[idx];
-    if (s.forn === 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === s.tipo); if (peca) peca.qtd++; }
+    if (s.forn === 'CHNET Estoque') {
+        let peca = db.estoque.find(e => e.nome === (s.estoqueItem || s.tipo));
+        if (peca) peca.qtd += Math.max(1, parseInt(s.pneuQtd, 10) || 1);
+    }
     v.servicos.splice(idx, 1);
 
     // Recalcula todas as bases de KM para garantir que o contador volte para o serviço anterior
@@ -2263,9 +2275,10 @@ function salvarEdicaoServico() {
     if (!novoTipo) return alert('Informe o tipo!');
     if (!novoKm) return alert('Informe o KM!');
     if (!novaData) return alert('Informe a data!');
-    if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === s.tipo); if (peca) peca.qtd++; }
-    if (s.forn !== 'CHNET Estoque' && novoForn === 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === novoTipo); if (!peca) return alert('Peça não encontrada!'); if (peca.qtd <= 0) return alert(`Sem estoque!`); peca.qtd--; }
+    if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === (s.estoqueItem || s.tipo)); if (peca) peca.qtd += Math.max(1, parseInt(s.pneuQtd, 10) || 1); }
+    if (s.forn !== 'CHNET Estoque' && novoForn === 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === novoTipo); if (!peca) return alert('Peça não encontrada!'); const qtd = novoTipo.toLowerCase().includes('pneu') ? Math.max(1, parseInt(document.getElementById('pneu_qtd')?.value, 10) || 1) : 1; if (peca.qtd < qtd) return alert(`Sem estoque!`); peca.qtd -= qtd; s.pneuQtd = qtd; }
     s.forn = novoForn; s.tipo = novoTipo; s.val = novoVal; s.km = novoKm; s.data = novaData; s.obs = novaObs;
+    if (novoForn === 'CHNET Estoque') s.estoqueItem = s.estoqueItem || novoTipo;
     recalcularBases(v);
     veiculoAtual = v; salvar(); fecharModalEditar(); alert('✅ Serviço atualizado!');
 }
@@ -2277,6 +2290,9 @@ function recalcularBases(v) {
         Object.keys(regras).forEach(regra => {
             if (tipoMatchRegra(s.tipo, regra)) v.bases[regra] = s.km;
         });
+        const tipo = (s.tipo || '').toLowerCase();
+        if (tipo.includes('pneu dianteiro') || tipo.includes('pneu front')) v.bases['Pneu Dianteiro'] = s.km;
+        if (tipo.includes('pneu traseiro') || tipo.includes('pneu rear')) v.bases['Pneu Traseiro'] = s.km;
     });
 }
 
@@ -2921,10 +2937,15 @@ function showRelatorio(tipo) {
             return dateA && dateB ? dateA - dateB : 0;
         };
         let dadosPneu = db.veiculos.filter(filtrarVeiculoPorPesquisa).map(v => {
-            let sp = filtrarServicos(v.servicos, v).filter(s => ehPneu(s.tipo));
+            // A vida útil do pneu é contínua: filtros de data servem para
+            // serviços do relatório, mas não podem esconder a instalação
+            // anterior que define a base do ciclo atual.
+            let sp = (v.servicos || []).filter(s => ehPneu(s.tipo));
             let d = sp.filter(s => ehPneuD(s.tipo) || (!ehPneuT(s.tipo) && !ehPneuD(s.tipo))).filter(s => s.data && (s.km || s.km === 0)).sort(tireSort);
             let t = sp.filter(s => ehPneuT(s.tipo)).filter(s => s.data && (s.km || s.km === 0)).sort(tireSort);
-            return { v, dianteiros: d, traseiros: t, calcD: calcCiclos(d, v.km, hoje, v.bases['Pneu Dianteiro']), calcT: calcCiclos(t, v.km, hoje, v.bases['Pneu Traseiro']) };
+            const baseD = Object.prototype.hasOwnProperty.call(v.bases || {}, 'Pneu Dianteiro') ? v.bases['Pneu Dianteiro'] : d[d.length - 1]?.km;
+            const baseT = Object.prototype.hasOwnProperty.call(v.bases || {}, 'Pneu Traseiro') ? v.bases['Pneu Traseiro'] : t[t.length - 1]?.km;
+            return { v, dianteiros: d, traseiros: t, calcD: calcCiclos(d, v.km, hoje, baseD), calcT: calcCiclos(t, v.km, hoje, baseT) };
         });
         let ttd=dadosPneu.reduce((s,d)=>s+d.dianteiros.length,0),ttt=dadosPneu.reduce((s,d)=>s+d.traseiros.length,0),mkd=0,mkt=0,cd=0,ct=0;
         dadosPneu.forEach(d=>{if(d.calcD&&d.calcD.mediaCiclo>0){mkd+=d.calcD.mediaCiclo;cd++;}if(d.calcT&&d.calcT.mediaCiclo>0){mkt+=d.calcT.mediaCiclo;ct++;}});
