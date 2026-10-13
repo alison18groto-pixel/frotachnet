@@ -1973,7 +1973,7 @@ function atualizarQuantidadeOleoServico() {
     const slider = document.getElementById('oleo_qtd_servico');
     const valor = document.getElementById('oleo_qtd_servico_val');
     if (slider && valor) valor.textContent = formatNumero(slider.value);
-    atualizarPrecoEUnidadesPorPneu(true);
+    atualizarPrecoEUnidadesPorPneu(false);
 }
 function atualizarPrecoEUnidadesPorPneu(resetOleo = false) {
     const tipoSelect = document.getElementById('servico_tipo');
@@ -1988,7 +1988,7 @@ function atualizarPrecoEUnidadesPorPneu(resetOleo = false) {
     if (!tipoSelect || !fornSelect || !valorCampo) return;
     const selectedOption = tipoSelect.options[tipoSelect.selectedIndex];
     const ehPneu = !!selectedOption && selectedOption.value.toLowerCase().includes('pneu');
-    const ehOleo = fornSelect.value === 'CHNET Estoque' && !!selectedOption && /óleo|oleo/i.test(selectedOption.value);
+    const ehOleo = fornSelect.value === 'CHNET Estoque' && !!selectedOption && selectedOption.value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'oleo motor 5w30';
     if (ehPneu) {
         if (wrapperPneu) wrapperPneu.classList.remove('hidden');
         if (wrapperEixo) wrapperEixo.classList.remove('hidden');
@@ -2154,7 +2154,7 @@ function addServico() {
     let pneuEixo = null;
     let pneuQtd = 1;
     const itemEstoqueSelecionado = forn === 'CHNET Estoque' ? db.estoque.find(e => e.nome === tipo) : null;
-    const isOleoServico = forn === 'CHNET Estoque' && /óleo|oleo/i.test(tipo || '');
+    const isOleoServico = forn === 'CHNET Estoque' && String(tipo || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'oleo motor 5w30';
     const qtdOleo = isOleoServico ? (parseNumero(document.getElementById('oleo_qtd_servico')?.value) || 0.1) : 0;
     if (!forn || !tipo || !km || !data || (!valor && !isOleoServico)) return alert('Preencha os campos obrigatórios!');
     let tipoFinalParaServico = isOleoServico ? 'Troca de óleo' : tipo;
