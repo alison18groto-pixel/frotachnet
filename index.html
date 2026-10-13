@@ -437,6 +437,7 @@
                 <input id="compra_val" oninput="maskMoney(this)" placeholder="Valor unitário" style="flex:1; margin-bottom:0">
                 <input type="date" id="compra_data" style="flex:1; margin-bottom:0">
                 <input id="compra_forn" placeholder="Fornecedor" style="flex:1; margin-bottom:0">
+                <input id="compra_nf" placeholder="Nota Fiscal" style="flex:1; margin-bottom:0">
                 <button onclick="addCompra()" class="btn-small" style="margin-bottom:0;white-space:nowrap">Registrar entrada</button>
             </div>
             <div style="border-top:1px solid var(--border);margin:16px 0 12px"></div>
@@ -448,6 +449,7 @@
                 <input id="nova_val" oninput="maskMoney(this)" placeholder="Valor unitário" style="flex:1; margin-bottom:0">
                 <input type="date" id="nova_data" style="flex:1; margin-bottom:0">
                 <input id="nova_forn" placeholder="Fornecedor" style="flex:1; margin-bottom:0">
+                <input id="nova_nf" placeholder="Nota Fiscal" style="flex:1; margin-bottom:0">
                 <button onclick="addPeca()" class="btn-small" style="margin-bottom:0;background:var(--success);white-space:nowrap"><i class="fas fa-box-open"></i> Cadastrar produto</button>
             </div>
         </div>
@@ -2428,11 +2430,12 @@ function addCompra() {
     peca.ignorarAlertaBaixoEstoque = false; // Reset flag on new purchase
     if (val) peca.val = val;
     if (!peca.compras) peca.compras = [];
-    peca.compras.unshift({ data: document.getElementById('compra_data').value || new Date().toISOString().split('T')[0], qtd, valorUnit: val||peca.val, fornecedor: document.getElementById('compra_forn').value||'Não informado', total: qtd*(val||peca.val) });
+    peca.compras.unshift({ data: document.getElementById('compra_data').value || new Date().toISOString().split('T')[0], qtd, valorUnit: val||peca.val, fornecedor: document.getElementById('compra_forn').value||'Não informado', notaFiscal: document.getElementById('compra_nf').value.trim(), total: qtd*(val||peca.val) });
     salvar(); renderEstoque();
     document.getElementById('compra_qtd').value = '';
     document.getElementById('compra_val').value = '';
     document.getElementById('compra_forn').value = '';
+    document.getElementById('compra_nf').value = '';
     alert(`✅ +${qtd} unidades adicionadas a "${peca.nome}"!`);
 }
 
@@ -2448,10 +2451,10 @@ function addPeca() {
     if (db.estoque.find(e => e.nome.toLowerCase() === nome.toLowerCase())) return alert('Produto já existe. Use “Registrar Compra” para adicionar uma nova entrada.');
     if (qtd < 0 || min < 0 || val < 0) return alert('Quantidade, mínimo e valor não podem ser negativos.');
     const produto = { id: Date.now(), nome, qtd, min, val, compras: [] };
-    if (qtd > 0) produto.compras.push({ data, qtd, valorUnit: val, fornecedor, total: qtd * val });
+    if (qtd > 0) produto.compras.push({ data, qtd, valorUnit: val, fornecedor, notaFiscal: document.getElementById('nova_nf').value.trim(), total: qtd * val });
     db.estoque.push(produto);
     salvar(); renderEstoque();
-    ['nova_peca','nova_qtd','nova_val','nova_forn'].forEach(id => { document.getElementById(id).value = ''; });
+    ['nova_peca','nova_qtd','nova_val','nova_forn','nova_nf'].forEach(id => { document.getElementById(id).value = ''; });
     alert(qtd > 0 ? '✅ Produto cadastrado e compra registrada no relatório!' : '✅ Produto cadastrado!');
 }
 
@@ -2781,13 +2784,37 @@ function renderRelatorioCompras(filterYear, filterMonth, filterStart, filterEnd,
     const container = document.getElementById('relatorio-content');
     const compras = []; (db.estoque || []).forEach(e => (e.compras || []).forEach((c, compraIndex) => {
         if (!periodoRelatorioValido(c.data, filterYear, filterMonth, filterStart, filterEnd)) return;
-        const texto = `${e.nome} ${c.fornecedor || ''} ${c.data || ''}`.toLowerCase();
+        const texto = `${e.nome} ${c.fornecedor || ''} ${c.notaFiscal || ''} ${c.data || ''}`.toLowerCase();
         if (filterSearch && !filterSearch.split(/\s+/).filter(Boolean).every(t => texto.includes(t))) return;
         compras.push({ ...c, item: e.nome, estoqueId: e.id, compraIndex });
     }));
     compras.sort((a,b) => String(b.data || '').localeCompare(String(a.data || '')));
     const total = compras.reduce((s,c) => s + parseNumero(c.total || parseNumero(c.qtd) * parseNumero(c.valorUnit)), 0);
-    container.innerHTML = `<div class="report-kpi-grid"><div class="report-kpi"><div class="report-kpi-label">Compras registradas</div><div class="report-kpi-value">${compras.length}</div></div><div class="report-kpi"><div class="report-kpi-label">Itens comprados</div><div class="report-kpi-value">${formatNumero(compras.reduce((s,c)=>s+parseNumero(c.qtd),0))}</div></div><div class="report-kpi"><div class="report-kpi-label">Valor total comprado</div><div class="report-kpi-value" style="color:var(--accent)">R$ ${formatMoney(total)}</div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Relatório de compras</h3><button onclick="exportarCSVCompras()" class="btn-small btn-success" style="width:auto"><i class="fas fa-file-csv"></i> Exportar CSV</button></div><div class="report-table-wrap"><table><thead><tr><th>Data</th><th>Produto</th><th>Fornecedor</th><th>Quantidade</th><th>Valor unitário</th><th>Total</th><th>Ação</th></tr></thead><tbody>${compras.map(c=>`<tr><td>${formatDate(c.data)}</td><td><strong>${escapeHtml(c.item)}</strong></td><td>${escapeHtml(c.fornecedor || 'Não informado')}</td><td>${formatNumero(c.qtd)}</td><td>R$ ${formatMoney(c.valorUnit)}</td><td><strong>R$ ${formatMoney(c.total || c.qtd*c.valorUnit)}</strong></td><td><button class="btn-small btn-danger" style="width:auto" onclick="excluirCompraRelatorio(${c.estoqueId}, ${c.compraIndex})" title="Excluir somente esta compra"><i class="fas fa-trash"></i> Excluir lançamento</button></td></tr>`).join('') || '<tr><td colspan="7" class="report-empty">Nenhuma compra encontrada no período.</td></tr>'}</tbody></table></div></div>`;
+    container.innerHTML = `<div class="report-kpi-grid"><div class="report-kpi"><div class="report-kpi-label">Compras registradas</div><div class="report-kpi-value">${compras.length}</div></div><div class="report-kpi"><div class="report-kpi-label">Itens comprados</div><div class="report-kpi-value">${formatNumero(compras.reduce((s,c)=>s+parseNumero(c.qtd),0))}</div></div><div class="report-kpi"><div class="report-kpi-label">Valor total comprado</div><div class="report-kpi-value" style="color:var(--accent)">R$ ${formatMoney(total)}</div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Relatório de compras</h3><button onclick="exportarCSVCompras()" class="btn-small btn-success" style="width:auto"><i class="fas fa-file-csv"></i> Exportar CSV</button></div><div class="report-table-wrap"><table><thead><tr><th>Data</th><th>Produto</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Quantidade</th><th>Valor unitário</th><th>Total</th><th>Ação</th></tr></thead><tbody>${compras.map(c=>`<tr><td>${formatDate(c.data)}</td><td><strong>${escapeHtml(c.item)}</strong></td><td>${escapeHtml(c.fornecedor || 'Não informado')}</td><td>${escapeHtml(c.notaFiscal || '-')}</td><td>${formatNumero(c.qtd)}</td><td>R$ ${formatMoney(c.valorUnit)}</td><td><strong>R$ ${formatMoney(c.total || c.qtd*c.valorUnit)}</strong></td><td style="white-space:nowrap"><button class="icon-btn" style="color:var(--accent)" onclick="editarCompraRelatorio(${c.estoqueId}, ${c.compraIndex})" title="Editar lançamento"><i class="fas fa-edit"></i></button><button class="icon-btn" style="color:var(--danger);margin-left:5px" onclick="excluirCompraRelatorio(${c.estoqueId}, ${c.compraIndex})" title="Excluir lançamento"><i class="fas fa-trash"></i></button></td></tr>`).join('') || '<tr><td colspan="8" class="report-empty">Nenhuma compra encontrada no período.</td></tr>'}</tbody></table></div></div>`;
+}
+function editarCompraRelatorio(estoqueId, compraIndex) {
+    if (!exigirPermissao('estoque', true)) return;
+    const produto = db.estoque.find(e => String(e.id) === String(estoqueId));
+    const compra = produto?.compras?.[compraIndex];
+    if (!produto || !compra) return alert('Lançamento não encontrado. Atualize o relatório e tente novamente.');
+    const qtdTexto = prompt('Quantidade comprada:', String(compra.qtd ?? ''));
+    if (qtdTexto === null) return;
+    const qtd = parseNumero(qtdTexto);
+    const valorTexto = prompt('Valor unitário:', `R$ ${formatMoney(compra.valorUnit ?? produto.val ?? 0)}`);
+    if (valorTexto === null) return;
+    const valorUnit = parseVal(valorTexto);
+    const data = prompt('Data da compra (AAAA-MM-DD):', compra.data || '');
+    if (data === null) return;
+    const fornecedor = prompt('Fornecedor:', compra.fornecedor || '');
+    if (fornecedor === null) return;
+    const notaFiscal = prompt('Nota Fiscal:', compra.notaFiscal || '');
+    if (notaFiscal === null) return;
+    if (qtd <= 0 || valorUnit < 0 || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return alert('Informe quantidade, valor e data válidos.');
+    produto.qtd = Math.max(0, parseNumero(produto.qtd) - parseNumero(compra.qtd) + qtd);
+    compra.qtd = qtd; compra.valorUnit = valorUnit; compra.total = qtd * valorUnit; compra.data = data; compra.fornecedor = fornecedor.trim() || 'Não informado'; compra.notaFiscal = notaFiscal.trim();
+    produto.val = valorUnit || produto.val;
+    salvar(); renderEstoque(); reRenderRelatorio();
+    alert('✅ Lançamento atualizado.');
 }
 function excluirCompraRelatorio(estoqueId, compraIndex) {
     if (!exigirPermissao('estoque', true)) return;
@@ -2810,7 +2837,7 @@ function excluirCompraRelatorio(estoqueId, compraIndex) {
     alert('✅ Lançamento excluído do relatório. O produto foi mantido no estoque.');
 }
 function exportarCSVCompras() {
-    const rows = [['Data','Produto','Fornecedor','Quantidade','Valor unitário','Total']]; (db.estoque||[]).forEach(e => (e.compras||[]).forEach(c => rows.push([c.data,e.nome,c.fornecedor||'',c.qtd,c.valorUnit,c.total||c.qtd*c.valorUnit]))); baixarCSV(rows, 'relatorio-compras.csv');
+    const rows = [['Data','Produto','Fornecedor','Nota Fiscal','Quantidade','Valor unitário','Total']]; (db.estoque||[]).forEach(e => (e.compras||[]).forEach(c => rows.push([c.data,e.nome,c.fornecedor||'',c.notaFiscal||'',c.qtd,c.valorUnit,c.total||c.qtd*c.valorUnit]))); baixarCSV(rows, 'relatorio-compras.csv');
 }
 function baixarCSV(rows, nome) { const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(';')).join('\n'); const blob = new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8;'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; a.click(); URL.revokeObjectURL(a.href); }
 
