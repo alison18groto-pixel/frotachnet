@@ -456,17 +456,20 @@
                 </div>
                 <button onclick="addCompra()" style="margin-top:10px">Registrar Entrada</button>
             </div>
-            <div class="card">
-                <h3>Nova Peça</h3>
+            <div class="card" style="border-left:3px solid var(--success)">
+                <h3>➕ Cadastrar produto comprado</h3>
+                <p style="font-size:11px;color:var(--text-secondary);margin:0 0 10px">Cadastre o produto e a primeira compra de uma vez. Essa entrada também aparecerá no Relatório de compras.</p>
                 <div class="flex-row">
-                    <input id="nova_peca" placeholder="Nome da peça" style="flex:2; margin-bottom:0">
-                    <input id="nova_qtd" type="number" placeholder="Qtd inicial" style="flex:1; margin-bottom:0">
+                    <input id="nova_peca" placeholder="Nome do produto (ex.: Óleo 5W30)" style="flex:2; margin-bottom:0">
+                    <input id="nova_qtd" type="number" min="0" step="0.1" placeholder="Qtd comprada" style="flex:1; margin-bottom:0">
                 </div>
                 <div class="flex-row" style="margin-top:8px">
-                    <input id="nova_min" type="number" placeholder="Qtd mínima" value="5" style="flex:1; margin-bottom:0">
-                    <input id="nova_val" oninput="maskMoney(this)" placeholder="Valor unit." style="flex:1; margin-bottom:0">
+                    <input id="nova_min" type="number" min="0" placeholder="Estoque mínimo" value="5" style="flex:1; margin-bottom:0">
+                    <input id="nova_val" oninput="maskMoney(this)" placeholder="Valor unitário" style="flex:1; margin-bottom:0">
+                    <input type="date" id="nova_data" style="flex:1; margin-bottom:0">
+                    <input id="nova_forn" placeholder="Fornecedor" style="flex:1; margin-bottom:0">
                 </div>
-                <button onclick="addPeca()" style="margin-top:10px">Criar Peça</button>
+                <button onclick="addPeca()" style="margin-top:10px;background:var(--success)"><i class="fas fa-box-open"></i> Cadastrar produto e compra</button>
             </div>
         </div>
         <div class="card">
@@ -577,6 +580,14 @@
                     <h3>🔧 Registrar Manutenção</h3>
                     <select id="servico_forn" onchange="updateTipoSelect()"></select>
                     <select id="servico_tipo" onchange="atualizarPrecoEUnidadesPorPneu()"></select>
+                    <div id="wrapper_oleo_qtd" class="hidden" style="margin-top:10px;padding:10px 12px;border:1px solid rgba(34,211,238,.3);border-radius:10px;background:rgba(34,211,238,.06)">
+                        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+                            <label for="oleo_qtd_servico" style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Quantidade de óleo usada</label>
+                            <strong id="oleo_qtd_servico_val" style="color:var(--fuel)">1,0</strong>
+                        </div>
+                        <input id="oleo_qtd_servico" type="range" min="0.5" max="20" step="0.5" value="1" oninput="atualizarQuantidadeOleoServico()" style="accent-color:var(--fuel);margin:10px 0 0">
+                        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary)"><span>0,5</span><span>deslize até a quantidade colocada no carro</span><span id="oleo_qtd_servico_max">20</span></div>
+                    </div>
                     <div id="wrapper_pneu_eixo" class="hidden" style="margin-top: 8px;">
                         <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Eixo do Pneu</label>
                         <select id="pneu_eixo">
@@ -1980,37 +1991,49 @@ function updateTipoSelect() {
     atualizarPrecoEUnidadesPorPneu();
 }
 
-function atualizarPrecoEUnidadesPorPneu() {
+function atualizarQuantidadeOleoServico() {
+    const slider = document.getElementById('oleo_qtd_servico');
+    const valor = document.getElementById('oleo_qtd_servico_val');
+    if (slider && valor) valor.textContent = formatNumero(slider.value);
+    atualizarPrecoEUnidadesPorPneu(true);
+}
+function atualizarPrecoEUnidadesPorPneu(resetOleo = false) {
     const tipoSelect = document.getElementById('servico_tipo');
     const fornSelect = document.getElementById('servico_forn');
     const valorCampo = document.getElementById('servico_val');
     const wrapperPneu = document.getElementById('wrapper_pneu_qtd');
     const qtdPneuSelect = document.getElementById('pneu_qtd');
     const wrapperEixo = document.getElementById('wrapper_pneu_eixo');
-
+    const wrapperOleo = document.getElementById('wrapper_oleo_qtd');
+    const sliderOleo = document.getElementById('oleo_qtd_servico');
+    const maxOleo = document.getElementById('oleo_qtd_servico_max');
     if (!tipoSelect || !fornSelect || !valorCampo) return;
-
     const selectedOption = tipoSelect.options[tipoSelect.selectedIndex];
-    
-    // REGRA: Se a palavra PNEU estiver no serviço, exibe o seletor de quantidade
-    // REGRA: Se a palavra PNEU estiver no serviço, exibe os seletores de quantidade e eixo
-    if (selectedOption && selectedOption.value.toLowerCase().includes('pneu')) {
+    const ehPneu = !!selectedOption && selectedOption.value.toLowerCase().includes('pneu');
+    const ehOleo = fornSelect.value === 'CHNET Estoque' && !!selectedOption && /óleo|oleo/i.test(selectedOption.value);
+    if (ehPneu) {
         if (wrapperPneu) wrapperPneu.classList.remove('hidden');
         if (wrapperEixo) wrapperEixo.classList.remove('hidden');
     } else {
-        if (wrapperPneu) {
-            wrapperPneu.classList.add('hidden');
-            if (qtdPneuSelect) qtdPneuSelect.value = '1'; // Reseta se mudar para outro produto
-        }
+        if (wrapperPneu) wrapperPneu.classList.add('hidden');
         if (wrapperEixo) wrapperEixo.classList.add('hidden');
+        if (qtdPneuSelect) qtdPneuSelect.value = '1';
     }
-
-    // REGRA: Se for ESTOQUE CHNET, puxa o valor automático e multiplica pelas unidades
-    if (fornSelect.value === 'CHNET Estoque' && selectedOption) {
-        const valorBase = parseFloat(selectedOption.getAttribute('data-valor')) || 0;
-        const qtd = (qtdPneuSelect && wrapperPneu && !wrapperPneu.classList.contains('hidden')) ? parseInt(qtdPneuSelect.value) : 1;
-        
-        // Insere o preço final multiplicado e formatado no campo
+    if (wrapperOleo) wrapperOleo.classList.toggle('hidden', !ehOleo);
+    if (ehOleo && sliderOleo) {
+        const item = db.estoque.find(e => e.nome === selectedOption.value);
+        const disponivel = Math.max(0.5, parseNumero(item?.qtd));
+        sliderOleo.max = String(Math.max(0.5, disponivel));
+        if (resetOleo || parseNumero(sliderOleo.value) > disponivel) sliderOleo.value = String(Math.min(1, disponivel));
+        if (maxOleo) maxOleo.textContent = formatNumero(disponivel);
+        const qtdOleo = parseNumero(sliderOleo.value) || 0.5;
+        const valorBase = parseNumero(selectedOption.getAttribute('data-valor'));
+        valorCampo.value = 'R$ ' + formatMoney(valorBase * qtdOleo);
+        const valorQtd = document.getElementById('oleo_qtd_servico_val');
+        if (valorQtd) valorQtd.textContent = formatNumero(qtdOleo);
+    } else if (fornSelect.value === 'CHNET Estoque' && selectedOption) {
+        const valorBase = parseNumero(selectedOption.getAttribute('data-valor'));
+        const qtd = (qtdPneuSelect && ehPneu) ? parseInt(qtdPneuSelect.value, 10) || 1 : 1;
         valorCampo.value = 'R$ ' + formatMoney(valorBase * qtd);
     }
 }
@@ -2152,9 +2175,11 @@ function addServico() {
     let file = document.getElementById('servico_foto').files[0];
     let pneuEixo = null;
     let pneuQtd = 1;
-    
-    if (!forn || !tipo || !km || !valor || !data) return alert('Preencha os campos obrigatórios!');
-    let tipoFinalParaServico = tipo;
+    const itemEstoqueSelecionado = forn === 'CHNET Estoque' ? db.estoque.find(e => e.nome === tipo) : null;
+    const isOleoServico = forn === 'CHNET Estoque' && /óleo|oleo/i.test(tipo || '');
+    const qtdOleo = isOleoServico ? (parseNumero(document.getElementById('oleo_qtd_servico')?.value) || 0.5) : 0;
+    if (!forn || !tipo || !km || !data || (!valor && !isOleoServico)) return alert('Preencha os campos obrigatórios!');
+    let tipoFinalParaServico = isOleoServico ? 'Troca de óleo' : tipo;
     const wrapperEixo = document.getElementById('wrapper_pneu_eixo');
     if (wrapperEixo && !wrapperEixo.classList.contains('hidden')) {
         pneuEixo = document.getElementById('pneu_eixo').value;
@@ -2162,25 +2187,25 @@ function addServico() {
         tipoFinalParaServico = `Pneu ${pneuEixo}`;
     }
     
-    if (!forn || !tipoFinalParaServico || !km || !valor || !data) return alert('Preencha os campos obrigatórios!');
+    if (!forn || !tipoFinalParaServico || !km || !data || (!valor && !isOleoServico)) return alert('Preencha os campos obrigatórios!');
     
-    // Controle de baixa de estoque
+    // Controle de baixa de estoque: o óleo usa a quantidade definida no slider.
     if (forn === 'CHNET Estoque') {
-        let peca = db.estoque.find(e => e.nome === tipo);
-        if (!peca) return alert('Peça não encontrada no inventário.');
+        let peca = itemEstoqueSelecionado;
+        if (!peca) return alert('Produto não encontrado no inventário.');
 
-        let qtdAReduzir = 1;
-        if (tipo.toLowerCase().includes('pneu')) {
+        let qtdAReduzir = isOleoServico ? qtdOleo : 1;
+        if (!isOleoServico && tipo.toLowerCase().includes('pneu')) {
             const qtdPneuSelect = document.getElementById('pneu_qtd');
-            if (qtdPneuSelect) qtdAReduzir = parseInt(qtdPneuSelect.value) || 1;
+            if (qtdPneuSelect) qtdAReduzir = parseInt(qtdPneuSelect.value, 10) || 1;
         }
 
-        if (peca.qtd < qtdAReduzir) return alert(`Estoque insuficiente para "${tipo}"!`);
-        peca.qtd -= qtdAReduzir;
+        if (parseNumero(peca.qtd) < qtdAReduzir) return alert(`Estoque insuficiente para "${tipo}"! Disponível: ${formatNumero(peca.qtd)}.`);
+        peca.qtd = parseNumero(peca.qtd) - qtdAReduzir;
     }
 
     const processar = (img) => {
-        let servico = { tipo: tipoFinalParaServico, forn, val: valor, km, data, obs, img, pneuEixo, pneuQtd: pneuEixo ? pneuQtd : null, estoqueItem: forn === 'CHNET Estoque' ? tipo : null };
+        let servico = { tipo: tipoFinalParaServico, forn, val: valor, km, data, obs, img, pneuEixo, pneuQtd: pneuEixo ? pneuQtd : null, estoqueItem: forn === 'CHNET Estoque' ? tipo : null, oleoQtd: isOleoServico ? qtdOleo : null };
         if (servico.km > 0) {
             if (!v.kmHistory) v.kmHistory = [];
             const exists = v.kmHistory.some(h => h.date === data && h.km === servico.km);
@@ -2435,15 +2460,21 @@ function addCompra() {
 
 function addPeca() {
     if (!exigirPermissao('estoque', true)) return;
-    let nome = document.getElementById('nova_peca').value.trim();
-    if (!nome) return alert('Informe o nome!');
-    if (db.estoque.find(e => e.nome.toLowerCase() === nome.toLowerCase())) return alert('Peça já existe!');
-    db.estoque.push({ id: Date.now(), nome, qtd: parseInt(document.getElementById('nova_qtd').value)||0, min: parseInt(document.getElementById('nova_min').value)||5, val: parseVal(document.getElementById('nova_val').value)||0, compras: [] });
+    const nome = document.getElementById('nova_peca').value.trim();
+    const qtd = parseNumero(document.getElementById('nova_qtd').value);
+    const min = parseNumero(document.getElementById('nova_min').value) || 5;
+    const val = parseVal(document.getElementById('nova_val').value);
+    const data = document.getElementById('nova_data').value || new Date().toISOString().split('T')[0];
+    const fornecedor = document.getElementById('nova_forn').value.trim() || 'Não informado';
+    if (!nome) return alert('Informe o nome do produto!');
+    if (db.estoque.find(e => e.nome.toLowerCase() === nome.toLowerCase())) return alert('Produto já existe. Use “Registrar Compra” para adicionar uma nova entrada.');
+    if (qtd < 0 || min < 0 || val < 0) return alert('Quantidade, mínimo e valor não podem ser negativos.');
+    const produto = { id: Date.now(), nome, qtd, min, val, compras: [] };
+    if (qtd > 0) produto.compras.push({ data, qtd, valorUnit: val, fornecedor, total: qtd * val });
+    db.estoque.push(produto);
     salvar(); renderEstoque();
-    document.getElementById('nova_peca').value = '';
-    document.getElementById('nova_qtd').value = '';
-    document.getElementById('nova_val').value = '';
-    alert('✅ Peça criada!');
+    ['nova_peca','nova_qtd','nova_val','nova_forn'].forEach(id => { document.getElementById(id).value = ''; });
+    alert(qtd > 0 ? '✅ Produto cadastrado e compra registrada no relatório!' : '✅ Produto cadastrado!');
 }
 
 function editarEstoque(id) {
