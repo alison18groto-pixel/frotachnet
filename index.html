@@ -2779,15 +2779,35 @@ function reRenderRelatorio() { showRelatorio(_relatorioAtual); }
 
 function renderRelatorioCompras(filterYear, filterMonth, filterStart, filterEnd, filterSearch) {
     const container = document.getElementById('relatorio-content');
-    const compras = []; (db.estoque || []).forEach(e => (e.compras || []).forEach(c => {
+    const compras = []; (db.estoque || []).forEach(e => (e.compras || []).forEach((c, compraIndex) => {
         if (!periodoRelatorioValido(c.data, filterYear, filterMonth, filterStart, filterEnd)) return;
         const texto = `${e.nome} ${c.fornecedor || ''} ${c.data || ''}`.toLowerCase();
         if (filterSearch && !filterSearch.split(/\s+/).filter(Boolean).every(t => texto.includes(t))) return;
-        compras.push({ ...c, item: e.nome });
+        compras.push({ ...c, item: e.nome, estoqueId: e.id, compraIndex });
     }));
     compras.sort((a,b) => String(b.data || '').localeCompare(String(a.data || '')));
     const total = compras.reduce((s,c) => s + parseNumero(c.total || parseNumero(c.qtd) * parseNumero(c.valorUnit)), 0);
-    container.innerHTML = `<div class="report-kpi-grid"><div class="report-kpi"><div class="report-kpi-label">Compras registradas</div><div class="report-kpi-value">${compras.length}</div></div><div class="report-kpi"><div class="report-kpi-label">Itens comprados</div><div class="report-kpi-value">${formatNumero(compras.reduce((s,c)=>s+parseNumero(c.qtd),0))}</div></div><div class="report-kpi"><div class="report-kpi-label">Valor total comprado</div><div class="report-kpi-value" style="color:var(--accent)">R$ ${formatMoney(total)}</div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Relatório de compras</h3><button onclick="exportarCSVCompras()" class="btn-small btn-success" style="width:auto"><i class="fas fa-file-csv"></i> Exportar CSV</button></div><div class="report-table-wrap"><table><thead><tr><th>Data</th><th>Produto</th><th>Fornecedor</th><th>Quantidade</th><th>Valor unitário</th><th>Total</th></tr></thead><tbody>${compras.map(c=>`<tr><td>${formatDate(c.data)}</td><td><strong>${escapeHtml(c.item)}</strong></td><td>${escapeHtml(c.fornecedor || 'Não informado')}</td><td>${formatNumero(c.qtd)}</td><td>R$ ${formatMoney(c.valorUnit)}</td><td><strong>R$ ${formatMoney(c.total || c.qtd*c.valorUnit)}</strong></td></tr>`).join('') || '<tr><td colspan="6" class="report-empty">Nenhuma compra encontrada no período.</td></tr>'}</tbody></table></div></div>`;
+    container.innerHTML = `<div class="report-kpi-grid"><div class="report-kpi"><div class="report-kpi-label">Compras registradas</div><div class="report-kpi-value">${compras.length}</div></div><div class="report-kpi"><div class="report-kpi-label">Itens comprados</div><div class="report-kpi-value">${formatNumero(compras.reduce((s,c)=>s+parseNumero(c.qtd),0))}</div></div><div class="report-kpi"><div class="report-kpi-label">Valor total comprado</div><div class="report-kpi-value" style="color:var(--accent)">R$ ${formatMoney(total)}</div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Relatório de compras</h3><button onclick="exportarCSVCompras()" class="btn-small btn-success" style="width:auto"><i class="fas fa-file-csv"></i> Exportar CSV</button></div><div class="report-table-wrap"><table><thead><tr><th>Data</th><th>Produto</th><th>Fornecedor</th><th>Quantidade</th><th>Valor unitário</th><th>Total</th><th>Ação</th></tr></thead><tbody>${compras.map(c=>`<tr><td>${formatDate(c.data)}</td><td><strong>${escapeHtml(c.item)}</strong></td><td>${escapeHtml(c.fornecedor || 'Não informado')}</td><td>${formatNumero(c.qtd)}</td><td>R$ ${formatMoney(c.valorUnit)}</td><td><strong>R$ ${formatMoney(c.total || c.qtd*c.valorUnit)}</strong></td><td><button class="btn-small btn-danger" style="width:auto" onclick="excluirCompraRelatorio(${c.estoqueId}, ${c.compraIndex})" title="Excluir somente esta compra"><i class="fas fa-trash"></i> Excluir lançamento</button></td></tr>`).join('') || '<tr><td colspan="7" class="report-empty">Nenhuma compra encontrada no período.</td></tr>'}</tbody></table></div></div>`;
+}
+function excluirCompraRelatorio(estoqueId, compraIndex) {
+    if (!exigirPermissao('estoque', true)) return;
+    const produto = db.estoque.find(e => String(e.id) === String(estoqueId));
+    const compra = produto?.compras?.[compraIndex];
+    if (!produto || !compra) return alert('Lançamento não encontrado. Atualize o relatório e tente novamente.');
+    const qtd = parseNumero(compra.qtd);
+    if (!confirm(`Excluir somente este lançamento de compra?\n\nProduto: ${produto.nome}\nQuantidade: ${formatNumero(qtd)}\n\nO produto continuará cadastrado e essa quantidade será estornada do estoque.`)) return;
+    produto.compras.splice(compraIndex, 1);
+    produto.qtd = Math.max(0, parseNumero(produto.qtd) - qtd);
+    salvar();
+    renderEstoque();
+    renderRelatorioCompras(
+        document.getElementById('filter_year')?.value || '',
+        document.getElementById('filter_month')?.value || '',
+        document.getElementById('filter_start')?.value || '',
+        document.getElementById('filter_end')?.value || '',
+        document.getElementById('filter_search')?.value || ''
+    );
+    alert('✅ Lançamento excluído do relatório. O produto foi mantido no estoque.');
 }
 function exportarCSVCompras() {
     const rows = [['Data','Produto','Fornecedor','Quantidade','Valor unitário','Total']]; (db.estoque||[]).forEach(e => (e.compras||[]).forEach(c => rows.push([c.data,e.nome,c.fornecedor||'',c.qtd,c.valorUnit,c.total||c.qtd*c.valorUnit]))); baixarCSV(rows, 'relatorio-compras.csv');
