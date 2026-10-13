@@ -2409,8 +2409,8 @@ function renderEstoque() {
             <td>${e.min}</td><td>R$ ${formatMoney(e.val)}</td><td>R$ ${formatMoney(e.qtd * e.val)}</td>
             <td>${statusBadge}</td>
             <td>
-                <button class="btn-small" onclick="editarEstoque(${e.id})"><i class="fas fa-edit"></i></button>
-                <button class="btn-small btn-danger" style="margin-left:4px" onclick="excluirEstoque(${e.id})"><i class="fas fa-trash"></i></button>
+                <button class="btn-small" onclick="editarEstoque(${e.id})" title="Editar produto"><i class="fas fa-edit"></i> Editar</button>
+                <button class="btn-small btn-danger" style="margin-left:4px;width:auto" onclick="excluirEstoque(${e.id})" title="Excluir produto"><i class="fas fa-trash"></i> Excluir produto</button>
             </td>
         </tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhuma peça cadastrada</td></tr>';
