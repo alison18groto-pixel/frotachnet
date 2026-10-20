@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
     <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/frotachnet-icon-180.png">
-    <title>Frota Pro V49 | Sistema Funcional</title>
+    <title>CHNET Gestão de Frotas | Sistema de Controle Veicular</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -365,7 +365,7 @@
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-    <div class="sidebar-logo"><img src="assets/frotachnet-icon.png" alt="CHNET Telecom"> <span style="font-size:14px; font-weight:bold; vertical-align:middle">Frota Pro</span></div>
+    <div class="sidebar-logo"><img src="assets/frotachnet-icon.png" alt="CHNET Telecom"> <span style="font-size:12px; line-height:1.15; font-weight:bold; vertical-align:middle; white-space:normal">CHNET Gestão de Frotas</span></div>
     <button class="sidebar-toggle-button" onclick="toggleSidebar()" title="Minimizar/Expandir sidebar"><i class="fas fa-chevron-left"></i></button>
     <div class="nav-item active" onclick="tab('dash')"><i class="fas fa-home"></i> <span>Dashboard</span></div>
     <div class="nav-item" onclick="tab('frota')"><i class="fas fa-car"></i> <span>Veículos</span></div>
@@ -2714,7 +2714,7 @@ function limparPeriodoRelatorio() {
     reRenderRelatorio();
 }
 function imprimirRelatorio() {
-    if (_relatorioAtual === 'executivo') document.title = 'Relatório Executivo - Frota';
+    if (_relatorioAtual === 'executivo') document.title = 'Relatório Executivo - CHNET Gestão de Frotas';
     window.print();
 }
 function renderRelatorioExecutivo(filterYear, filterMonth, filterStart, filterEnd, filterSearch) {
