@@ -54,7 +54,7 @@
         .sidebar { width: 70px; background: var(--sidebar-bg); height: 100vh; position: fixed; top: 0; left: 0; transition: width 0.3s; border-right: 1px solid var(--border); overflow: hidden; z-index: 100; }
         .sidebar:hover { width: 180px; }
         .sidebar-logo { padding: 14px 18px; font-size: 1.5rem; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
-        .sidebar-logo img { width: 38px; height: 38px; object-fit: cover; border-radius: 9px; flex: 0 0 auto; }
+        .sidebar-logo img { width: 44px; height: 44px; object-fit: cover; border-radius: 9px; flex: 0 0 auto; }
         .sidebar-toggle-button { position: absolute; top: 16px; right: 10px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(255,255,255,0.08); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s; }
         .sidebar-toggle-button:hover { background: rgba(255,255,255,0.16); }
         .sidebar-toggle-button i { font-size: 12px; }
@@ -397,7 +397,7 @@
     <!-- FROTA -->
     <div id="tab-frota" class="hidden">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-            <h2 style="margin:0;display:flex;align-items:center;gap:8px"><img src="assets/frotachnet-icon.png" alt="" aria-hidden="true" style="width:28px;height:28px;object-fit:cover;border-radius:6px"> Veículos</h2>
+            <h2 style="margin:0;display:flex;align-items:center;gap:8px"><img src="assets/frotachnet-icon.png" alt="" aria-hidden="true" style="width:34px;height:34px;object-fit:contain;border-radius:7px"> Veículos</h2>
             <input type="text" id="frota_search" onkeyup="renderVeiculos()" placeholder="🔎 Pesquisar por motorista, placa..." style="flex-grow: 1; margin: 0 20px;">
             <button onclick="addVeiculo()" class="btn-small">+ Novo Veículo</button>
         </div>
