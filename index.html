@@ -573,6 +573,15 @@
                         <input id="oleo_qtd_servico" type="range" min="0.1" max="10" step="0.1" value="1" oninput="atualizarQuantidadeOleoServico()" style="accent-color:var(--fuel);margin:10px 0 0">
                         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary)"><span>0,1 L</span><span>ajuste de 100 em 100 ml</span><span id="oleo_qtd_servico_max">10 L</span></div>
                     </div>
+                    <div id="wrapper_oleo_modo" class="hidden" style="margin-top:10px;padding:10px 12px;border:1px solid rgba(34,211,238,.3);border-radius:10px;background:rgba(34,211,238,.06)">
+                        <label for="oleo_modo_servico" style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Tipo de registro do óleo</label>
+                        <select id="oleo_modo_servico" style="margin:6px 0 0">
+                            <option value="">-- Selecione --</option>
+                            <option value="emenda">Emenda / complemento (não reinicia o contador)</option>
+                            <option value="troca_completa">Troca completa (reinicia o contador)</option>
+                        </select>
+                        <small style="color:var(--text-secondary)">A emenda fica no histórico com a data e o KM, sem alterar a próxima troca.</small>
+                    </div>
                     <div id="wrapper_pneu_eixo" class="hidden" style="margin-top: 8px;">
                         <label style="font-size:11px;color:var(--text-secondary);text-transform:uppercase">Eixo do Pneu</label>
                         <select id="pneu_eixo">
@@ -752,6 +761,11 @@ function tipoMatchRegra(tipo, regra) {
     }
 
     return false;
+}
+
+function servicoAtualizaBase(servico, regra) {
+    if (servico && servico.oleoModo === 'emenda') return false;
+    return tipoMatchRegra(servico?.tipo || '', regra);
 }
 
 function getRegrasVeiculo(v) {
@@ -1990,6 +2004,8 @@ function atualizarPrecoEUnidadesPorPneu(resetOleo = false) {
     const qtdPneuSelect = document.getElementById('pneu_qtd');
     const wrapperEixo = document.getElementById('wrapper_pneu_eixo');
     const wrapperOleo = document.getElementById('wrapper_oleo_qtd');
+    const wrapperModoOleo = document.getElementById('wrapper_oleo_modo');
+    const modoOleoSelect = document.getElementById('oleo_modo_servico');
     const sliderOleo = document.getElementById('oleo_qtd_servico');
     const maxOleo = document.getElementById('oleo_qtd_servico_max');
     if (!tipoSelect || !fornSelect || !valorCampo) return;
@@ -2005,6 +2021,8 @@ function atualizarPrecoEUnidadesPorPneu(resetOleo = false) {
         if (qtdPneuSelect) qtdPneuSelect.value = '1';
     }
     if (wrapperOleo) wrapperOleo.classList.toggle('hidden', !ehOleo);
+    if (wrapperModoOleo) wrapperModoOleo.classList.toggle('hidden', !ehOleo);
+    if (!ehOleo && modoOleoSelect) modoOleoSelect.value = '';
     if (ehOleo && sliderOleo) {
         const item = db.estoque.find(e => e.nome === selectedOption.value);
         const disponivel = Math.min(10, Math.max(0.1, parseNumero(item?.qtd)));
@@ -2163,8 +2181,10 @@ function addServico() {
     const itemEstoqueSelecionado = forn === 'CHNET Estoque' ? db.estoque.find(e => e.nome === tipo) : null;
     const isOleoServico = forn === 'CHNET Estoque' && String(tipo || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'oleo motor 5w30';
     const qtdOleo = isOleoServico ? (parseNumero(document.getElementById('oleo_qtd_servico')?.value) || 0.1) : 0;
+    const oleoModo = isOleoServico ? document.getElementById('oleo_modo_servico')?.value : null;
     if (!forn || !tipo || !km || !data || (!valor && !isOleoServico)) return alert('Preencha os campos obrigatórios!');
-    let tipoFinalParaServico = isOleoServico ? 'Troca de óleo' : tipo;
+    if (isOleoServico && !['emenda', 'troca_completa'].includes(oleoModo)) return alert('Selecione se o óleo foi apenas completado/emendado ou se foi feita uma troca completa.');
+    let tipoFinalParaServico = isOleoServico ? (oleoModo === 'troca_completa' ? 'Troca de óleo' : 'Emenda de óleo') : tipo;
     const wrapperEixo = document.getElementById('wrapper_pneu_eixo');
     if (wrapperEixo && !wrapperEixo.classList.contains('hidden')) {
         pneuEixo = document.getElementById('pneu_eixo').value;
@@ -2190,7 +2210,7 @@ function addServico() {
     }
 
     const processar = (img) => {
-        let servico = { tipo: tipoFinalParaServico, forn, val: valor, km, data, obs, img, pneuEixo, pneuQtd: pneuEixo ? pneuQtd : null, estoqueItem: forn === 'CHNET Estoque' ? tipo : null, oleoQtd: isOleoServico ? qtdOleo : null };
+        let servico = { tipo: tipoFinalParaServico, forn, val: valor, km, data, obs, img, pneuEixo, pneuQtd: pneuEixo ? pneuQtd : null, estoqueItem: forn === 'CHNET Estoque' ? tipo : null, oleoQtd: isOleoServico ? qtdOleo : null, oleoModo: isOleoServico ? oleoModo : null };
         if (servico.km > 0) {
             if (!v.kmHistory) v.kmHistory = [];
             const exists = v.kmHistory.some(h => h.date === data && h.km === servico.km);
@@ -2206,7 +2226,7 @@ function addServico() {
         const regrasConfig = getRegrasVeiculo(v);
         
         // Filtra as regras estritamente pela função tipoMatchRegra
-        let regrasBatidas = Object.keys(regrasConfig).filter(r => tipoMatchRegra(tipoFinalParaServico, r));
+        let regrasBatidas = Object.keys(regrasConfig).filter(r => servicoAtualizaBase(servico, r));
         
         // Se a IA tentou forçar o fallback automático, aplicamos a trava manual aqui também
         if (ehCabine) {
@@ -2252,6 +2272,7 @@ function addServico() {
         document.getElementById('servico_km').value = '';
         document.getElementById('servico_obs').value = '';
         if(document.getElementById('servico_foto')) document.getElementById('servico_foto').value = '';
+        if (isOleoServico) document.getElementById('oleo_modo_servico').value = '';
         
         updateTipoSelect();
         alert('✅ Manutenção registrada com sucesso!');
@@ -2273,7 +2294,7 @@ function excluirServico(idx) {
     let s = v.servicos[idx];
     if (s.forn === 'CHNET Estoque') {
         let peca = db.estoque.find(e => e.nome === (s.estoqueItem || s.tipo));
-        if (peca) peca.qtd += Math.max(1, parseInt(s.pneuQtd, 10) || 1);
+        if (peca) peca.qtd += s.oleoQtd != null ? parseNumero(s.oleoQtd) : Math.max(1, parseInt(s.pneuQtd, 10) || 1);
     }
     v.servicos.splice(idx, 1);
 
@@ -2312,7 +2333,7 @@ function salvarEdicaoServico() {
     if (!novoTipo) return alert('Informe o tipo!');
     if (!novoKm) return alert('Informe o KM!');
     if (!novaData) return alert('Informe a data!');
-    if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === (s.estoqueItem || s.tipo)); if (peca) peca.qtd += Math.max(1, parseInt(s.pneuQtd, 10) || 1); }
+    if (s.forn === 'CHNET Estoque' && novoForn !== 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === (s.estoqueItem || s.tipo)); if (peca) peca.qtd += s.oleoQtd != null ? parseNumero(s.oleoQtd) : Math.max(1, parseInt(s.pneuQtd, 10) || 1); }
     if (s.forn !== 'CHNET Estoque' && novoForn === 'CHNET Estoque') { let peca = db.estoque.find(e => e.nome === novoTipo); if (!peca) return alert('Peça não encontrada!'); const qtd = novoTipo.toLowerCase().includes('pneu') ? Math.max(1, parseInt(document.getElementById('pneu_qtd')?.value, 10) || 1) : 1; if (peca.qtd < qtd) return alert(`Sem estoque!`); peca.qtd -= qtd; s.pneuQtd = qtd; }
     s.forn = novoForn; s.tipo = novoTipo; s.val = novoVal; s.km = novoKm; s.data = novaData; s.obs = novaObs;
     if (novoForn === 'CHNET Estoque') s.estoqueItem = s.estoqueItem || novoTipo;
@@ -2325,7 +2346,7 @@ function recalcularBases(v) {
     const regras = getRegrasVeiculo(v);
     [...v.servicos].sort((a,b) => (a.km||0)-(b.km||0)).forEach(s => {
         Object.keys(regras).forEach(regra => {
-            if (tipoMatchRegra(s.tipo, regra)) v.bases[regra] = s.km;
+            if (servicoAtualizaBase(s, regra)) v.bases[regra] = s.km;
         });
         const tipo = (s.tipo || '').toLowerCase();
         if (tipo.includes('pneu dianteiro') || tipo.includes('pneu front')) v.bases['Pneu Dianteiro'] = s.km;

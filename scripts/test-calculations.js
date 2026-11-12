@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 
 function parseKM(v) { return parseInt(String(v ?? '').replace(/\D/g, ''), 10) || 0; }
 function parseNumero(v) {
@@ -31,6 +34,15 @@ assert.equal(parseNumero('52,07'), 52.07);
 assert.equal(parseNumero('1.234'), 1.234);
 assert.equal(parseNumero('inválido'), 0);
 
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const oleoHelpers = html.match(/function tipoMatchRegra\(tipo, regra\) \{[\s\S]*?\n\}\n\nfunction servicoAtualizaBase\(servico, regra\) \{[\s\S]*?\n\}/);
+assert.ok(oleoHelpers, 'A lógica compartilhada de identificação de regras e emendas de óleo deve existir.');
+const oleoSandbox = {};
+vm.runInNewContext(`${oleoHelpers[0]}\nglobalThis.servicoAtualizaBase = servicoAtualizaBase;`, oleoSandbox);
+assert.equal(oleoSandbox.servicoAtualizaBase({ tipo: 'Emenda de óleo', oleoModo: 'emenda' }, 'Troca de óleo'), false);
+assert.equal(oleoSandbox.servicoAtualizaBase({ tipo: 'Troca de óleo', oleoModo: 'troca_completa' }, 'Troca de óleo'), true);
+assert.equal(oleoSandbox.servicoAtualizaBase({ tipo: 'Troca de óleo' }, 'Troca de óleo'), true, 'Registros antigos de troca completa continuam válidos.');
+
 const intervalos = intervalosConsumo([
   { km: '150.000', qtd: '50,00' },
   { km: '150.400', qtd: '50,00' },
@@ -48,4 +60,4 @@ const totalGastos = gastos.reduce((sum, valor) => sum + valor, 0);
 assert.equal(totalOdometros, 654639);
 assert.equal(Number((totalGastos / totalOdometros).toFixed(6)), 0.181552);
 
-console.log('OK: testes de normalização, consumo e exclusão de outlier passaram.');
+console.log('OK: testes de normalização, consumo, óleo e exclusão de outlier passaram.');
