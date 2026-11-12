@@ -768,6 +768,10 @@ function servicoAtualizaBase(servico, regra) {
     return tipoMatchRegra(servico?.tipo || '', regra);
 }
 
+function nomeProdutoEhOleo(nome) {
+    return String(nome || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('oleo');
+}
+
 function getRegrasVeiculo(v) {
     if (v.regrasProprias && Object.keys(v.regrasProprias).length > 0) return v.regrasProprias;
     return db.regras;
@@ -1077,10 +1081,13 @@ function salvarDados() {
     const snapshotToSave = JSON.parse(JSON.stringify(db));
     const btn = document.getElementById('save-btn');
     if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-    saveQueue = saveQueue.then(async () => {
+    saveQueue = saveQueue.catch(() => {}).then(async () => {
         const previous = lastSavedDbSnapshot || {};
         const updates = {};
-        if (isAdmin()) {
+        const uid = currentAuthUser.uid;
+        const tokenResult = typeof currentAuthUser.getIdTokenResult === 'function' ? await currentAuthUser.getIdTokenResult() : null;
+        const podeEscreverAppDataCompleto = ['0bUm9uxTizLn7S3dShqbLCYnFWz1', 'uYUbXBTRVCUCAZINzzxNqFRGjH63'].includes(uid) || tokenResult?.claims?.admin === true;
+        if (podeEscreverAppDataCompleto) {
             updates.appData = snapshotToSave;
         } else {
             if (podeEditar('frota') || podeEditar('servicos')) updates['appData/veiculos'] = snapshotToSave.veiculos;
@@ -2011,7 +2018,7 @@ function atualizarPrecoEUnidadesPorPneu(resetOleo = false) {
     if (!tipoSelect || !fornSelect || !valorCampo) return;
     const selectedOption = tipoSelect.options[tipoSelect.selectedIndex];
     const ehPneu = !!selectedOption && selectedOption.value.toLowerCase().includes('pneu');
-    const ehOleo = fornSelect.value === 'CHNET Estoque' && !!selectedOption && selectedOption.value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'oleo motor 5w30';
+    const ehOleo = fornSelect.value === 'CHNET Estoque' && !!selectedOption && nomeProdutoEhOleo(selectedOption.value);
     if (ehPneu) {
         if (wrapperPneu) wrapperPneu.classList.remove('hidden');
         if (wrapperEixo) wrapperEixo.classList.remove('hidden');
@@ -2179,10 +2186,11 @@ function addServico() {
     let pneuEixo = null;
     let pneuQtd = 1;
     const itemEstoqueSelecionado = forn === 'CHNET Estoque' ? db.estoque.find(e => e.nome === tipo) : null;
-    const isOleoServico = forn === 'CHNET Estoque' && String(tipo || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'oleo motor 5w30';
+    const isOleoServico = forn === 'CHNET Estoque' && nomeProdutoEhOleo(tipo);
     const qtdOleo = isOleoServico ? (parseNumero(document.getElementById('oleo_qtd_servico')?.value) || 0.1) : 0;
     const oleoModo = isOleoServico ? document.getElementById('oleo_modo_servico')?.value : null;
     if (!forn || !tipo || !km || !data || (!valor && !isOleoServico)) return alert('Preencha os campos obrigatórios!');
+    if (forn === 'CHNET Estoque' && !podeEditar('estoque')) return alert('Seu perfil não tem permissão para baixar itens do estoque. Peça ao administrador acesso de edição ao módulo Estoque.');
     if (isOleoServico && !['emenda', 'troca_completa'].includes(oleoModo)) return alert('Selecione se o óleo foi apenas completado/emendado ou se foi feita uma troca completa.');
     let tipoFinalParaServico = isOleoServico ? (oleoModo === 'troca_completa' ? 'Troca de óleo' : 'Emenda de óleo') : tipo;
     const wrapperEixo = document.getElementById('wrapper_pneu_eixo');
@@ -2193,6 +2201,8 @@ function addServico() {
     }
     
     if (!forn || !tipoFinalParaServico || !km || !data || (!valor && !isOleoServico)) return alert('Preencha os campos obrigatórios!');
+
+    const estadoAnterior = JSON.parse(JSON.stringify(db));
     
     // Controle de baixa de estoque: o óleo usa a quantidade definida no slider.
     if (forn === 'CHNET Estoque') {
@@ -2209,7 +2219,7 @@ function addServico() {
         peca.qtd = parseNumero(peca.qtd) - qtdAReduzir;
     }
 
-    const processar = (img) => {
+    const processar = async (img) => {
         let servico = { tipo: tipoFinalParaServico, forn, val: valor, km, data, obs, img, pneuEixo, pneuQtd: pneuEixo ? pneuQtd : null, estoqueItem: forn === 'CHNET Estoque' ? tipo : null, oleoQtd: isOleoServico ? qtdOleo : null, oleoModo: isOleoServico ? oleoModo : null };
         if (servico.km > 0) {
             if (!v.kmHistory) v.kmHistory = [];
@@ -2265,7 +2275,15 @@ function addServico() {
         v.servicos.push(servico);
         v.ultimaAtualizacao = data;
         veiculoAtual = v;
-        salvar();
+        try {
+            await salvar();
+        } catch (error) {
+            db = estadoAnterior;
+            veiculoAtual = db.veiculos.find(x => String(x.id) === String(vid)) || null;
+            renderizarTudo();
+            updateTipoSelect();
+            return;
+        }
         
         // Limpa os campos do formulário
         document.getElementById('servico_val').value = '';
@@ -2275,7 +2293,7 @@ function addServico() {
         if (isOleoServico) document.getElementById('oleo_modo_servico').value = '';
         
         updateTipoSelect();
-        alert('✅ Manutenção registrada com sucesso!');
+        alert('✅ Manutenção registrada e sincronizada com sucesso!');
     };
 
     if (file) { 

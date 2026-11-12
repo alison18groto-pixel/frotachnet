@@ -42,6 +42,16 @@ vm.runInNewContext(`${oleoHelpers[0]}\nglobalThis.servicoAtualizaBase = servicoA
 assert.equal(oleoSandbox.servicoAtualizaBase({ tipo: 'Emenda de óleo', oleoModo: 'emenda' }, 'Troca de óleo'), false);
 assert.equal(oleoSandbox.servicoAtualizaBase({ tipo: 'Troca de óleo', oleoModo: 'troca_completa' }, 'Troca de óleo'), true);
 assert.equal(oleoSandbox.servicoAtualizaBase({ tipo: 'Troca de óleo' }, 'Troca de óleo'), true, 'Registros antigos de troca completa continuam válidos.');
+const detectorOleo = html.match(/function nomeProdutoEhOleo\(nome\) \{[\s\S]*?\n\}/);
+assert.ok(detectorOleo, 'O sistema deve identificar itens de óleo pelo nome do produto.');
+const detectorSandbox = {};
+vm.runInNewContext(`${detectorOleo[0]}\nglobalThis.nomeProdutoEhOleo = nomeProdutoEhOleo;`, detectorSandbox);
+assert.equal(detectorSandbox.nomeProdutoEhOleo('Óleo Motor 5W30'), true);
+assert.equal(detectorSandbox.nomeProdutoEhOleo('Óleo Hidráulico ISO 68'), true);
+assert.equal(detectorSandbox.nomeProdutoEhOleo('Filtro de Óleo'), true);
+assert.equal(detectorSandbox.nomeProdutoEhOleo('Filtro de ar'), false);
+assert.match(html, /await salvar\(\);/, 'A interface só deve confirmar a manutenção depois de aguardar o salvamento.');
+assert.match(html, /podeEditar\('estoque'\)/, 'A baixa de estoque precisa exigir permissão de edição do estoque.');
 
 const intervalos = intervalosConsumo([
   { km: '150.000', qtd: '50,00' },
