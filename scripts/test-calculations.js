@@ -53,7 +53,8 @@ assert.equal(detectorSandbox.nomeProdutoEhOleo('Filtro de ar'), false);
 assert.match(html, /await salvar\(\);/, 'A interface só deve confirmar a manutenção depois de aguardar o salvamento.');
 assert.match(html, /podeEditar\('estoque'\)/, 'A baixa de estoque precisa exigir permissão de edição do estoque.');
 assert.match(html, /Ao salvar: descontar \$\{formatNumero\(qtdOleo\)\} L de/, 'A interface deve mostrar qual produto e quantos litros serão descontados.');
-assert.match(html, /Emenda registrada.*formatNumero\(s\.oleoQtd\)\} L/, 'O histórico deve mostrar os litros de óleo em cada emenda.');
+assert.match(html, /function renderInfoOleoServico\(servico, filtro = ''\) \{[\s\S]*?Emenda registrada[\s\S]*?formatNumero\(servico\.oleoQtd\)\} L/, 'Histórico e relatórios devem mostrar os litros de óleo em cada emenda.');
+assert.ok((html.match(/\$\{renderInfoOleoServico\(s, filterSearch\)\}/g) || []).length >= 3, 'Os relatórios devem renderizar a quantidade de óleo junto ao serviço.');
 
 const intervalos = intervalosConsumo([
   { km: '150.000', qtd: '50,00' },
