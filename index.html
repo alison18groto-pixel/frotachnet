@@ -3024,9 +3024,9 @@ function showRelatorio(tipo) {
                     <button onclick="exportarCSV()" class="btn-small btn-success"><i class="fas fa-file-csv"></i> Exportar CSV</button>
                 </div>
                 <div style="overflow-x:auto"><table>
-                    <thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Oficina</th><th>KM</th><th>Valor</th><th>Obs</th></tr></thead>
-                    <tbody>${todos.map(s => `<tr><td>${highlightText(formatDate(s.data), filterSearch)}</td><td><strong>${highlightText(s.motorista, filterSearch)}</strong> <span style="color:var(--text-secondary)">(${highlightText(s.placa, filterSearch)})</span></td><td>${highlightText(s.tipo, filterSearch)}${renderInfoOleoServico(s, filterSearch)}${renderInfoProdutoEstoqueServico(s, filterSearch)}</td><td>${highlightText(s.forn, filterSearch)}</td><td>${formatKM(s.km)} km</td><td><strong>R$ ${formatMoney(s.val)}</strong></td><td style="color:var(--text-secondary)">${highlightText(s.obs||'—', filterSearch)}</td></tr>`).join('')}
-                    ${!todos.length ? '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>' : ''}</tbody>
+                    <thead><tr><th>Data</th><th>Veículo</th><th>Tipo</th><th>Produto / Marca (CHNET)</th><th>Oficina</th><th>KM</th><th>Valor</th><th>Obs</th></tr></thead>
+                    <tbody>${todos.map(s => `<tr><td>${highlightText(formatDate(s.data), filterSearch)}</td><td><strong>${highlightText(s.motorista, filterSearch)}</strong> <span style="color:var(--text-secondary)">(${highlightText(s.placa, filterSearch)})</span></td><td>${highlightText(s.tipo, filterSearch)}${renderInfoOleoServico(s, filterSearch)}</td><td><strong style="color:var(--fuel)">${s.forn === 'CHNET Estoque' && s.estoqueItem ? highlightText(s.estoqueItem, filterSearch) : '—'}</strong></td><td>${highlightText(s.forn, filterSearch)}</td><td>${formatKM(s.km)} km</td><td><strong>R$ ${formatMoney(s.val)}</strong></td><td style="color:var(--text-secondary)">${highlightText(s.obs||'—', filterSearch)}</td></tr>`).join('')}
+                    ${!todos.length ? '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum serviço no período</td></tr>' : ''}</tbody>
                 </table></div>
             </div>`;
 

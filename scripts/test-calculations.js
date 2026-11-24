@@ -66,6 +66,9 @@ assert.equal(produtoPneuSandbox.renderInfoProdutoEstoqueServico({ tipo: 'Pneu Di
 assert.match(html, /produto: ini\.estoqueItem \|\| ''/, 'Cada ciclo do relatório de pneus deve manter o produto associado à instalação.');
 assert.match(html, /Produto\/marca do pneu/, 'O histórico de ciclos deve exibir a marca/nome do pneu.');
 assert.match(html, /Produto do estoque/,'A exportação CSV deve incluir o nome do produto retirado do estoque.');
+assert.match(html, /<th>Produto \/ Marca \(CHNET\)<\/th>/, 'Todos os Serviços deve exibir uma coluna própria para a marca/modelo selecionado.');
+assert.match(html, /s\.forn === 'CHNET Estoque' && s\.estoqueItem \? highlightText\(s\.estoqueItem, filterSearch\) : '—'/, 'A coluna do relatório deve mostrar o texto exato salvo em estoqueItem.');
+assert.match(html, /estoqueItem: forn === 'CHNET Estoque' \? tipo : null/, 'A troca deve salvar o produto escolhido no estoque, separado do eixo do pneu.');
 
 const intervalos = intervalosConsumo([
   { km: '150.000', qtd: '50,00' },
