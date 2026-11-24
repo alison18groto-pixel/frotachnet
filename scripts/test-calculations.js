@@ -56,6 +56,20 @@ assert.match(html, /Ao salvar: descontar \$\{formatNumero\(qtdOleo\)\} L de/, 'A
 assert.match(html, /function renderInfoOleoServico\(servico, filtro = ''\) \{[\s\S]*?Emenda registrada[\s\S]*?formatNumero\(servico\.oleoQtd\)\} L/, 'Histórico e relatórios devem mostrar os litros de óleo em cada emenda.');
 assert.ok((html.match(/\$\{renderInfoOleoServico\(s, filterSearch\)\}/g) || []).length >= 3, 'Os relatórios devem renderizar a quantidade de óleo junto ao serviço.');
 
+const renderProdutoPneu = html.match(/function renderInfoProdutoEstoqueServico\(servico, filtro = ''\) \{[\s\S]*?\n\}/);
+assert.ok(renderProdutoPneu, 'O sistema deve apresentar o nome do pneu retirado do estoque CHNET.');
+const produtoPneuSandbox = { highlightText: texto => String(texto) };
+vm.runInNewContext(`${renderProdutoPneu[0]}\nglobalThis.renderInfoProdutoEstoqueServico = renderInfoProdutoEstoqueServico;`, produtoPneuSandbox);
+assert.match(produtoPneuSandbox.renderInfoProdutoEstoqueServico({ tipo: 'Pneu Dianteiro', forn: 'CHNET Estoque', estoqueItem: 'Michelin X Multi Energy Z 295/80R22.5', pneuQtd: 2 }), /Michelin X Multi Energy Z 295\/80R22\.5/);
+assert.match(produtoPneuSandbox.renderInfoProdutoEstoqueServico({ tipo: 'Pneu Traseiro', forn: 'CHNET Estoque', estoqueItem: 'Michelin X Multi Energy Z 295/80R22.5', pneuQtd: 2 }), /2 unidades/);
+assert.equal(produtoPneuSandbox.renderInfoProdutoEstoqueServico({ tipo: 'Pneu Dianteiro', forn: 'Outra oficina', estoqueItem: 'Pneu Premium' }), '', 'Não mostrar produto CHNET para serviços de outros fornecedores.');
+assert.match(html, /produto: ini\.estoqueItem \|\| ''/, 'Cada ciclo do relatório de pneus deve manter o produto associado à instalação.');
+assert.match(html, /Produto\/marca do pneu/, 'O histórico de ciclos deve exibir a marca/nome do pneu.');
+assert.match(html, /Produto do estoque/,'A exportação CSV deve incluir o nome do produto retirado do estoque.');
+assert.match(html, /<th>Produto \/ Marca \(CHNET\)<\/th>/, 'Todos os Serviços deve exibir uma coluna própria para a marca/modelo selecionado.');
+assert.match(html, /s\.forn === 'CHNET Estoque' && s\.estoqueItem \? highlightText\(s\.estoqueItem, filterSearch\) : '—'/, 'A coluna do relatório deve mostrar o texto exato salvo em estoqueItem.');
+assert.match(html, /estoqueItem: forn === 'CHNET Estoque' \? tipo : null/, 'A troca deve salvar o produto escolhido no estoque, separado do eixo do pneu.');
+
 const intervalos = intervalosConsumo([
   { km: '150.000', qtd: '50,00' },
   { km: '150.400', qtd: '50,00' },
